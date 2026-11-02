@@ -1,26 +1,149 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@layer base {
+  :root {
+    --background: #EEEDF4;
+    --foreground: #0A0A0A;
+    
+    --card: #FFFFFF;
+    --card-foreground: #0A0A0A;
+    
+    --popover: #FFFFFF;
+    --popover-foreground: #0A0A0A;
+    
+    --primary: #0A0A0A;
+    --primary-foreground: #FFFFFF;
+    
+    --secondary: #F3F4F6;
+    --secondary-foreground: #111827;
+    
+    --muted: #F0EFF5;
+    --muted-foreground: #6B7280;
+    
+    --accent: #D4F732;
+    --accent-foreground: #0A0A0A;
+    
+    --destructive: #EF4444;
+    --destructive-foreground: #FFFFFF;
+    
+    --border: #E5E4EE;
+    --input: #E5E4EE;
+    --ring: #D4F732;
+    
+    --radius: 1.25rem;
+    
+    /* TAZQOR Custom Brand Tokens from Reference Screenshots */
+    --tazqor-lime: #D4F732;
+    --tazqor-lime-dark: #B6D628;
+    --tazqor-charcoal: #151515;
+    --tazqor-hero-start: #C8D5F5;
+    --tazqor-hero-end: #E5EAFF;
+    --tazqor-sidebar: #F5F4FA;
+  }
+
+  .dark {
+    --background: #0D0E11;
+    --foreground: #F9FAFB;
+    
+    --card: #18191E;
+    --card-foreground: #F9FAFB;
+    
+    --popover: #18191E;
+    --popover-foreground: #F9FAFB;
+    
+    --primary: #D4F732;
+    --primary-foreground: #0A0A0A;
+    
+    --secondary: #24262E;
+    --secondary-foreground: #F9FAFB;
+    
+    --muted: #1F2128;
+    --muted-foreground: #9CA3AF;
+    
+    --accent: #D4F732;
+    --accent-foreground: #0A0A0A;
+    
+    --destructive: #EF4444;
+    --destructive-foreground: #FFFFFF;
+    
+    --border: #2C2E38;
+    --input: #2C2E38;
+    --ring: #D4F732;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-tazqor-lime: var(--tazqor-lime);
+  --color-tazqor-lime-dark: var(--tazqor-lime-dark);
+  --color-tazqor-charcoal: var(--tazqor-charcoal);
+  --color-tazqor-sidebar: var(--tazqor-sidebar);
+
+  --radius-card: var(--radius);
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Glass & subtle card shadows matching reference screenshots */
+.tazqor-card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
+}
+
+.tazqor-hero-card {
+  background: linear-gradient(135deg, var(--tazqor-hero-start) 0%, var(--tazqor-hero-end) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 30px -4px rgba(108, 123, 255, 0.12);
+}
+
+.tazqor-lime-card {
+  background-color: var(--tazqor-lime);
+  color: #0A0A0A;
+  border-radius: var(--radius);
+  box-shadow: 0 8px 30px -4px rgba(212, 247, 50, 0.25);
+}
+
+.tazqor-charcoal-card {
+  background-color: var(--tazqor-charcoal);
+  color: #FFFFFF;
+  border-radius: var(--radius);
+  box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.3);
+}
+
+/* Hide scrollbars for clean pill tabs */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

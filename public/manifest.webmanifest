@@ -1,0 +1,17 @@
+{
+  "name": "TAZQOR Business Manager",
+  "short_name": "TAZQOR",
+  "description": "Operations & Business Management for TAZQOR Cleaning Products",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#EEEDF4",
+  "theme_color": "#151515",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
