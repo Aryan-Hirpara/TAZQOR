@@ -3,6 +3,8 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
+/* TEMP FONT: Licensed Lufga font files not yet present in /fonts.
+   Using Plus Jakarta Sans with true Light 300 Italic fallback per addendum spec. */
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -37,7 +39,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`h-full ${plusJakartaSans.variable}`}>
-      <body className="min-h-full font-sans antialiased text-foreground selection:bg-[#E0FE52] selection:text-black">
+      <body className="min-h-full font-sans antialiased text-foreground selection:bg-[#D7FF00] selection:text-black">
         {children}
         <Toaster position="top-right" richColors />
       </body>

@@ -14,8 +14,8 @@ export default function AppLayout({
         <Sidebar />
       </Suspense>
 
-      {/* Main Content Canvas */}
-      <div className="flex-1 flex flex-col min-w-0 pr-4 sm:pr-8 pl-1">
+      {/* Main Content Canvas: Cards start at exact x=87 (72px rail + 15px pl) */}
+      <div className="flex-1 flex flex-col min-w-0 pl-[15px] pr-0">
         <main className="flex-1 w-full">
           <Suspense fallback={<div className="p-8 text-center text-xs text-neutral-400 font-light">Loading...</div>}>
             {children}

@@ -14,19 +14,22 @@ export function TopRightMetricsCard({
   averageSaleValue = 1240.0,
 }: TopRightMetricsCardProps) {
   return (
-    <GlassCard variant="glass" className="h-full p-5 sm:p-6 lg:p-7 select-none flex flex-col justify-between">
+    <GlassCard
+      variant="glass"
+      className="h-full p-5 sm:p-6 lg:p-7 select-none flex flex-col justify-between"
+    >
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-6 h-full items-stretch min-w-0">
-        {/* Left ~5 cols equivalent: Average Items per Sale */}
+        {/* Left section: Average Items per Sale */}
         <div className="md:col-span-5 h-full min-w-0 flex flex-col">
           <DottedParticleChart averageItems={averageItems} />
         </div>
 
         {/* Vertical thin glass divider line */}
         <div className="hidden md:flex md:col-span-1 justify-center items-center pointer-events-none">
-          <div className="w-[1px] h-[85%] bg-white/60" />
+          <div className="w-[1px] h-[85%] bg-white/50" />
         </div>
 
-        {/* Right ~6-7 cols equivalent: Average Sale Value */}
+        {/* Right section: Average Sale Value */}
         <div className="md:col-span-6 h-full min-w-0 flex flex-col">
           <DailyPillBarChart averageSaleValue={averageSaleValue} />
         </div>

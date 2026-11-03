@@ -65,11 +65,11 @@ export function TopHeader({
 
   return (
     <>
-      <header className="w-full h-[76px] flex items-center justify-between px-2 sm:px-4 bg-transparent select-none z-20 shrink-0">
+      <header className="w-full h-[73px] flex items-center justify-between pl-[27px] pr-4 sm:pr-6 bg-transparent select-none z-20 shrink-0">
         {/* Left: Wordmark logo (ONE logo only, no redundant logo in rail) */}
         <div className="flex items-center gap-2.5">
           <Link href="/dashboard" className="flex items-center gap-2 group">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-black text-[#E0FE52] shadow-sm group-hover:scale-105 transition-transform">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-black text-[#D7FF00] group-hover:scale-105 transition-transform">
               <Sparkles className="w-4 h-4 fill-current" />
             </div>
             <span className="font-semibold text-neutral-900 tracking-tight text-lg leading-none">
@@ -83,15 +83,15 @@ export function TopHeader({
           )}
         </div>
 
-        {/* Center: Centered pill tabs (Today / This Week / This Month / Reports; active = black pill) */}
-        <div className="flex items-center gap-1 p-1 bg-white/45 backdrop-blur-md rounded-full border border-white/65 shadow-sm">
+        {/* Center: Centered pill tabs (Today / This Week / This Month / Reports; active = black pill, height 42px) */}
+        <div className="flex items-center gap-1 p-1 h-[42px] bg-white/30 backdrop-blur-md rounded-full border border-white/60">
           <button
             type="button"
             onClick={() => onPeriodChange ? onPeriodChange("today") : router.push("/dashboard")}
             className={cn(
-              "px-4 sm:px-5 py-1.5 text-xs sm:text-sm rounded-full transition-all",
+              "px-4 sm:px-5 py-1 text-xs sm:text-sm rounded-full transition-all h-full flex items-center",
               period === "today" && isDashboard
-                ? "bg-black text-white font-normal shadow-sm"
+                ? "bg-black text-white font-normal"
                 : "text-neutral-700 hover:text-black font-light hover:bg-white/40"
             )}
           >
@@ -101,9 +101,9 @@ export function TopHeader({
             type="button"
             onClick={() => onPeriodChange ? onPeriodChange("week") : router.push("/dashboard")}
             className={cn(
-              "px-4 sm:px-5 py-1.5 text-xs sm:text-sm rounded-full transition-all",
+              "px-4 sm:px-5 py-1 text-xs sm:text-sm rounded-full transition-all h-full flex items-center",
               period === "week" && isDashboard
-                ? "bg-black text-white font-normal shadow-sm"
+                ? "bg-black text-white font-normal"
                 : "text-neutral-700 hover:text-black font-light hover:bg-white/40"
             )}
           >
@@ -113,9 +113,9 @@ export function TopHeader({
             type="button"
             onClick={() => onPeriodChange ? onPeriodChange("month") : router.push("/dashboard")}
             className={cn(
-              "px-4 sm:px-5 py-1.5 text-xs sm:text-sm rounded-full transition-all",
+              "px-4 sm:px-5 py-1 text-xs sm:text-sm rounded-full transition-all h-full flex items-center",
               period === "month" && isDashboard
-                ? "bg-black text-white font-normal shadow-sm"
+                ? "bg-black text-white font-normal"
                 : "text-neutral-700 hover:text-black font-light hover:bg-white/40"
             )}
           >
@@ -124,9 +124,9 @@ export function TopHeader({
           <Link
             href="/reports"
             className={cn(
-              "px-4 sm:px-5 py-1.5 text-xs sm:text-sm rounded-full transition-all",
+              "px-4 sm:px-5 py-1 text-xs sm:text-sm rounded-full transition-all h-full flex items-center",
               pathname === "/reports"
-                ? "bg-black text-white font-normal shadow-sm"
+                ? "bg-black text-white font-normal"
                 : "text-neutral-700 hover:text-black font-light hover:bg-white/40"
             )}
           >
@@ -134,21 +134,21 @@ export function TopHeader({
           </Link>
         </div>
 
-        {/* Right: "All Outlets" outlined pill + round black grid button (NO search bar, NO big title) */}
+        {/* Right: "All Outlets" outlined pill + round black grid button (NO search bar, NO big title, NO shadows) */}
         <div className="flex items-center gap-2.5">
           {/* Outlined Pill */}
           <div className="relative">
             <button
               type="button"
               onClick={() => setOutletMenuOpen(!outletMenuOpen)}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-white/50 backdrop-blur-md rounded-full border border-white/70 text-xs sm:text-sm font-light text-neutral-800 hover:bg-white/80 transition-all shadow-sm"
+              className="flex items-center gap-1.5 px-4 h-[38px] bg-white/40 backdrop-blur-md rounded-full border border-white/70 text-xs sm:text-sm font-light text-neutral-800 hover:bg-white/70 transition-all"
             >
               <span>{selectedOutlet}</span>
               <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />
             </button>
 
             {outletMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white/95 backdrop-blur-xl rounded-[20px] border border-white shadow-xl py-1 z-50">
+              <div className="absolute right-0 mt-2 w-48 bg-white/95 backdrop-blur-xl rounded-[20px] border border-white py-1 z-50">
                 {["All Outlets", "Central Warehouse", "Ahmedabad Retail", "Surat Hub"].map(
                   (outlet) => (
                     <button

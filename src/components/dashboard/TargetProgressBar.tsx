@@ -28,37 +28,38 @@ export function TargetProgressBar({
       variant="glass"
       className="h-full px-5 sm:px-6 py-3.5 sm:py-4 select-none flex flex-col justify-center min-w-0"
     >
-      {/* Top Labels */}
-      <div className="flex items-center justify-between mb-2 sm:mb-2.5">
+      {/* Top Labels: Sentence case "Your sales targets" */}
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-sm sm:text-base font-normal text-neutral-900">
-            Sales target
+          <span className="text-sm sm:text-[15px] font-normal text-neutral-900">
+            Your sales targets
           </span>
-          <span className="text-xs font-light text-neutral-500">
+          <span className="text-xs font-light text-black/55">
             ({pct}% achieved)
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 text-xs sm:text-sm font-light text-neutral-700">
-          <span className="font-normal text-neutral-950">
-            {formatINR(currentSales)}
-          </span>
-          <span className="text-neutral-400">/</span>
-          <span>{formatINR(targetSales)}</span>
+        {/* Number styling: currency symbol Light, digits SemiBold */}
+        <div className="flex items-center text-xs sm:text-sm text-neutral-800">
+          <span className="font-light text-[0.85em] mr-0.5">₹</span>
+          <span className="font-semibold">{formatINR(currentSales).replace(/^₹\s*/, "")}</span>
+          <span className="text-black/35 mx-1.5 font-light">/</span>
+          <span className="font-light text-[0.85em] mr-0.5 text-black/70">₹</span>
+          <span className="font-semibold text-black/75">{formatINR(targetSales).replace(/^₹\s*/, "")}</span>
         </div>
       </div>
 
-      {/* Progress Bar Container with Lime Fill, Knob Handle, and Hatched Remainder */}
-      <div className="relative w-full h-7 sm:h-8 bg-white/40 backdrop-blur-md rounded-full border border-white/65 p-0.5 sm:p-1 flex items-center shadow-inner overflow-visible">
-        {/* Filled Portion (Electric Lime) */}
+      {/* Progress Bar Container: Lime #D7FF00, 3-dot knob, diagonal hatched remainder, NO drop shadow */}
+      <div className="relative w-full h-7 sm:h-8 bg-white/35 rounded-full border border-white/60 p-0.5 sm:p-1 flex items-center overflow-visible">
+        {/* Filled Portion (#D7FF00 Lime) */}
         <div
-          className="h-full bg-[#E0FE52] rounded-full transition-all duration-500 shadow-sm"
+          className="h-full bg-[#D7FF00] rounded-full transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
 
-        {/* Draggable-Style Knob Thumb (White circle with 3 vertical micro-dots) */}
+        {/* Draggable Knob (White circle with 3 vertical micro-dots, zero drop shadow) */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white shadow-md border border-neutral-100 flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-105 transition-transform z-10"
+          className="absolute top-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white border border-neutral-300 flex items-center justify-center cursor-grab active:cursor-grabbing hover:scale-105 transition-transform z-10"
           style={{ left: `calc(${pct}% - 14px)` }}
           title={`Target Achieved: ${pct}%`}
         >
@@ -71,7 +72,7 @@ export function TargetProgressBar({
 
         {/* Remainder Track (Diagonal Hatched Pattern) */}
         <div
-          className="h-full rounded-r-full hatch-pattern-dark opacity-25 flex-1 ml-1"
+          className="h-full rounded-r-full hatch-pattern-dark opacity-20 flex-1 ml-1"
           style={{ width: `${100 - pct}%` }}
         />
       </div>

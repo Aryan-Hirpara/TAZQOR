@@ -46,21 +46,21 @@ export function GrossProfitCard({
           <span className="text-xs font-normal text-black/85 block">
             Gross profit
           </span>
-          <span className="text-[11px] font-light text-black/65 block mt-0.5">
+          <span className="text-[11px] font-light text-black/60 block mt-0.5">
             {grossMarginPct.toFixed(1)}% margin
           </span>
         </div>
       </div>
 
-      {/* Bottom Row: Amount via FitNumber and Subtext */}
-      <div className="relative z-10 pt-4">
+      {/* Bottom Row: Amount via FitNumber and Subtext (NO drop shadows) */}
+      <div className="relative z-10 pt-3">
         <FitNumber
           value={formatINR(grossProfit)}
-          minFontSize={18}
-          maxFontSize={34}
+          minFontSize={15}
+          maxFontSize={26}
           className="font-normal text-black tracking-tight"
         />
-        <span className="text-[11px] sm:text-xs font-light text-black/70 mt-1 block truncate">
+        <span className="text-[11px] sm:text-xs font-light text-black/65 mt-0.5 block truncate">
           After direct cost of goods
         </span>
       </div>
@@ -108,14 +108,14 @@ export function NetProfitCard({
       </div>
 
       {/* Bottom Row: Amount via FitNumber and Subtext */}
-      <div className="relative z-10 pt-2">
+      <div className="relative z-10 pt-1.5">
         <FitNumber
           value={formatINR(netProfit)}
-          minFontSize={16}
-          maxFontSize={28}
+          minFontSize={14}
+          maxFontSize={24}
           className="font-normal text-white tracking-tight"
         />
-        <span className="text-[11px] sm:text-xs font-light text-neutral-400 mt-1 block truncate">
+        <span className="text-[11px] sm:text-xs font-light text-neutral-400 mt-0.5 block truncate">
           Operational net profit
         </span>
       </div>
@@ -130,7 +130,7 @@ export function ProfitCards({
   netMarginPct = 43.1,
 }: ProfitCardsProps) {
   return (
-    <div className="h-full flex flex-col gap-3 min-w-0 relative">
+    <div className="h-full flex flex-col gap-2 min-w-0 relative">
       <div className="flex-1 min-h-0">
         <GrossProfitCard grossProfit={grossProfit} grossMarginPct={grossMarginPct} />
       </div>

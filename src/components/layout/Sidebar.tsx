@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -33,15 +32,18 @@ export function Sidebar() {
 
   return (
     <aside
-      className="hidden md:flex flex-col items-center justify-between w-[68px] py-6 select-none bg-transparent shrink-0 z-30"
+      className="hidden md:flex flex-col items-center justify-between w-[72px] py-4 select-none bg-transparent shrink-0 z-30"
       style={{
         position: "sticky",
         top: 0,
         height: "100dvh",
       }}
     >
-      {/* Top Group: Primary 8 Circular Icon Buttons (NO redundant logo in rail) */}
-      <nav className="flex flex-col items-center gap-2">
+      {/* Top spacer to balance rail at design pitch */}
+      <div className="h-2" />
+
+      {/* Nav Group: 42px circles, 45px pitch (gap-[3px]), 8 primary icons */}
+      <nav className="flex flex-col items-center gap-[3px]">
         {PRIMARY_NAV.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -61,7 +63,7 @@ export function Sidebar() {
       </nav>
 
       {/* Bottom Group: Pinned Mail (red dot), Bell (red dot), User Avatar */}
-      <div className="flex flex-col items-center gap-2.5 pt-4">
+      <div className="flex flex-col items-center gap-[3px] pb-2">
         <RoundIconButton
           icon={<Mail className="w-4 h-4 text-neutral-800" />}
           label="Messages"
@@ -73,10 +75,10 @@ export function Sidebar() {
           hasBadge
         />
 
-        {/* Circular User Avatar */}
+        {/* 42px User Avatar */}
         <div
-          className="w-11 h-11 rounded-full bg-gradient-to-tr from-neutral-800 to-black text-[#E0FE52] border border-white/80 flex items-center justify-center text-xs font-medium shadow-sm cursor-pointer hover:scale-105 active:scale-95 transition-transform"
-          title="TAZQOR Owner"
+          className="w-[42px] h-[42px] rounded-full bg-black text-[#D7FF00] border border-white/80 flex items-center justify-center text-xs font-semibold cursor-pointer hover:scale-105 active:scale-95 transition-transform select-none"
+          title="TAZQOR Store Manager"
         >
           TQ
         </div>

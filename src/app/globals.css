@@ -2,43 +2,51 @@
 
 @layer base {
   :root {
-    --background: #d8d5de;
+    --background: #DAD5E3;
     --foreground: #111113;
     
-    --card: rgba(255, 255, 255, 0.58);
+    --card: rgba(255, 255, 255, 0.28);
     --card-foreground: #111113;
     
     --primary: #000000;
     --primary-foreground: #FFFFFF;
     
-    --secondary: rgba(255, 255, 255, 0.45);
+    --secondary: rgba(255, 255, 255, 0.35);
     --secondary-foreground: #111113;
     
-    --muted: rgba(255, 255, 255, 0.35);
+    --muted: rgba(255, 255, 255, 0.25);
     --muted-foreground: #6E6D7A;
     
-    --accent: #E0FE52;
+    /* Exact Color Tokens from Addendum Spec */
+    --accent: #D7FF00; /* lime #D7FF00 */
     --accent-foreground: #000000;
-    
-    --radius-card: 2.2rem; /* Exact measured 35px radius from ref02 */
-    --radius-card-sm: 1.5rem; /* 24px */
-    
-    /* Exact TAZQOR Design Reference Tokens */
-    --tazqor-lime: #E0FE52;
-    --tazqor-lime-hover: #D7F171;
+    --tazqor-lime: #D7FF00;
+    --tazqor-lime-hover: #C5EB00;
     --tazqor-charcoal: #000000;
-    --tazqor-bg-start: #d8d5e4;
-    --tazqor-bg-mid1: #ded7dc;
-    --tazqor-bg-mid2: #e2d6d0;
-    --tazqor-bg-end: #d6d9cf;
+    --tazqor-cyan: #23D7FF;
+    --tazqor-rose: #DB9595;
+    
+    /* Page substrate stops */
+    --tazqor-bg-start: #DCD5E5; /* lavender */
+    --tazqor-bg-mid: #D3C7BD;   /* peach */
+    --tazqor-bg-end: #D5D7CD;   /* sage */
+
+    /* Hero card gradient stops */
+    --hero-mint: #D9DED1;
+    --hero-lilac: #D4CDD8;
+    --hero-blue: #C7D8E9;
+    
+    /* Exact 40px radius from Addendum */
+    --radius-card: 40px;
+    --radius-card-sm: 28px;
   }
 
   .dark {
-    --background: #0E1015;
+    --background: #1C1C1A;
     --foreground: #F8FAFC;
-    --card: rgba(24, 27, 36, 0.75);
+    --card: rgba(36, 36, 34, 0.85);
     --card-foreground: #F8FAFC;
-    --primary: #E0FE52;
+    --primary: #D7FF00;
     --primary-foreground: #000000;
     --muted-foreground: #94A3B8;
   }
@@ -61,12 +69,15 @@
   --color-tazqor-lime: var(--tazqor-lime);
   --color-tazqor-lime-hover: var(--tazqor-lime-hover);
   --color-tazqor-charcoal: var(--tazqor-charcoal);
+  --color-tazqor-cyan: var(--tazqor-cyan);
+  --color-tazqor-rose: var(--tazqor-rose);
 
   --font-sans: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 body {
-  background: linear-gradient(135deg, #d8d5de 0%, #ded7dc 35%, #e2d6d0 70%, #d6d9cf 100%);
+  /* Page background: soft gradient lavender #DCD5E5 -> peach #D3C7BD -> sage #D5D7CD */
+  background: linear-gradient(135deg, #DCD5E5 0%, #D3C7BD 50%, #D5D7CD 100%);
   background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans);
@@ -76,9 +87,9 @@ body {
   overflow-x: hidden;
 }
 
-/* Dark mode body background */
+/* Dark mode body background (mobile dark spec: #1C1C1A) */
 .dark body {
-  background: linear-gradient(180deg, #12141A 0%, #0E1015 100%);
+  background: #1C1C1A;
   background-attachment: fixed;
 }
 
@@ -87,14 +98,14 @@ body {
   container-type: inline-size;
 }
 
-/* Frosted glass card substrate */
+/* Frosted glass card substrate: 25-35% white over gradient, blur 20px, 1px lighter border, NO DROP SHADOW */
 .glass-card {
-  background: rgba(255, 255, 255, 0.58);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background: rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.65);
   border-radius: var(--radius-card);
-  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.02);
+  box-shadow: none !important;
   overflow: hidden;
   position: relative;
   min-width: 0;
@@ -102,18 +113,18 @@ body {
 }
 
 .dark .glass-card {
-  background: rgba(24, 27, 36, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.5);
+  background: rgba(36, 36, 34, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: none !important;
 }
 
 .glass-card-sm {
-  background: rgba(255, 255, 255, 0.58);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background: rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.65);
   border-radius: var(--radius-card-sm);
-  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.03);
+  box-shadow: none !important;
   overflow: hidden;
   position: relative;
   min-width: 0;
@@ -121,28 +132,43 @@ body {
 }
 
 .dark .glass-card-sm {
-  background: rgba(24, 27, 36, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(36, 36, 34, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: none !important;
 }
 
-/* Electric Lime Gross Profit Card */
-.lime-card {
-  background-color: #E0FE52;
-  color: #000000;
+/* Hero card: gradient light blue #C7D8E9 -> mint #D9DED1 -> lilac #D4CDD8, NO DROP SHADOW */
+.hero-card {
+  background: linear-gradient(135deg, #D9DED1 0%, #D4CDD8 50%, #C7D8E9 100%) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: var(--radius-card);
-  box-shadow: 0 12px 32px -4px rgba(224, 254, 82, 0.35);
+  box-shadow: none !important;
   overflow: hidden;
   position: relative;
   min-width: 0;
   min-height: 0;
 }
 
-/* Net Profit Deep Black Card */
+/* Electric Lime Gross Profit Card: #D7FF00, NO DROP SHADOW */
+.lime-card {
+  background-color: #D7FF00;
+  color: #000000;
+  border-radius: var(--radius-card);
+  box-shadow: none !important;
+  overflow: hidden;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Net Profit Deep Black Card: #000000, NO DROP SHADOW */
 .black-card {
   background-color: #000000;
   color: #FFFFFF;
   border-radius: var(--radius-card);
-  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.4);
+  box-shadow: none !important;
   overflow: hidden;
   position: relative;
   min-width: 0;
@@ -151,13 +177,13 @@ body {
 
 /* Circular notch cutouts for Gross & Net profit cards */
 .notch-bottom-right {
-  mask-image: radial-gradient(circle 26px at calc(100% - 22px) 100%, transparent 24px, black 25px);
-  -webkit-mask-image: radial-gradient(circle 26px at calc(100% - 22px) 100%, transparent 24px, black 25px);
+  mask-image: radial-gradient(circle 28px at calc(100% - 24px) 100%, transparent 26px, black 27px);
+  -webkit-mask-image: radial-gradient(circle 28px at calc(100% - 24px) 100%, transparent 26px, black 27px);
 }
 
 .notch-top-right {
-  mask-image: radial-gradient(circle 26px at calc(100% - 22px) 0%, transparent 24px, black 25px);
-  -webkit-mask-image: radial-gradient(circle 26px at calc(100% - 22px) 0%, transparent 24px, black 25px);
+  mask-image: radial-gradient(circle 28px at calc(100% - 24px) 0%, transparent 26px, black 27px);
+  -webkit-mask-image: radial-gradient(circle 28px at calc(100% - 24px) 0%, transparent 26px, black 27px);
 }
 
 /* Diagonal stripe pattern for remainder bars and month bars */
@@ -190,14 +216,17 @@ body {
   scrollbar-width: none;
 }
 
-/* Master Bento Grid (20 columns x 5 equal-height rows) */
+/* Master Bento Grid (20 columns x 5 equal-height rows, scaled for 1440x960 canvas and 1470x800 page) */
 @media (min-width: 1024px) {
   .bento-grid {
     display: grid !important;
     grid-template-columns: repeat(20, minmax(0, 1fr)) !important;
-    grid-template-rows: repeat(5, minmax(0, 1fr)) !important;
-    gap: clamp(10px, 0.8vw, 14px) !important;
-    height: calc(100dvh - 84px) !important;
+    grid-template-rows: repeat(5, minmax(120px, 1fr)) !important;
+    gap: clamp(6px, 0.5vw, 8px) !important;
+    margin-right: 22px !important;
+    margin-bottom: 23px !important;
+    height: calc(100dvh - 73px - 23px) !important;
+    min-height: calc(120px * 5 + 4 * 7px) !important; /* Minimum row height 120px ensures zero card overlap */
     overflow: hidden !important;
   }
   .bento-hero {

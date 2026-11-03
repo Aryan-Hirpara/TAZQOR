@@ -186,10 +186,11 @@ export default function DashboardPage() {
         <div className="bento-transfer min-w-0 min-h-0">
           <OrderCard
             type="Transfer"
-            title="Warehouse Transfer"
-            subtitle="Central Hub → Surat Outlet (48 Cans)"
+            title="Warehouse transfer"
+            subtitle="Central Hub → Surat Outlet"
             amount={28400.0}
             status="In Transit"
+            countLabel={{ count: 48, word: "in transit" }}
             href="/inventory"
           />
         </div>
@@ -197,11 +198,12 @@ export default function DashboardPage() {
         {/* 6. Purchase Orders Card 1: Cols 13-16, Row 4 */}
         <div className="bento-po-1 min-w-0 min-h-0">
           <OrderCard
-            type="Purchase Orders"
-            title="Chemical Supplies"
-            subtitle="ChemCorp Ltd. • Acid slurry & LABSA"
+            type="Purchase orders"
+            title="Chemical supplies"
+            subtitle="ChemCorp Ltd. • Acid slurry"
             amount={42150.0}
             status="Dispatched"
+            countLabel={{ count: 3, word: "dispatched" }}
             href="/orders"
           />
         </div>
@@ -209,11 +211,12 @@ export default function DashboardPage() {
         {/* 7. Purchase Orders Card 2: Cols 13-16, Row 5 */}
         <div className="bento-po-2 min-w-0 min-h-0">
           <OrderCard
-            type="Purchase Orders"
-            title="Packaging Cans"
-            subtitle="Shreeji Polymer • 5L Cans (500 units)"
+            type="Purchase orders"
+            title="Packaging cans"
+            subtitle="Shreeji Polymer • 5L Cans"
             amount={18500.0}
             status="Delivered"
+            countLabel={{ count: 500, word: "delivered" }}
             href="/orders"
           />
         </div>
@@ -224,14 +227,14 @@ export default function DashboardPage() {
             grossProfit={metrics.grossProfit}
             grossMarginPct={53.5}
           />
-          {/* Overlapping Round Arrow Button sitting in the circular notch between Gross & Net profit */}
+          {/* Overlapping Round Arrow Button in circular notch with ring in page-background colour (#D3C7BD) */}
           <Link
             href="/reports"
             data-notch-overlap="true"
-            className="absolute -bottom-5 right-5 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black text-white hover:scale-105 active:scale-95 border-2 border-white/90 shadow-xl flex items-center justify-center transition-all z-30"
+            className="absolute -bottom-5 right-5 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black text-[#D7FF00] hover:scale-105 active:scale-95 ring-[6px] ring-[#D3C7BD] flex items-center justify-center transition-all z-30"
             title="View Profit Analysis"
           >
-            <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 text-[#E0FE52]" />
+            <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 text-[#D7FF00]" />
           </Link>
         </div>
 

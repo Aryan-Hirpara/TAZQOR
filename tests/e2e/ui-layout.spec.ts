@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 
 const VIEWPORTS = [
+  { width: 1440, height: 960, label: "1440x960 (Design Canvas Spec)" },
+  { width: 1470, height: 800, label: "1470x800 (Typical Page Area Spec)" },
   { width: 1190, height: 774, label: "1190x774 (Master Ref02 Viewport)" },
   { width: 1280, height: 720, label: "1280x720 (Standard HD Laptop)" },
   { width: 1440, height: 1002, label: "1440x1002 (MacBook Pro Ret.)" },
@@ -174,3 +176,4 @@ for (const vp of VIEWPORTS) {
     });
   });
 }
+

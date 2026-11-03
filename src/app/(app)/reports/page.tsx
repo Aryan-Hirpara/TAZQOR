@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { formatINR } from "@/lib/formatting/currency";
+import { MobileSalesAnalyzing } from "@/components/dashboard/MobileSalesAnalyzing";
 
 export default function ReportsPage() {
   const [period, setPeriod] = useState<"this_month" | "last_month" | "year">("this_month");
@@ -66,7 +67,18 @@ export default function ReportsPage() {
 
   return (
     <div className="min-h-screen pb-12">
-      <TopHeader title="Financial Reports" />
+      {/* Mobile "Sales Analyzing" Screen matching Ref-10, Ref-13, and Ref-14 */}
+      <div className="md:hidden pt-2 px-1">
+        <MobileSalesAnalyzing
+          grossProfit={reportData.grossProfit}
+          netProfit={reportData.netProfit}
+          grossMarginPct={reportData.grossMarginPct}
+          netMarginPct={43.1}
+        />
+      </div>
+
+      <div className="hidden md:block">
+        <TopHeader title="Financial Reports" />
 
       <div className="space-y-6 pt-2">
         {/* Controls Bar */}
@@ -232,7 +244,7 @@ export default function ReportsPage() {
                     </div>
                     <div className="h-2 w-full bg-white/50 rounded-full overflow-hidden border border-white/70">
                       <div
-                        className="h-full bg-[#E0FE52] rounded-full"
+                        className="h-full bg-[#D7FF00] rounded-full"
                         style={{ width: `${c.percentage}%` }}
                       />
                     </div>
@@ -246,6 +258,7 @@ export default function ReportsPage() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -54,25 +54,24 @@ export function DailyPillBarChart({
     <div className="flex-1 flex flex-col justify-between h-full p-1 select-none min-w-0">
       {/* Header */}
       <div>
-        <span className="text-xs font-light text-neutral-500 block">
+        <span className="text-xs font-light text-black/55 block">
           Average sale value
         </span>
         <div className="flex items-baseline gap-2 mt-0.5">
           <FitNumber
             value={formatINR(averageSaleValue)}
-            minFontSize={18}
-            maxFontSize={30}
-            className="font-normal text-neutral-900 tracking-tight"
+            minFontSize={14}
+            maxFontSize={25}
           />
-          <span className="text-xs font-light text-emerald-600 shrink-0">+4.2%</span>
+          <span className="text-xs font-medium text-emerald-700 shrink-0">+4.2%</span>
         </div>
       </div>
 
       {/* Daily Pill Bars with Baseline & Negative Bars */}
       <div className="py-2 flex-1 flex flex-col justify-end">
-        <div className="flex items-center justify-between gap-1 sm:gap-1.5 h-28 sm:h-32 relative px-1">
+        <div className="flex items-center justify-between gap-1 sm:gap-1.5 h-26 sm:h-28 relative px-1">
           {/* Baseline horizontal divider rule at 65% height */}
-          <div className="absolute top-[65%] left-0 right-0 h-[1px] bg-neutral-300/70 z-0 pointer-events-none" />
+          <div className="absolute top-[65%] left-0 right-0 h-[1px] bg-neutral-300/60 z-0 pointer-events-none" />
 
           {bars.map((bar) => {
             const isNeg = (bar.negativePct ?? 0) > 0;
@@ -89,16 +88,16 @@ export function DailyPillBarChart({
                     <div
                       className={`w-full max-w-[9px] rounded-full flex flex-col overflow-hidden transition-all duration-300 ${
                         bar.highlight
-                          ? "bg-black shadow-sm ring-1 ring-black"
-                          : "bg-white/60 group-hover:bg-white/90 border border-white/80"
+                          ? "bg-black"
+                          : "bg-white/50 group-hover:bg-white/80 border border-white/70"
                       }`}
                       style={{ height: `${bar.heightPct}%` }}
                     >
-                      {/* Top cap: lime if highlighted, diagonal hatched if normal */}
+                      {/* Top cap: lime #D7FF00 if highlighted, diagonal hatched if normal */}
                       <div
                         className={`w-full h-1/2 rounded-t-full ${
                           bar.highlight
-                            ? "bg-[#E0FE52]"
+                            ? "bg-[#D7FF00]"
                             : "hatch-pattern-dark opacity-35"
                         }`}
                       />
@@ -110,7 +109,7 @@ export function DailyPillBarChart({
                 <div className="h-[35%] w-full flex items-start justify-center">
                   {isNeg && (
                     <div
-                      className="w-full max-w-[9px] rounded-full bg-neutral-400/80 group-hover:bg-neutral-600 transition-all duration-300 shadow-sm"
+                      className="w-full max-w-[9px] rounded-full bg-neutral-400/80 group-hover:bg-neutral-600 transition-all duration-300"
                       style={{ height: `${bar.negativePct}%` }}
                     />
                   )}
