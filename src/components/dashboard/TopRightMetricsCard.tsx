@@ -1,5 +1,6 @@
 "use client";
 
+import { GlassCard } from "@/components/ui/GlassCard";
 import { DottedParticleChart } from "@/components/charts/DottedParticleChart";
 import { DailyPillBarChart } from "@/components/charts/DailyPillBarChart";
 
@@ -10,20 +11,26 @@ interface TopRightMetricsCardProps {
 
 export function TopRightMetricsCard({
   averageItems = 8.3,
-  averageSaleValue = 1240.00,
+  averageSaleValue = 1240.0,
 }: TopRightMetricsCardProps) {
   return (
-    <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[28px] p-6 sm:p-7 h-full flex flex-col justify-between select-none relative overflow-hidden shadow-sm">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full items-stretch">
-        {/* Left Half: Average Items per Sale */}
-        <DottedParticleChart averageItems={averageItems} />
+    <GlassCard variant="glass" className="h-full p-5 sm:p-6 lg:p-7 select-none flex flex-col justify-between">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-6 h-full items-stretch min-w-0">
+        {/* Left ~5 cols equivalent: Average Items per Sale */}
+        <div className="md:col-span-5 h-full min-w-0 flex flex-col">
+          <DottedParticleChart averageItems={averageItems} />
+        </div>
 
-        {/* Vertical divider */}
-        <div className="hidden md:block w-[1px] bg-white/70 self-stretch my-2" />
+        {/* Vertical thin glass divider line */}
+        <div className="hidden md:flex md:col-span-1 justify-center items-center pointer-events-none">
+          <div className="w-[1px] h-[85%] bg-white/60" />
+        </div>
 
-        {/* Right Half: Average Sale Value */}
-        <DailyPillBarChart averageSaleValue={averageSaleValue} />
+        {/* Right ~6-7 cols equivalent: Average Sale Value */}
+        <div className="md:col-span-6 h-full min-w-0 flex flex-col">
+          <DailyPillBarChart averageSaleValue={averageSaleValue} />
+        </div>
       </div>
-    </div>
+    </GlassCard>
   );
 }

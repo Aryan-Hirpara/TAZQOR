@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
+import { FitNumber } from "@/components/ui/FitNumber";
 
 interface DottedColumn {
   month: string;
-  value: number; // e.g. 11.4
-  dotsCount: number; // number of dots to render vertically (e.g. 4 to 12)
+  value: number;
+  dotsCount: number;
   highlight?: boolean;
 }
 
@@ -14,20 +15,54 @@ interface DottedParticleChartProps {
   data?: DottedColumn[];
 }
 
+// Deterministic Pseudo-Random Generator (Lehmer LCG)
+function createLCG(seed: number) {
+  let s = seed % 2147483647;
+  if (s <= 0) s += 2147483646;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
 export function DottedParticleChart({
   averageItems = 8.3,
   data,
 }: DottedParticleChartProps) {
-  const columns: DottedColumn[] = useMemo(() => data || [
-    { month: "may", value: 11.4, dotsCount: 10 },
-    { month: "jun", value: 8.1, dotsCount: 7 },
-    { month: "jul", value: 2.1, dotsCount: 3 },
-    { month: "aug", value: 7.3, dotsCount: 6 },
-    { month: "sep", value: 12.5, dotsCount: 11, highlight: true },
-  ], [data]);
+  const columns: DottedColumn[] = useMemo(
+    () =>
+      data || [
+        { month: "may", value: 11.4, dotsCount: 16 },
+        { month: "jun", value: 8.1, dotsCount: 12 },
+        { month: "jul", value: 2.1, dotsCount: 5 },
+        { month: "aug", value: 7.3, dotsCount: 10 },
+        { month: "sep", value: 12.5, dotsCount: 18, highlight: true },
+      ],
+    [data]
+  );
+
+  // Compute deterministic stipple dots for each column
+  const columnDots = useMemo(() => {
+    return columns.map((col, colIdx) => {
+      const rng = createLCG(colIdx * 1000 + 42);
+      const dots: { xPct: number; yPct: number; isTopHighlight: boolean }[] = [];
+      const heightFactor = Math.min(1, Math.max(0.15, col.value / 14));
+
+      for (let i = 0; i < col.dotsCount; i++) {
+        // x distribution between 15% and 85% of column width
+        const xPct = 15 + rng() * 70;
+        // y distribution concentrated toward the bottom up to heightFactor
+        const yRaw = rng();
+        const yPct = 100 - (yRaw * heightFactor * 90);
+        const isTopHighlight = Boolean(col.highlight && yPct < (100 - heightFactor * 75));
+        dots.push({ xPct, yPct, isTopHighlight });
+      }
+      return dots;
+    });
+  }, [columns]);
 
   return (
-    <div className="flex-1 flex flex-col justify-between h-full p-1 select-none">
+    <div className="flex-1 flex flex-col justify-between h-full p-1 select-none min-w-0">
       {/* Header */}
       <div>
         <span className="text-xs font-light text-neutral-500 block">
@@ -41,47 +76,60 @@ export function DottedParticleChart({
         </div>
       </div>
 
-      {/* Dotted Columns Visualization */}
-      <div className="py-4">
-        <div className="flex items-end justify-between gap-2.5 h-36 px-2">
-          {columns.map((col) => (
-            <div
-              key={col.month}
-              className="flex-1 flex flex-col items-center justify-end h-full group"
-            >
-              {/* Stacked Particle Dots */}
-              <div className="flex flex-col-reverse gap-1.5 items-center mb-2.5">
-                {Array.from({ length: col.dotsCount }).map((_, dotIdx) => (
-                  <span
-                    key={dotIdx}
-                    className={`w-2.5 h-2.5 rounded-full transition-all ${
-                      col.highlight
-                        ? dotIdx >= col.dotsCount - 2
-                          ? "bg-[#E0FE52] ring-1 ring-black"
-                          : "bg-black"
-                        : "bg-neutral-800/80 group-hover:bg-black"
-                    }`}
-                  />
-                ))}
-              </div>
+      {/* Deterministic Stippled Dot Chart */}
+      <div className="py-2 flex-1 flex flex-col justify-end">
+        <div className="flex items-end justify-between gap-1.5 h-28 sm:h-32 px-1">
+          {columns.map((col, idx) => {
+            const dots = columnDots[idx];
 
-              {/* Pill badge with value */}
+            return (
               <div
-                className={`px-2 py-0.5 rounded-full text-[10px] font-light border transition-all ${
-                  col.highlight
-                    ? "bg-black text-[#E0FE52] border-black font-normal shadow-sm"
-                    : "bg-white/70 text-neutral-800 border-white/80 group-hover:bg-white"
-                }`}
+                key={col.month}
+                className="flex-1 flex flex-col items-center justify-end h-full relative group cursor-pointer"
               >
-                {col.value.toFixed(1)}
-              </div>
+                {/* Stipple Dot Area with Seeded Particles */}
+                <div className="w-full h-full relative mb-1.5 overflow-hidden">
+                  <svg
+                    viewBox="0 0 100 100"
+                    className="w-full h-full"
+                    preserveAspectRatio="none"
+                  >
+                    {dots.map((dot, dIdx) => (
+                      <circle
+                        key={dIdx}
+                        cx={dot.xPct}
+                        cy={dot.yPct}
+                        r={dot.isTopHighlight ? 3.5 : 2.8}
+                        className={`transition-all duration-200 ${
+                          dot.isTopHighlight
+                            ? "fill-[#E0FE52] stroke-black stroke-[0.8]"
+                            : col.highlight
+                            ? "fill-black"
+                            : "fill-neutral-800/80 group-hover:fill-black"
+                        }`}
+                      />
+                    ))}
+                  </svg>
+                </div>
 
-              {/* Month Label */}
-              <span className="text-[10px] font-light text-neutral-500 uppercase mt-1">
-                {col.month}
-              </span>
-            </div>
-          ))}
+                {/* Pill badge with value */}
+                <div
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-light border transition-all ${
+                    col.highlight
+                      ? "bg-black text-[#E0FE52] border-black font-normal shadow-sm"
+                      : "bg-white/70 text-neutral-800 border-white/80 group-hover:bg-white"
+                  }`}
+                >
+                  {col.value.toFixed(1)}
+                </div>
+
+                {/* Lowercase Month Label */}
+                <span className="text-[10px] font-light text-neutral-500 mt-1">
+                  {col.month}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

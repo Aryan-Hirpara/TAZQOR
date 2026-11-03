@@ -64,3 +64,4 @@ print(f"Target card bg: {target_card_bg}")
 print("\n--- LINE CHART CARD ---")
 line_card_bg = hex_c(cw*0.20, ch*0.70)
 print(f"Line chart card bg: {line_card_bg}")
+

@@ -1,63 +1,116 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { HeroMonthBars } from "@/components/dashboard/HeroMonthBars";
+import { TopRightMetricsCard } from "@/components/dashboard/TopRightMetricsCard";
 import { TargetProgressBar } from "@/components/dashboard/TargetProgressBar";
 import { SalesSplineChart } from "@/components/charts/SalesSplineChart";
-import { TopRightMetricsCard } from "@/components/dashboard/TopRightMetricsCard";
-import { OrdersColumn } from "@/components/dashboard/OrdersColumn";
-import { ProfitCards } from "@/components/dashboard/ProfitCards";
+import { OrderCard } from "@/components/dashboard/OrderCard";
+import { GrossProfitCard, NetProfitCard } from "@/components/dashboard/ProfitCards";
 import { createClient } from "@/lib/supabase/client";
 
 export default function DashboardPage() {
   const [period, setPeriod] = useState<"today" | "week" | "month">("month");
   const [loading, setLoading] = useState(true);
 
-  // Real aggregate state from database
+  // Live Aggregate Metrics State
   const [metrics, setMetrics] = useState({
     monthlySales: 331224.74,
     previousMonthSales: 286867.51,
     salesChange: 44357.23,
-    grossProfit: 177349.50,
-    netProfit: 142875.00,
-    monthlyTarget: 400500.00,
+    grossProfit: 177349.5,
+    netProfit: 142875.0,
+    monthlyTarget: 400500.0,
     targetProgressPct: 82,
     averageItems: 8.3,
-    averageSaleValue: 1240.00,
-    totalSalesYear: 385990.30,
-    comparisonSalesYear: 311056.00,
+    averageSaleValue: 1240.0,
+    totalSalesYear: 385990.3,
+    comparisonSalesYear: 311056.0,
   });
 
   useEffect(() => {
+    // Check if Playwright test metrics are injected
+    if (typeof window !== "undefined" && (window as any).__TAZQOR_TEST_METRICS__) {
+      setMetrics((prev) => ({
+        ...prev,
+        ...(window as any).__TAZQOR_TEST_METRICS__,
+      }));
+    }
+
+    const handleTestMetrics = (e: any) => {
+      if (e.detail) {
+        setMetrics((prev) => ({ ...prev, ...e.detail }));
+      }
+    };
+    window.addEventListener("tazqor:set-test-metrics", handleTestMetrics);
+
     async function fetchDashboardAggregates() {
       try {
         const supabase = createClient();
         const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
-        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59).toISOString();
+        const startOfMonth = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          1
+        ).toISOString();
+        const startOfLastMonth = new Date(
+          now.getFullYear(),
+          now.getMonth() - 1,
+          1
+        ).toISOString();
+        const endOfLastMonth = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          0,
+          23,
+          59,
+          59
+        ).toISOString();
 
         const [
           { data: curInvoices, error: curErr },
           { data: prevInvoices, error: prevErr },
           { data: expensesData, error: expErr },
         ] = await Promise.all([
-          supabase.from("invoices").select("total_amount, created_at").gte("created_at", startOfMonth),
-          supabase.from("invoices").select("total_amount").gte("created_at", startOfLastMonth).lte("created_at", endOfLastMonth),
-          supabase.from("expenses").select("amount").gte("created_at", startOfMonth),
+          supabase
+            .from("invoices")
+            .select("total_amount, created_at")
+            .gte("created_at", startOfMonth),
+          supabase
+            .from("invoices")
+            .select("total_amount")
+            .gte("created_at", startOfLastMonth)
+            .lte("created_at", endOfLastMonth),
+          supabase
+            .from("expenses")
+            .select("amount")
+            .gte("created_at", startOfMonth),
         ]);
 
         if (!curErr && curInvoices && curInvoices.length > 0) {
-          const curSales = curInvoices.reduce((sum, inv) => sum + (Number(inv.total_amount) || 0), 0);
-          const prevSales = (prevInvoices || []).reduce((sum, inv) => sum + (Number(inv.total_amount) || 0), 0);
-          const curExp = (expensesData || []).reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
+          const curSales = curInvoices.reduce(
+            (sum, inv) => sum + (Number(inv.total_amount) || 0),
+            0
+          );
+          const prevSales = (prevInvoices || []).reduce(
+            (sum, inv) => sum + (Number(inv.total_amount) || 0),
+            0
+          );
+          const curExp = (expensesData || []).reduce(
+            (sum, exp) => sum + (Number(exp.amount) || 0),
+            0
+          );
 
           const estimatedGrossProfit = curSales * 0.535;
           const calculatedNetProfit = Math.max(0, estimatedGrossProfit - curExp);
-          const target = 400500.00;
-          const targetPct = target > 0 ? Math.round((curSales / target) * 100) : 0;
-          const avgSale = curInvoices.length > 0 ? curSales / curInvoices.length : 0;
+          const target = 400500.0;
+          const targetPct =
+            target > 0 ? Math.round((curSales / target) * 100) : 0;
+          const avgSale =
+            curInvoices.length > 0 ? curSales / curInvoices.length : 0;
 
           setMetrics({
             monthlySales: curSales,
@@ -68,7 +121,7 @@ export default function DashboardPage() {
             monthlyTarget: target,
             targetProgressPct: targetPct,
             averageItems: 8.3,
-            averageSaleValue: avgSale > 0 ? avgSale : 1240.00,
+            averageSaleValue: avgSale > 0 ? avgSale : 1240.0,
             totalSalesYear: curSales * 1.15,
             comparisonSalesYear: prevSales * 1.1,
           });
@@ -81,91 +134,114 @@ export default function DashboardPage() {
     }
 
     fetchDashboardAggregates();
+
+    return () => {
+      window.removeEventListener("tazqor:set-test-metrics", handleTestMetrics);
+    };
   }, []);
 
   return (
     <div className="min-h-screen flex flex-col pb-4">
-      {/* Sleek Frameless Top Navigation Bar matching reference */}
-      <TopHeader
-        period={period}
-        onPeriodChange={setPeriod}
-      />
+      {/* Top Navigation Bar */}
+      <TopHeader period={period} onPeriodChange={setPeriod} />
 
-      {/* Main Canvas Grid: Exact Match to Master Reference Geometry */}
-      <div className="flex-1 select-none flex flex-col gap-5 pt-1">
-        
-        {/* ============================================================ */}
-        {/* ROW 1: Hero Greeting (39.5%) + Top-Right Metrics Chart (60.5%)*/}
-        {/* ============================================================ */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch h-[360px]">
-          
-          {/* Hero Greeting Card (width ~610px / ~40%) */}
-          <div className="lg:col-span-5 h-full">
-            <HeroMonthBars
-              userName="Mike"
-              monthlySales={metrics.monthlySales}
-              salesChange={metrics.salesChange}
-              activeMonth="oct"
-            />
-          </div>
-
-          {/* Top Right Card: Average Items & Sale Value (width ~920px / ~60%) */}
-          <div className="lg:col-span-7 h-full">
-            <TopRightMetricsCard
-              averageItems={metrics.averageItems}
-              averageSaleValue={metrics.averageSaleValue}
-            />
-          </div>
-
+      {/* Main Master Bento Canvas: 20 Columns x 5 Equal-Height Rows */}
+      <div className="flex-1 flex flex-col lg:bento-grid gap-4 lg:gap-0 pt-1 select-none min-w-0 min-h-0">
+        {/* 1. Hero Card: Cols 1-8, Rows 1-2 */}
+        <div className="bento-hero min-w-0 min-h-0">
+          <HeroMonthBars
+            userName="Mike"
+            monthlySales={metrics.monthlySales}
+            salesChange={metrics.salesChange}
+            activeMonth="oct"
+          />
         </div>
 
-        {/* ============================================================ */}
-        {/* ROW 2: Left Charts (64%) + Right Orders & Profit (36%)       */}
-        {/* ============================================================ */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch h-[580px]">
-          
-          {/* Left Column: Target Progress Bar + Sales Line Chart (width ~990px) */}
-          <div className="lg:col-span-8 flex flex-col gap-4 h-full">
-            {/* Target Progress Bar */}
-            <div className="h-[96px]">
-              <TargetProgressBar
-                currentSales={metrics.monthlySales}
-                targetSales={metrics.monthlyTarget}
-                progressPct={metrics.targetProgressPct}
-              />
-            </div>
-
-            {/* Sales Spline Chart */}
-            <div className="flex-1 h-[468px]">
-              <SalesSplineChart
-                totalSales={metrics.totalSalesYear}
-                comparisonSales={metrics.comparisonSalesYear}
-              />
-            </div>
-          </div>
-
-          {/* Right Column: Orders (18%) & Profit (18%) */}
-          <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 gap-4 h-full">
-            
-            {/* Orders Column: 3 stacked frosted cards with arrow buttons */}
-            <div className="h-full">
-              <OrdersColumn />
-            </div>
-
-            {/* Profit Column: Gross Profit Lime Card (top) + Net Profit Black Card (bottom) */}
-            <div className="h-full">
-              <ProfitCards
-                grossProfit={metrics.grossProfit}
-                netProfit={metrics.netProfit}
-                grossMarginPct={53.5}
-                netMarginPct={43.1}
-              />
-            </div>
-
-          </div>
-
+        {/* 2. Top-Right Analytics: Cols 9-20, Rows 1-2 */}
+        <div className="bento-top-right min-w-0 min-h-0">
+          <TopRightMetricsCard
+            averageItems={metrics.averageItems}
+            averageSaleValue={metrics.averageSaleValue}
+          />
         </div>
 
+        {/* 3. Sales Target Bar: Cols 1-12, Row 3 */}
+        <div className="bento-target min-w-0 min-h-0">
+          <TargetProgressBar
+            currentSales={metrics.monthlySales}
+            targetSales={metrics.monthlyTarget}
+            progressPct={metrics.targetProgressPct}
+          />
+        </div>
+
+        {/* 4. Sales This Year Spline: Cols 1-12, Rows 4-5 */}
+        <div className="bento-sales-chart min-w-0 min-h-0">
+          <SalesSplineChart
+            totalSales={metrics.totalSalesYear}
+            comparisonSales={metrics.comparisonSalesYear}
+          />
+        </div>
+
+        {/* 5. Transfer Card: Cols 13-16, Row 3 */}
+        <div className="bento-transfer min-w-0 min-h-0">
+          <OrderCard
+            type="Transfer"
+            title="Warehouse Transfer"
+            subtitle="Central Hub → Surat Outlet (48 Cans)"
+            amount={28400.0}
+            status="In Transit"
+            href="/inventory"
+          />
+        </div>
+
+        {/* 6. Purchase Orders Card 1: Cols 13-16, Row 4 */}
+        <div className="bento-po-1 min-w-0 min-h-0">
+          <OrderCard
+            type="Purchase Orders"
+            title="Chemical Supplies"
+            subtitle="ChemCorp Ltd. • Acid slurry & LABSA"
+            amount={42150.0}
+            status="Dispatched"
+            href="/orders"
+          />
+        </div>
+
+        {/* 7. Purchase Orders Card 2: Cols 13-16, Row 5 */}
+        <div className="bento-po-2 min-w-0 min-h-0">
+          <OrderCard
+            type="Purchase Orders"
+            title="Packaging Cans"
+            subtitle="Shreeji Polymer • 5L Cans (500 units)"
+            amount={18500.0}
+            status="Delivered"
+            href="/orders"
+          />
+        </div>
+
+        {/* 8. Gross Profit Card: Cols 17-20, Rows 3-4 */}
+        <div className="bento-gross-profit min-w-0 min-h-0 relative">
+          <GrossProfitCard
+            grossProfit={metrics.grossProfit}
+            grossMarginPct={53.5}
+          />
+          {/* Overlapping Round Arrow Button sitting in the circular notch between Gross & Net profit */}
+          <Link
+            href="/reports"
+            data-notch-overlap="true"
+            className="absolute -bottom-5 right-5 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black text-white hover:scale-105 active:scale-95 border-2 border-white/90 shadow-xl flex items-center justify-center transition-all z-30"
+            title="View Profit Analysis"
+          >
+            <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 text-[#E0FE52]" />
+          </Link>
+        </div>
+
+        {/* 9. Net Profit Card: Cols 17-20, Row 5 */}
+        <div className="bento-net-profit min-w-0 min-h-0">
+          <NetProfitCard
+            netProfit={metrics.netProfit}
+            netMarginPct={43.1}
+          />
+        </div>
       </div>
     </div>
   );

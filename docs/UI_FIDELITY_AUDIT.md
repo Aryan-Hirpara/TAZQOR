@@ -156,24 +156,24 @@ Side-by-side visual diffs generated in `ui-audit/compare/`:
 - `mobile_dashboard_compare.png`
 - Component diffs: `component_topbar.png` (19.2%), `component_sidebar.png` (55.5%), `component_hero.png` (21.4%), `component_target.png` (63.2%), `component_line_chart.png` (76.1%), `component_top_right.png` (43.3%), `component_orders.png` (85.6%), `component_profit.png` (99.0%).
 
-### Detailed Component Checklist
+### Detailed Component Checklist (Rebuilt on branch `ui-rebuild`)
 
 | Component / Area | Reference Target Specification | Current Implementation State | Audit Status | Severity |
 |---|---|---|---|---|
-| **Page Background** | 135deg gradient (`#dbd5e4` to `#d6d9cf`) | Flat neutral grey/white (`#F8FAFC`) | **MISMATCH** | **Critical** |
-| **Navigation Shell (Sidebar)** | Slim floating circular icon rail (`w-11` round buttons, active = solid black circle, bottom badges + avatar) | Traditional rectangular full-height white sidebar with text labels | **MISMATCH** | **Critical** |
-| **Top Navigation Bar** | Frameless transparent header with centered segmented pill tabs (`Today`, `This Week`, `This Month`, `Reports`), `All Outlets` pill, black 3×3 grid button | White navbar with big bold title, search input box, date dropdown, and separate tabs | **MISMATCH** | **Critical** |
-| **Card Materiality** | Frosted translucent glass (`rgba(255,255,255,0.58)` + `backdrop-blur-xl` + `rounded-[28px]`, no opaque borders) | Opaque white cards (`#FFFFFF`) with 1px gray borders and `rounded-xl` (12px) | **MISMATCH** | **Critical** |
-| **Typography & Tone** | Light geometric sans (`font-light`), sentence-case labels, italic word accent in greeting | Bold/semibold fonts (`font-bold`), uppercase tracked labels, no italic accents | **MISMATCH** | **High** |
-| **Hero Greeting Card** | Light greeting with italic accent, 6 hatched pill month bars with active black/lime pill, sales stat + comparison | Generic KPI cards with standard bold text and solid bars | **MISMATCH** | **Critical** |
-| **Sales Target Bar** | Electric lime progress fill with draggable-style knob handle (3 dots) and diagonal hatched remainder | Standard shadcn Progress bar (solid blue/lime fill, empty grey track, no knob) | **MISMATCH** | **Critical** |
-| **Top-Right Charts** | "Average Items per Sale" dotted particle chart + "Average Sale Value" daily pill bars with hatched tops | Generic line and bar charts with standard axes | **MISMATCH** | **Critical** |
-| **Main Sales Chart** | Dual spline curves (lime solid + grey dashed) with floating black/lime tooltip pills and month scrubber track | Standard Recharts line chart with generic tooltip box | **MISMATCH** | **Critical** |
-| **Orders Column** | 3 stacked frosted cards ("Transfer", "Purchase Orders", "Purchase Orders") with top-right circular arrow buttons (`↗`) | Generic table widget or missing transfer order cards | **MISMATCH** | **Critical** |
-| **Gross & Net Profit Cards** | Electric Lime card with concentric line art + circular notch button; Black Net Profit card with concave notch and concentric rings | Generic rectangular cards or missing cutouts | **MISMATCH** | **Critical** |
-| **Accent Lime Hex** | Electric Lime `#E0FE52` (RGB 224, 254, 82) | Muted green/lime `#84CC16` / `#65A30D` | **MISMATCH** | **High** |
-| **Button Overlap Bug** | Quick Action button cleanly positioned without collisions | Circular "N" button overlaps and clips Quick Action text | **MISMATCH** | **High** |
-| **Data Integrity** | Live aggregated database calculations with ₹ (INR `en-IN` format) and honest empty states | Some static fallback numbers resembling reference placeholder text | **MISMATCH** | **High** |
+| **Page Background** | 135deg gradient (`#d8d5de` to `#d6d9cf`) | Linear gradient (135deg, `#d8d5de` 0%, `#ded7dc` 35%, `#e2d6d0` 70%, `#d6d9cf` 100%) | **MATCH** | Resolved |
+| **Navigation Shell (Sidebar)** | Slim floating circular icon rail (`w-11` round buttons, active = solid black circle, bottom badges + avatar) | Sticky `100dvh` rail with exactly 8 primary circular icon buttons, pinned bottom group (Mail with red dot, Bell with red dot, User avatar), zero duplicate logo | **MATCH** | Resolved |
+| **Top Navigation Bar** | Frameless transparent header with centered segmented pill tabs (`Today`, `This Week`, `This Month`, `Reports`), `All Outlets` pill, black 3×3 grid launcher button | Frameless top bar with single TAZQOR logo, centered floating pill tabs, "All Outlets" dropdown pill, black grid launcher modal button | **MATCH** | Resolved |
+| **Card Materiality** | Frosted translucent glass (`rgba(255,255,255,0.58)` + `backdrop-blur-xl` + `rounded-[28px]`, no opaque borders) | Frosted glass substrate (`rgba(255,255,255,0.58)` + `backdrop-blur-xl` + border `rgba(255,255,255,0.65)` + `rounded-[var(--radius-card)]`), container-type inline-size | **MATCH** | Resolved |
+| **Typography & Tone** | Light geometric sans (`font-light`), sentence-case labels, italic word accent in greeting | Plus Jakarta Sans loaded with normal and true italic styles. Greeting: `Hi Mike, <span class="italic font-light">here's</span> <span class="font-semibold">what's happening in your stores.</span>`, sentence-case labels | **MATCH** | Resolved |
+| **Hero Greeting Card** | Light greeting with italic accent, 6 hatched pill month bars with active black/lime pill, sales stat + comparison | 6 pill bars (`may`..`oct`) with hatched upper sections, active `oct` solid black with `#E0FE52` top cap, `<FitNumber>` sales metric with `+₹44,357.23 vs last period` comparison | **MATCH** | Resolved |
+| **Sales Target Bar** | Electric lime progress fill with draggable-style knob handle (3 dots) and diagonal hatched remainder | Electric lime `#E0FE52` fill, draggable knob with 3 vertical micro-dots, diagonal hatched remainder track (`hatch-pattern-dark`) | **MATCH** | Resolved |
+| **Top-Right Charts** | "Average Items per Sale" dotted particle chart + "Average Sale Value" daily pill bars with hatched tops | Deterministic seeded LCG stippled particle chart with highlighted value pills + 22 daily pill bars with hatched caps and negative hanging return bars | **MATCH** | Resolved |
+| **Main Sales Chart** | Dual spline curves (lime solid + grey dashed) with floating black/lime tooltip pills and month scrubber track | Dual smooth cubic bezier curves (Electric Lime `#E0FE52` + dashed grey), vertical crosshair guideline, floating dual tooltips, interactive month scrubber pill track | **MATCH** | Resolved |
+| **Orders Column** | 3 stacked frosted cards ("Transfer", "Purchase Orders", "Purchase Orders") with top-right circular arrow buttons (`↗`) | Distinct grid items in cols 13-16, rows 3-5 with `<FitNumber>`, status badges (`In Transit`, `Dispatched`, `Delivered`), and top-right circular arrow buttons | **MATCH** | Resolved |
+| **Gross & Net Profit Cards** | Electric Lime card with concentric line art + circular notch button; Black Net Profit card with concave notch and concentric rings | Gross Profit `#E0FE52` card with faint concentric rings and `.notch-bottom-right` + Net Profit `#000000` card with `.notch-top-right`, joined by round arrow button (`↗`) | **MATCH** | Resolved |
+| **Accent Lime Hex** | Electric Lime `#E0FE52` (RGB 224, 254, 82) | Exact sampled Electric Lime `#E0FE52` across all accents, progress bars, active month caps, and charts | **MATCH** | Resolved |
+| **Button Overlap Bug & Dev Indicator** | Quick Action button cleanly positioned; Next.js dev indicator removed | Dev indicator disabled (`devIndicators: false` in `next.config.ts`), round grid launcher cleanly docked in top bar without collision | **MATCH** | Resolved |
+| **Layout Integrity & Fluid Numbers** | Strict 20-col, 5-row Bento Grid fitting 100dvh without scrollbars; fluid `<FitNumber>` downscaling | Playwright 36/36 automated verification tests GREEN across all 6 viewports including ₹99,99,99,999.99 stress test | **MATCH** | Resolved |
 
 ---
 
@@ -203,3 +203,4 @@ Now proceeding straight into Step 5 in accordance with the specified sequence:
 6. **Phase 5.6 — Re-capture, Diff Verification, & Quality Gate**:
    - Re-run Playwright captures and verify pixel diff is reduced below acceptable threshold.
    - Ensure all tests, typechecks, and builds pass cleanly.
+

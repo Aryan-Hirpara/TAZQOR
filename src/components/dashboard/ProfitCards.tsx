@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { formatINR } from "@/lib/formatting/currency";
+import { GlassCard } from "@/components/ui/GlassCard";
+import { FitNumber } from "@/components/ui/FitNumber";
 
 interface ProfitCardsProps {
   grossProfit?: number;
@@ -11,106 +13,129 @@ interface ProfitCardsProps {
   netMarginPct?: number;
 }
 
-export function ProfitCards({
-  grossProfit = 177349.50,
-  netProfit = 142875.00,
+export function GrossProfitCard({
+  grossProfit = 177349.5,
   grossMarginPct = 53.5,
-  netMarginPct = 43.1,
-}: ProfitCardsProps) {
+}: {
+  grossProfit?: number;
+  grossMarginPct?: number;
+}) {
   return (
-    <div className="flex flex-col gap-4 select-none h-full justify-between">
-      {/* 1. Gross Profit Card (Electric Lime with Concentric Circle Rings & Top-Right Button Notch) */}
-      <div className="bg-[#E0FE52] text-black rounded-[24px] p-6 flex flex-col justify-between flex-1 relative min-h-[250px] overflow-hidden shadow-xl shadow-[#E0FE52]/25">
-        {/* Concentric Vector Circle Line Art Background */}
-        <svg
-          viewBox="0 0 280 250"
-          className="absolute inset-0 w-full h-full pointer-events-none opacity-25"
-          preserveAspectRatio="xMidYMid slice"
-        >
-          <circle cx="140" cy="125" r="40" fill="none" stroke="#000000" strokeWidth="1.2" />
-          <circle cx="140" cy="125" r="70" fill="none" stroke="#000000" strokeWidth="1.2" />
-          <circle cx="140" cy="125" r="100" fill="none" stroke="#000000" strokeWidth="1.2" />
-          <circle cx="140" cy="125" r="130" fill="none" stroke="#000000" strokeWidth="1.2" />
-          <circle cx="140" cy="125" r="160" fill="none" stroke="#000000" strokeWidth="1.2" />
-        </svg>
+    <GlassCard
+      variant="lime"
+      className="h-full p-5 sm:p-6 lg:p-7 flex flex-col justify-between relative select-none min-w-0 notch-bottom-right overflow-hidden"
+    >
+      {/* Decorative Concentric Circle Line Art: pointer-events: none, aria-hidden, z-0, opacity <= 0.12 */}
+      <svg
+        viewBox="0 0 300 300"
+        aria-hidden="true"
+        data-decorative="true"
+        className="absolute inset-0 w-full h-full pointer-events-none opacity-10 z-0"
+        preserveAspectRatio="xMaxYMid slice"
+      >
+        <circle cx="220" cy="80" r="40" fill="none" stroke="#000000" strokeWidth="1.2" />
+        <circle cx="220" cy="80" r="75" fill="none" stroke="#000000" strokeWidth="1.2" />
+        <circle cx="220" cy="80" r="110" fill="none" stroke="#000000" strokeWidth="1.2" />
+        <circle cx="220" cy="80" r="145" fill="none" stroke="#000000" strokeWidth="1.2" />
+        <circle cx="220" cy="80" r="180" fill="none" stroke="#000000" strokeWidth="1.2" />
+      </svg>
 
-        {/* Top Row: Label & Notch Button */}
-        <div className="flex items-start justify-between relative z-10">
-          <div>
-            <span className="text-xs font-normal text-black/80 uppercase tracking-wide block">
-              Gross profit
-            </span>
-            <span className="text-[11px] font-light text-black/65">
-              {grossMarginPct.toFixed(1)}% margin
-            </span>
-          </div>
-
-          {/* Standalone Black Circular Arrow Button */}
-          <Link
-            href="/reports"
-            className="w-10 h-10 rounded-full bg-black text-white hover:scale-105 active:scale-95 flex items-center justify-center transition-transform shadow-md"
-            title="View Gross Profit Analysis"
-          >
-            <ArrowUpRight className="w-4 h-4 text-[#E0FE52]" />
-          </Link>
-        </div>
-
-        {/* Bottom Row: Amount */}
-        <div className="pt-4 relative z-10">
-          <span className="text-3xl sm:text-[34px] font-normal text-black tracking-tight block">
-            {formatINR(grossProfit)}
+      {/* Top Row: Label & Margin */}
+      <div className="relative z-10 flex items-start justify-between">
+        <div>
+          <span className="text-xs font-normal text-black/85 block">
+            Gross profit
           </span>
-          <span className="text-xs font-light text-black/70 mt-0.5 block">
-            After direct cost of goods
+          <span className="text-[11px] font-light text-black/65 block mt-0.5">
+            {grossMarginPct.toFixed(1)}% margin
           </span>
         </div>
       </div>
 
-      {/* 2. Net Profit Card (Deep Black with Translucent Concentric Rings & Concave Notch Design) */}
-      <div className="bg-black text-white rounded-[24px] p-6 flex flex-col justify-between flex-1 relative min-h-[250px] overflow-hidden shadow-2xl shadow-black/40">
-        {/* Concentric Vector Circle Line Art Background */}
-        <svg
-          viewBox="0 0 280 250"
-          className="absolute inset-0 w-full h-full pointer-events-none opacity-20"
-          preserveAspectRatio="xMidYMid slice"
-        >
-          <circle cx="140" cy="125" r="35" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
-          <circle cx="140" cy="125" r="65" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
-          <circle cx="140" cy="125" r="95" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
-          <circle cx="140" cy="125" r="125" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
-          <circle cx="140" cy="125" r="155" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
-        </svg>
+      {/* Bottom Row: Amount via FitNumber and Subtext */}
+      <div className="relative z-10 pt-4">
+        <FitNumber
+          value={formatINR(grossProfit)}
+          minFontSize={18}
+          maxFontSize={34}
+          className="font-normal text-black tracking-tight"
+        />
+        <span className="text-[11px] sm:text-xs font-light text-black/70 mt-1 block truncate">
+          After direct cost of goods
+        </span>
+      </div>
+    </GlassCard>
+  );
+}
 
-        {/* Top Row: Label & Circular Arrow Button */}
-        <div className="flex items-start justify-between relative z-10">
-          <div>
-            <span className="text-xs font-normal text-white/90 uppercase tracking-wide block">
-              Net profit
-            </span>
-            <span className="text-[11px] font-light text-neutral-400">
-              {netMarginPct.toFixed(1)}% margin
-            </span>
-          </div>
+export function NetProfitCard({
+  netProfit = 142875.0,
+  netMarginPct = 43.1,
+}: {
+  netProfit?: number;
+  netMarginPct?: number;
+}) {
+  return (
+    <GlassCard
+      variant="black"
+      className="h-full p-4 sm:p-5 lg:p-6 flex flex-col justify-between relative select-none min-w-0 notch-top-right overflow-hidden"
+    >
+      {/* Decorative Concentric Circle Line Art: opacity <= 0.12, z-0 */}
+      <svg
+        viewBox="0 0 300 300"
+        aria-hidden="true"
+        data-decorative="true"
+        className="absolute inset-0 w-full h-full pointer-events-none opacity-10 z-0"
+        preserveAspectRatio="xMaxYMid slice"
+      >
+        <circle cx="220" cy="180" r="35" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
+        <circle cx="220" cy="180" r="70" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
+        <circle cx="220" cy="180" r="105" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
+        <circle cx="220" cy="180" r="140" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
+        <circle cx="220" cy="180" r="175" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
+      </svg>
 
-          {/* Circular Button */}
-          <Link
-            href="/reports"
-            className="w-10 h-10 rounded-full bg-white/15 hover:bg-white text-white hover:text-black border border-white/25 flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-sm"
-            title="View Net Profit Report"
-          >
-            <ArrowUpRight className="w-4 h-4" />
-          </Link>
-        </div>
-
-        {/* Bottom Row: Amount */}
-        <div className="pt-4 relative z-10">
-          <span className="text-3xl sm:text-[34px] font-normal text-white tracking-tight block">
-            {formatINR(netProfit)}
+      {/* Top Row: Label & Margin */}
+      <div className="relative z-10 flex items-start justify-between">
+        <div>
+          <span className="text-xs font-normal text-white/90 block">
+            Net profit
           </span>
-          <span className="text-xs font-light text-neutral-400 mt-0.5 block">
-            All operating expenses deducted
+          <span className="text-[11px] font-light text-neutral-400 block mt-0.5">
+            {netMarginPct.toFixed(1)}% margin
           </span>
         </div>
+      </div>
+
+      {/* Bottom Row: Amount via FitNumber and Subtext */}
+      <div className="relative z-10 pt-2">
+        <FitNumber
+          value={formatINR(netProfit)}
+          minFontSize={16}
+          maxFontSize={28}
+          className="font-normal text-white tracking-tight"
+        />
+        <span className="text-[11px] sm:text-xs font-light text-neutral-400 mt-1 block truncate">
+          Operational net profit
+        </span>
+      </div>
+    </GlassCard>
+  );
+}
+
+export function ProfitCards({
+  grossProfit = 177349.5,
+  netProfit = 142875.0,
+  grossMarginPct = 53.5,
+  netMarginPct = 43.1,
+}: ProfitCardsProps) {
+  return (
+    <div className="h-full flex flex-col gap-3 min-w-0 relative">
+      <div className="flex-1 min-h-0">
+        <GrossProfitCard grossProfit={grossProfit} grossMarginPct={grossMarginPct} />
+      </div>
+      <div className="h-[36%] min-h-0">
+        <NetProfitCard netProfit={netProfit} netMarginPct={netMarginPct} />
       </div>
     </div>
   );

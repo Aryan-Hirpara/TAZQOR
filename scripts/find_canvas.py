@@ -47,3 +47,4 @@ print(f"Canvas size: {right - left} x {bottom - top}")
 app_canvas = img.crop((left, top, right, bottom))
 app_canvas.save("ui-audit/crops/app_canvas.png")
 print("Saved app_canvas.png")
+

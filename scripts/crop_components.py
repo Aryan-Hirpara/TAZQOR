@@ -37,3 +37,4 @@ profit = canvas.crop((1330, 480, 1610, 1070))
 profit.save("ui-audit/crops/detailed_profit.png")
 
 print("All detailed component crops saved to ui-audit/crops/")
+
