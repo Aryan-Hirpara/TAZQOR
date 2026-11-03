@@ -348,3 +348,4 @@ export default function CustomerDetailClient({ id }: { id: string }) {
     </div>
   );
 }
+

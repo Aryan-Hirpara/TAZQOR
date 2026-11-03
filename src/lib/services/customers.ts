@@ -167,3 +167,4 @@ export async function getCustomerById(id: string): Promise<Customer | null> {
   const customer = DEMO_CUSTOMERS.find((c) => c.id === id);
   return customer || null;
 }
+

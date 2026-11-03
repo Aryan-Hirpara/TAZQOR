@@ -46,3 +46,4 @@ All versioned PostgreSQL migrations are located in `supabase/migrations/`:
 - **Unit Test Suite:** `pnpm test` -> 6/6 tests passing in 2ms (Vitest)
 - **Lint Check:** `pnpm lint` -> Exit Code 0 (0 errors)
 - **Production Build:** `pnpm build` -> Exit Code 0 (26/26 routes compiled and prerendered)
+

@@ -74,63 +74,60 @@ export default function VisitsPage() {
   const [filter, setFilter] = useState<"all" | "today" | "upcoming">("all");
 
   return (
-    <div className="min-h-screen">
-      <TopHeader
-        title="Store Visits & Follow-ups"
-        subtitle="Track field salesperson client check-ins, sales pitches and revisit schedule"
-      />
+    <div className="min-h-screen pb-12">
+      <TopHeader title="Shop Visits" />
 
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6 pt-2">
         {/* KPI Strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-3xl p-5 border border-[#E5E4EE] shadow-sm">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-              Today&apos;s Store Visits
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
+            <span className="text-xs font-light text-neutral-500 block">
+              Today&apos;s store visits
             </span>
-            <div className="text-2xl font-black text-gray-900 mt-1">
+            <div className="text-3xl font-normal text-neutral-900 mt-1 tracking-tight">
               2 Scheduled
             </div>
-            <p className="text-[11px] text-gray-400 mt-0.5">1 Completed, 1 Pending</p>
+            <p className="text-[11px] font-light text-neutral-500 mt-0.5">1 Completed, 1 Pending</p>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 border border-[#E5E4EE] shadow-sm">
-            <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider block">
-              Total Logged This Month
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
+            <span className="text-xs font-light text-neutral-500 block">
+              Total logged this month
             </span>
-            <div className="text-2xl font-black text-emerald-700 mt-1">
+            <div className="text-3xl font-normal text-emerald-600 mt-1 tracking-tight">
               18 Visits
             </div>
-            <p className="text-[11px] text-gray-400 mt-0.5">14 Resulted in fresh orders</p>
+            <p className="text-[11px] font-light text-neutral-500 mt-0.5">14 Resulted in fresh orders</p>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 border border-[#E5E4EE] shadow-sm flex items-center justify-between">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-                GPS Verified
+              <span className="text-xs font-light text-neutral-500 block">
+                GPS verified check-in
               </span>
-              <p className="text-xs text-gray-700 font-bold mt-1">Browser Geolocation Check-in</p>
+              <p className="text-sm font-normal text-neutral-900 mt-0.5">Browser geolocation check-in</p>
             </div>
-            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center">
-              <MapPin className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-full bg-[#E0FE52] text-black flex items-center justify-center shadow-sm">
+              <MapPin className="w-4 h-4" />
             </div>
           </div>
         </div>
 
         {/* Action Bar */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 p-1 bg-white rounded-full border border-[#E5E4EE] shadow-sm">
+          <div className="flex items-center gap-1.5 p-1 bg-white/55 backdrop-blur-md rounded-full border border-white/70 shadow-sm">
             <button
               onClick={() => setFilter("all")}
-              className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all ${
-                filter === "all" ? "bg-[#0A0A0A] text-white" : "text-gray-500 hover:text-black"
+              className={`px-4 py-1.5 text-xs font-light rounded-full transition-all ${
+                filter === "all" ? "bg-black text-white font-normal shadow-sm" : "text-neutral-700 hover:text-black"
               }`}
             >
               All Logs
             </button>
             <button
               onClick={() => setFilter("today")}
-              className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all ${
-                filter === "today" ? "bg-[#0A0A0A] text-white" : "text-gray-500 hover:text-black"
+              className={`px-4 py-1.5 text-xs font-light rounded-full transition-all ${
+                filter === "today" ? "bg-black text-white font-normal shadow-sm" : "text-neutral-700 hover:text-black"
               }`}
             >
               Today
@@ -139,9 +136,9 @@ export default function VisitsPage() {
 
           <Link
             href="/visits/new"
-            className="flex items-center gap-1.5 px-5 h-11 rounded-full bg-[#0A0A0A] text-white text-xs sm:text-sm font-bold shadow-md hover:bg-black/90 active:scale-95 transition-all"
+            className="flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-black text-white text-xs sm:text-sm font-normal shadow-md hover:scale-105 active:scale-95 transition-all"
           >
-            <Plus className="w-4 h-4 text-[#D4F732]" />
+            <Plus className="w-4 h-4 text-[#E0FE52]" />
             <span>Log Visit</span>
           </Link>
         </div>
@@ -151,35 +148,35 @@ export default function VisitsPage() {
           {visits.map((v) => (
             <div
               key={v.id}
-              className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E5E4EE] shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+              className="bg-white/55 backdrop-blur-xl rounded-[24px] p-5 sm:p-6 border border-white/65 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
             >
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-gray-900">{v.customer_name}</h3>
-                  <span className="text-[11px] text-gray-500">({v.shop_name})</span>
+                  <h3 className="text-base font-normal text-neutral-900">{v.customer_name}</h3>
+                  <span className="text-[11px] font-light text-neutral-500">({v.shop_name})</span>
                   {v.gps_verified && (
-                    <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
-                      <MapPin className="w-3 h-3" />
+                    <span className="inline-flex items-center gap-0.5 text-[10px] font-light text-neutral-700 bg-white/70 px-2 py-0.5 rounded-full border border-white/80">
+                      <MapPin className="w-3 h-3 text-[#E0FE52]" />
                       GPS
                     </span>
                   )}
                   <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold capitalize ${
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-light border capitalize ${
                       v.status === "completed"
-                        ? "bg-emerald-50 text-emerald-800"
-                        : "bg-amber-50 text-amber-800"
+                        ? "bg-emerald-50 text-emerald-800 border-emerald-200/60"
+                        : "bg-amber-50 text-amber-800 border-amber-200/60"
                     }`}
                   >
                     {v.status}
                   </span>
                 </div>
 
-                <p className="text-xs text-gray-600 max-w-2xl">{v.outcome}</p>
+                <p className="text-xs font-light text-neutral-600 max-w-2xl">{v.outcome}</p>
 
-                <div className="flex items-center gap-4 text-[11px] text-gray-400 font-medium pt-1">
+                <div className="flex items-center gap-4 text-[11px] text-neutral-400 font-light pt-1">
                   <span>Visit Time: {v.visit_date}</span>
                   {v.next_follow_up && (
-                    <span className="text-gray-700 font-semibold">
+                    <span className="text-neutral-700 font-normal">
                       Next Follow-up: {v.next_follow_up}
                     </span>
                   )}
@@ -189,7 +186,7 @@ export default function VisitsPage() {
               <div className="flex items-center gap-2 shrink-0">
                 <Link
                   href="/customers"
-                  className="px-4 py-2 rounded-full bg-gray-100 text-gray-800 text-xs font-bold hover:bg-black hover:text-white transition-all"
+                  className="px-4 py-1.5 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm"
                 >
                   View Shop
                 </Link>
@@ -201,3 +198,4 @@ export default function VisitsPage() {
     </div>
   );
 }
+

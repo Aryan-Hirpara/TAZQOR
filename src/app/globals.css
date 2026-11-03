@@ -2,73 +2,44 @@
 
 @layer base {
   :root {
-    --background: #EEEDF4;
-    --foreground: #0A0A0A;
+    --background: #d8d5de;
+    --foreground: #111113;
     
-    --card: #FFFFFF;
-    --card-foreground: #0A0A0A;
+    --card: rgba(255, 255, 255, 0.58);
+    --card-foreground: #111113;
     
-    --popover: #FFFFFF;
-    --popover-foreground: #0A0A0A;
+    --popover: rgba(255, 255, 255, 0.90);
+    --popover-foreground: #111113;
     
-    --primary: #0A0A0A;
+    --primary: #000000;
     --primary-foreground: #FFFFFF;
     
-    --secondary: #F3F4F6;
-    --secondary-foreground: #111827;
+    --secondary: rgba(255, 255, 255, 0.45);
+    --secondary-foreground: #111113;
     
-    --muted: #F0EFF5;
-    --muted-foreground: #6B7280;
+    --muted: rgba(255, 255, 255, 0.35);
+    --muted-foreground: #6E6D7A;
     
-    --accent: #D4F732;
-    --accent-foreground: #0A0A0A;
-    
-    --destructive: #EF4444;
-    --destructive-foreground: #FFFFFF;
-    
-    --border: #E5E4EE;
-    --input: #E5E4EE;
-    --ring: #D4F732;
-    
-    --radius: 1.25rem;
-    
-    /* TAZQOR Custom Brand Tokens from Reference Screenshots */
-    --tazqor-lime: #D4F732;
-    --tazqor-lime-dark: #B6D628;
-    --tazqor-charcoal: #151515;
-    --tazqor-hero-start: #C8D5F5;
-    --tazqor-hero-end: #E5EAFF;
-    --tazqor-sidebar: #F5F4FA;
-  }
-
-  .dark {
-    --background: #0D0E11;
-    --foreground: #F9FAFB;
-    
-    --card: #18191E;
-    --card-foreground: #F9FAFB;
-    
-    --popover: #18191E;
-    --popover-foreground: #F9FAFB;
-    
-    --primary: #D4F732;
-    --primary-foreground: #0A0A0A;
-    
-    --secondary: #24262E;
-    --secondary-foreground: #F9FAFB;
-    
-    --muted: #1F2128;
-    --muted-foreground: #9CA3AF;
-    
-    --accent: #D4F732;
-    --accent-foreground: #0A0A0A;
+    --accent: #E0FE52;
+    --accent-foreground: #000000;
     
     --destructive: #EF4444;
     --destructive-foreground: #FFFFFF;
     
-    --border: #2C2E38;
-    --input: #2C2E38;
-    --ring: #D4F732;
+    --border: rgba(255, 255, 255, 0.65);
+    --input: rgba(255, 255, 255, 0.75);
+    --ring: #E0FE52;
+    
+    --radius: 1.75rem; /* 28px standard for cards */
+    
+    /* Exact Measured TAZQOR Design Tokens */
+    --tazqor-lime: #E0FE52;
+    --tazqor-lime-hover: #D7F171;
+    --tazqor-charcoal: #000000;
+    --tazqor-bg-start: #dbd5e4;
+    --tazqor-bg-mid1: #d8d5de;
+    --tazqor-bg-mid2: #d1ced7;
+    --tazqor-bg-end: #d6d9cf;
   }
 }
 
@@ -94,15 +65,15 @@
   --color-ring: var(--ring);
 
   --color-tazqor-lime: var(--tazqor-lime);
-  --color-tazqor-lime-dark: var(--tazqor-lime-dark);
+  --color-tazqor-lime-hover: var(--tazqor-lime-hover);
   --color-tazqor-charcoal: var(--tazqor-charcoal);
-  --color-tazqor-sidebar: var(--tazqor-sidebar);
 
   --radius-card: var(--radius);
 }
 
 body {
-  background-color: var(--background);
+  background: linear-gradient(135deg, #dbd5e4 0%, #d8d5de 35%, #d1ced7 70%, #d6d9cf 100%);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   min-height: 100vh;
@@ -110,36 +81,75 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Glass & subtle card shadows matching reference screenshots */
-.tazqor-card {
-  background-color: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
+/* Frosted glass cards matching reference */
+.frosted-card {
+  background: rgba(255, 255, 255, 0.58);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 28px;
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.02);
 }
 
-.tazqor-hero-card {
-  background: linear-gradient(135deg, var(--tazqor-hero-start) 0%, var(--tazqor-hero-end) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 30px -4px rgba(108, 123, 255, 0.12);
+.frosted-card-sm {
+  background: rgba(255, 255, 255, 0.58);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 24px;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.03);
 }
 
-.tazqor-lime-card {
-  background-color: var(--tazqor-lime);
-  color: #0A0A0A;
-  border-radius: var(--radius);
-  box-shadow: 0 8px 30px -4px rgba(212, 247, 50, 0.25);
+.frosted-pill {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 9999px;
 }
 
-.tazqor-charcoal-card {
-  background-color: var(--tazqor-charcoal);
+/* Electric Lime Gross Profit Card */
+.lime-card {
+  background-color: #E0FE52;
+  color: #000000;
+  border-radius: 24px;
+  box-shadow: 0 12px 32px -4px rgba(224, 254, 82, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Net Profit Deep Black Card */
+.black-card {
+  background-color: #000000;
   color: #FFFFFF;
-  border-radius: var(--radius);
-  box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.3);
+  border-radius: 24px;
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
 }
 
-/* Hide scrollbars for clean pill tabs */
+/* Diagonal stripe pattern for remainder bars and month bars */
+.hatch-pattern {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0.35) 2px,
+    transparent 2px,
+    transparent 6px
+  );
+}
+
+.hatch-pattern-dark {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(0, 0, 0, 0.12),
+    rgba(0, 0, 0, 0.12) 2px,
+    transparent 2px,
+    transparent 6px
+  );
+}
+
+/* Hide scrollbars */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

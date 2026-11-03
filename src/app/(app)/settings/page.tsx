@@ -74,27 +74,24 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen">
-      <TopHeader
-        title="Business Settings & Tax Profile"
-        subtitle="Configure company identity, GST eligibility, document numbering and backups"
-      />
+    <div className="min-h-screen pb-12">
+      <TopHeader title="Business Settings" />
 
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-4xl mx-auto">
+      <div className="space-y-6 max-w-4xl pt-2">
         <form onSubmit={handleSaveProfile} className="space-y-6">
           {/* Business Profile */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E5E4EE] shadow-sm space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-              <Building2 className="w-5 h-5 text-gray-700" />
+          <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 shadow-sm space-y-4">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-white/50">
+              <Building2 className="w-5 h-5 text-neutral-700" />
               <div>
-                <h2 className="text-base font-bold text-gray-900">Legal Business Profile</h2>
-                <p className="text-xs text-gray-500">Printed on all invoices, bills and delivery challans</p>
+                <h2 className="text-base font-normal text-neutral-900">Legal Business Profile</h2>
+                <p className="text-xs font-light text-neutral-500">Printed on all invoices, bills and delivery challans</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-light text-neutral-700 mb-1.5">
                   Business Legal Name *
                 </label>
                 <input
@@ -102,12 +99,12 @@ export default function SettingsPage() {
                   value={profile.legal_name}
                   onChange={(e) => setProfile({ ...profile, legal_name: e.target.value })}
                   required
-                  className="w-full h-11 px-4 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-10 px-4 text-xs bg-white/70 rounded-full border border-white/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-light text-neutral-700 mb-1.5">
                   Primary Phone *
                 </label>
                 <input
@@ -115,24 +112,24 @@ export default function SettingsPage() {
                   value={profile.phone}
                   onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                   required
-                  className="w-full h-11 px-4 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-10 px-4 text-xs bg-white/70 rounded-full border border-white/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-light text-neutral-700 mb-1.5">
                   Registered Address
                 </label>
                 <input
                   type="text"
                   value={profile.address_line1}
                   onChange={(e) => setProfile({ ...profile, address_line1: e.target.value })}
-                  className="w-full h-11 px-4 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-10 px-4 text-xs bg-white/70 rounded-full border border-white/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-light text-neutral-700 mb-1.5">
                   City & State
                 </label>
                 <input
@@ -303,3 +300,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+

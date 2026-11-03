@@ -23,3 +23,4 @@ Storage policies are path-scoped by business: `{business_id}/...`
 ## 3. PWA Installation
 - **Android:** Open Chrome, navigate to your deployed domain, tap the three dots or the prompt "Install TAZQOR Business Manager" to add to Home Screen.
 - **iPhone / iOS:** Open Safari, navigate to your domain, tap Share icon -> "Add to Home Screen".
+

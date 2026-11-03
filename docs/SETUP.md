@@ -49,3 +49,4 @@ pnpm install
 pnpm dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser or phone on the same Wi-Fi.
+

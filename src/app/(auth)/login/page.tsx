@@ -53,16 +53,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="bg-white rounded-3xl p-8 border border-[#E5E4EE] shadow-xl">
+    <div className="bg-white/60 backdrop-blur-2xl rounded-[32px] p-8 sm:p-10 border border-white/75 shadow-2xl shadow-black/5">
       {/* Brand Header */}
       <div className="flex flex-col items-center text-center mb-8">
-        <div className="w-14 h-14 rounded-2xl bg-[#0A0A0A] text-[#D4F732] flex items-center justify-center shadow-lg mb-4">
-          <Sparkles className="w-7 h-7 fill-current" />
+        <div className="w-14 h-14 rounded-full bg-black text-[#E0FE52] flex items-center justify-center shadow-lg mb-4 hover:scale-105 transition-transform">
+          <Sparkles className="w-6 h-6 fill-current" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#0A0A0A]">
+        <h1 className="text-2xl font-normal tracking-tight text-neutral-900">
           TAZQOR
         </h1>
-        <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold mt-1">
+        <p className="text-xs tracking-wider text-neutral-500 font-light mt-1">
           Business Management System
         </p>
       </div>
@@ -81,14 +81,14 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="owner@tazqor.com"
               required
-              className="w-full h-11 pl-10 pr-4 text-sm bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0A0A0A] transition-all"
+              className="w-full h-11 pl-10 pr-4 text-xs bg-white/70 rounded-full border border-white/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E0FE52] transition-all"
             />
           </div>
         </div>
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-xs font-semibold text-gray-700">
+            <label className="block text-xs font-light text-neutral-700">
               Password
             </label>
           </div>
@@ -100,7 +100,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••••••"
               required
-              className="w-full h-11 pl-10 pr-10 text-sm bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0A0A0A] transition-all"
+              className="w-full h-11 pl-10 pr-10 text-xs bg-white/70 rounded-full border border-white/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E0FE52] transition-all"
             />
             <button
               type="button"
@@ -115,14 +115,14 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-12 mt-6 rounded-2xl bg-[#0A0A0A] text-white font-semibold text-sm flex items-center justify-center gap-2 hover:bg-black/90 active:scale-[0.99] transition-all disabled:opacity-60 shadow-md"
+          className="w-full h-11 mt-6 rounded-full bg-black text-white font-normal text-xs sm:text-sm flex items-center justify-center gap-2 hover:bg-neutral-900 active:scale-[0.99] transition-all disabled:opacity-60 shadow-md"
         >
           {loading ? (
             <span>Signing in...</span>
           ) : (
             <>
               <span>Sign In to Dashboard</span>
-              <ArrowRight className="w-4 h-4 text-[#D4F732]" />
+              <ArrowRight className="w-4 h-4 text-[#E0FE52]" />
             </>
           )}
         </button>
@@ -136,3 +136,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

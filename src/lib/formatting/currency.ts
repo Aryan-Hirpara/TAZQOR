@@ -41,3 +41,4 @@ export function formatQuantity(qty: number | string | null | undefined, unit = '
   const formatted = val % 1 === 0 ? val.toString() : val.toFixed(3).replace(/\.?0+$/, '');
   return unit ? `${formatted} ${unit}` : formatted;
 }
+

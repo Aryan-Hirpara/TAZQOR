@@ -36,45 +36,42 @@ export default function ProductsPage() {
   const totalVariantsCount = products.reduce((acc, p) => acc + p.variants.length, 0);
 
   return (
-    <div className="min-h-screen">
-      <TopHeader
-        title="Products & Pack Sizes"
-        subtitle="Manage product categories, SKUs, pack variants and batch costs"
-      />
+    <div className="min-h-screen pb-12">
+      <TopHeader title="Products & Packs" />
 
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6 pt-2">
         {/* Top Summary Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-3xl p-5 border border-[#E5E4EE] shadow-sm">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Product Lines
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
+            <span className="text-xs font-light text-neutral-500 block">
+              Product lines
             </span>
-            <div className="text-2xl font-black text-[#0A0A0A] mt-1">
+            <div className="text-3xl font-normal text-neutral-900 mt-1 tracking-tight">
               {products.length}
             </div>
-            <p className="text-[11px] text-gray-400 mt-0.5">Floor, Dish, Hand, Toilet, Glass</p>
+            <p className="text-[11px] font-light text-neutral-500 mt-0.5">Floor, Dish, Hand, Toilet, Glass</p>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 border border-[#E5E4EE] shadow-sm">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Active Pack Sizes (SKUs)
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
+            <span className="text-xs font-light text-neutral-500 block">
+              Active pack sizes (SKUs)
             </span>
-            <div className="text-2xl font-black text-emerald-600 mt-1">
+            <div className="text-3xl font-normal text-emerald-600 mt-1 tracking-tight">
               {totalVariantsCount}
             </div>
-            <p className="text-[11px] text-gray-400 mt-0.5">5L Cans, 1L, 500mL Bottles</p>
+            <p className="text-[11px] font-light text-neutral-500 mt-0.5">5L Cans, 1L, 500mL Bottles</p>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 border border-[#E5E4EE] shadow-sm flex items-center justify-between">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                Category Management
+              <span className="text-xs font-light text-neutral-500 block">
+                Category management
               </span>
-              <p className="text-xs text-gray-700 font-semibold mt-1">Configure catalog categories</p>
+              <p className="text-sm text-neutral-900 font-normal mt-0.5">Configure catalog categories</p>
             </div>
             <Link
               href="/categories"
-              className="px-3.5 py-1.5 rounded-full bg-gray-100 text-gray-800 text-xs font-bold hover:bg-black hover:text-white transition-all"
+              className="px-4 py-1.5 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm"
             >
               Categories
             </Link>
@@ -85,22 +82,22 @@ export default function ProductsPage() {
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
           <div className="flex flex-1 items-center gap-2 max-w-lg">
             <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search products, SKUs, pack sizes..."
-                className="w-full h-11 pl-10 pr-4 text-xs bg-white rounded-full border border-[#E5E4EE] text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4F732] shadow-sm transition-all"
+                className="w-full h-10 pl-10 pr-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm transition-all"
               />
             </div>
 
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="h-11 px-3 text-xs bg-white rounded-full border border-[#E5E4EE] text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#D4F732] shadow-sm"
+              className="h-10 px-3.5 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm"
             >
-              <option value="all">All Categories</option>
+              <option value="all">All categories</option>
               <option value="cat-floor">Floor Cleaner</option>
               <option value="cat-dish">Dish Wash</option>
               <option value="cat-hand">Hand Wash</option>
@@ -111,9 +108,9 @@ export default function ProductsPage() {
 
           <Link
             href="/products/new"
-            className="flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-[#0A0A0A] text-white text-xs sm:text-sm font-bold shadow-md hover:bg-black/90 active:scale-95 transition-all"
+            className="flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-black text-white text-xs sm:text-sm font-normal shadow-md hover:scale-105 active:scale-95 transition-all"
           >
-            <Plus className="w-4 h-4 text-[#D4F732]" />
+            <Plus className="w-4 h-4 text-[#E0FE52]" />
             <span>Add Product</span>
           </Link>
         </div>
@@ -123,7 +120,7 @@ export default function ProductsPage() {
           {products.map((product) => (
             <div
               key={product.id}
-              className="bg-white rounded-3xl p-6 border border-[#E5E4EE] shadow-sm space-y-4"
+              className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 border border-white/65 shadow-sm space-y-4"
             >
               {/* Product Header */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100">
@@ -209,3 +206,4 @@ export default function ProductsPage() {
     </div>
   );
 }
+

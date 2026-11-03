@@ -42,31 +42,28 @@ export default function StoreMapPage() {
   const mapPins = customers.filter((c) => c.lat && c.lng);
 
   return (
-    <div className="min-h-screen">
-      <TopHeader
-        title="Store & Outlet Map"
-        subtitle="GPS-mapped retail stores, hotels and offices across delivery routes"
-      />
+    <div className="min-h-screen pb-12">
+      <TopHeader title="Store Map" />
 
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6 pt-2">
         {/* Controls Bar */}
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
           <div className="flex flex-1 items-center gap-2 max-w-lg">
             <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search shops or city..."
-                className="w-full h-11 pl-10 pr-4 text-xs bg-white rounded-full border border-[#E5E4EE] text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4F732] shadow-sm transition-all"
+                className="w-full h-10 pl-10 pr-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm transition-all"
               />
             </div>
 
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="h-11 px-3 text-xs bg-white rounded-full border border-[#E5E4EE] text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#D4F732] shadow-sm"
+              className="h-10 px-3.5 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm"
             >
               <option value="all">All Types</option>
               <option value="grocery">Grocery</option>
@@ -77,12 +74,12 @@ export default function StoreMapPage() {
           </div>
 
           {/* Map vs List Toggle */}
-          <div className="flex items-center gap-1.5 p-1 bg-white rounded-full border border-[#E5E4EE] shadow-sm">
+          <div className="flex items-center gap-1.5 p-1 bg-white/55 backdrop-blur-md rounded-full border border-white/70 shadow-sm">
             <button
               type="button"
               onClick={() => setViewMode("map")}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                viewMode === "map" ? "bg-[#0A0A0A] text-white" : "text-gray-500 hover:text-black"
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-light transition-all ${
+                viewMode === "map" ? "bg-black text-white font-normal shadow-sm" : "text-neutral-700 hover:text-black"
               }`}
             >
               <MapIcon className="w-3.5 h-3.5" />
@@ -91,8 +88,8 @@ export default function StoreMapPage() {
             <button
               type="button"
               onClick={() => setViewMode("list")}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                viewMode === "list" ? "bg-[#0A0A0A] text-white" : "text-gray-500 hover:text-black"
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-light transition-all ${
+                viewMode === "list" ? "bg-black text-white font-normal shadow-sm" : "text-neutral-700 hover:text-black"
               }`}
             >
               <List className="w-3.5 h-3.5" />
@@ -105,7 +102,7 @@ export default function StoreMapPage() {
         {viewMode === "map" ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             {/* Interactive Map Canvas Container */}
-            <div className="lg:col-span-8 bg-white rounded-3xl p-6 border border-[#E5E4EE] shadow-sm flex flex-col justify-between min-h-[500px] relative overflow-hidden">
+            <div className="lg:col-span-8 bg-white/55 backdrop-blur-xl rounded-[28px] p-6 border border-white/65 shadow-sm flex flex-col justify-between min-h-[500px] relative overflow-hidden">
               {/* Map Canvas with simulated OSM Grid & real markers */}
               <div className="absolute inset-0 bg-[#E8ECEF] flex items-center justify-center">
                 {/* SVG Map Background Pattern */}
@@ -267,3 +264,4 @@ export default function StoreMapPage() {
     </div>
   );
 }
+

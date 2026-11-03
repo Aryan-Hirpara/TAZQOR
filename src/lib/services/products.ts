@@ -232,3 +232,4 @@ export async function getProducts(query?: { search?: string; categoryId?: string
 
   return list;
 }
+

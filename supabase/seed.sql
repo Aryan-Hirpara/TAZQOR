@@ -112,3 +112,4 @@ BEGIN
     (v_cust_3, v_biz_id, 'Apex Co-Working Space', 'Apex Tech Park Office', 'Neha Shah', '+91 97120 77889', '+91 97120 77889', 'office', 'Gandhinagar', 'Gujarat', '382010', 'active', 'CUST-003', true, 23.2156, 72.6369);
 
 END $$;
+

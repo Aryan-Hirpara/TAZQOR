@@ -167,3 +167,4 @@ CREATE OR REPLACE TRIGGER trg_audit_invoices AFTER INSERT OR UPDATE OR DELETE ON
 CREATE OR REPLACE TRIGGER trg_audit_payments AFTER INSERT OR UPDATE OR DELETE ON payments FOR EACH ROW EXECUTE FUNCTION trg_write_audit_log();
 CREATE OR REPLACE TRIGGER trg_audit_stock_movements AFTER INSERT ON stock_movements FOR EACH ROW EXECUTE FUNCTION trg_write_audit_log();
 CREATE OR REPLACE TRIGGER trg_audit_settings AFTER INSERT OR UPDATE ON business_settings FOR EACH ROW EXECUTE FUNCTION trg_write_audit_log();
+

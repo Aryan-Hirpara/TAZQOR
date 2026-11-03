@@ -221,44 +221,41 @@ export default function InventoryPage() {
   };
 
   return (
-    <div className="min-h-screen">
-      <TopHeader
-        title="Inventory & Batch Ledger"
-        subtitle="FEFO Batch Allocation, Traceability & Stock Movements"
-      />
+    <div className="min-h-screen pb-12">
+      <TopHeader title="Inventory & Batches" />
 
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6 pt-2">
         {/* Valuation & Summary KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-3xl p-5 border border-[#E5E4EE] shadow-sm">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Total Stock Valuation (At Cost)
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
+            <span className="text-xs font-light text-neutral-500 block">
+              Total stock valuation (at cost)
             </span>
-            <div className="text-2xl font-black text-[#0A0A0A] mt-1">
+            <div className="text-3xl font-normal text-neutral-900 mt-1 tracking-tight">
               {formatINR(totalStockValuation)}
             </div>
-            <p className="text-[11px] text-gray-400 mt-0.5">Calculated from individual batch costs</p>
+            <p className="text-[11px] font-light text-neutral-500 mt-0.5">Calculated from batch costs</p>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 border border-[#E5E4EE] shadow-sm">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Total Units On Hand
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
+            <span className="text-xs font-light text-neutral-500 block">
+              Total units on hand
             </span>
-            <div className="text-2xl font-black text-emerald-600 mt-1">
+            <div className="text-3xl font-normal text-emerald-600 mt-1 tracking-tight">
               {totalStockUnits} Units
             </div>
-            <p className="text-[11px] text-gray-400 mt-0.5">Summed across all active FEFO batches</p>
+            <p className="text-[11px] font-light text-neutral-500 mt-0.5">Across active FEFO batches</p>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 border border-[#E5E4EE] shadow-sm flex items-center justify-between">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                FEFO Policy
+              <span className="text-xs font-light text-neutral-500 block">
+                FEFO policy
               </span>
-              <p className="text-xs text-gray-700 font-semibold mt-1">First-Expiry-First-Out</p>
-              <p className="text-[11px] text-emerald-700 font-medium">Automatic stock issue on billing</p>
+              <p className="text-sm text-neutral-900 font-normal mt-0.5">First-Expiry-First-Out</p>
+              <p className="text-[11px] text-emerald-600 font-light">Automatic allocation on billing</p>
             </div>
-            <div className="w-10 h-10 rounded-2xl bg-[#D4F732]/30 text-black flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-full bg-[#E0FE52] text-black flex items-center justify-center font-normal shadow-sm">
               ✓
             </div>
           </div>
@@ -266,23 +263,23 @@ export default function InventoryPage() {
 
         {/* Action Controls & Navigation Tabs */}
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-          <div className="flex items-center gap-2 p-1 bg-white rounded-full border border-[#E5E4EE] shadow-sm">
+          <div className="flex items-center gap-1.5 p-1 bg-white/55 backdrop-blur-md rounded-full border border-white/70 shadow-sm">
             <button
               onClick={() => setActiveTab("batches")}
-              className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all ${
+              className={`px-4 py-1.5 text-xs font-light rounded-full transition-all ${
                 activeTab === "batches"
-                  ? "bg-[#0A0A0A] text-white"
-                  : "text-gray-500 hover:text-black"
+                  ? "bg-black text-white font-normal shadow-sm"
+                  : "text-neutral-700 hover:text-black"
               }`}
             >
               Batches on Hand
             </button>
             <button
               onClick={() => setActiveTab("movements")}
-              className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all ${
+              className={`px-4 py-1.5 text-xs font-light rounded-full transition-all ${
                 activeTab === "movements"
-                  ? "bg-[#0A0A0A] text-white"
-                  : "text-gray-500 hover:text-black"
+                  ? "bg-black text-white font-normal shadow-sm"
+                  : "text-neutral-700 hover:text-black"
               }`}
             >
               Stock Movements Ledger
@@ -293,7 +290,7 @@ export default function InventoryPage() {
             <button
               type="button"
               onClick={() => setAdjustStockOpen(true)}
-              className="flex items-center gap-1.5 px-4 h-11 rounded-full bg-white text-gray-800 border border-[#E5E4EE] text-xs font-bold shadow-sm hover:border-black transition-all"
+              className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-white/70 text-neutral-800 border border-white/80 text-xs font-light shadow-sm hover:bg-white transition-all"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>Adjust Stock</span>
@@ -302,9 +299,9 @@ export default function InventoryPage() {
             <button
               type="button"
               onClick={() => setReceiveStockOpen(true)}
-              className="flex items-center gap-1.5 px-5 h-11 rounded-full bg-[#0A0A0A] text-white text-xs font-bold shadow-md hover:bg-black/90 active:scale-95 transition-all"
+              className="flex items-center gap-1.5 px-5 h-10 rounded-full bg-black text-white text-xs font-normal shadow-md hover:scale-105 active:scale-95 transition-all"
             >
-              <Plus className="w-4 h-4 text-[#D4F732]" />
+              <Plus className="w-4 h-4 text-[#E0FE52]" />
               <span>Receive Stock</span>
             </button>
           </div>
@@ -312,12 +309,12 @@ export default function InventoryPage() {
 
         {/* Tab 1: Batch-wise Stock Table */}
         {activeTab === "batches" && (
-          <div className="bg-white rounded-3xl border border-[#E5E4EE] overflow-hidden shadow-sm">
-            <div className="p-5 border-b border-[#E5E4EE] flex items-center justify-between">
-              <h3 className="text-sm font-bold text-gray-900">
+          <div className="bg-white/55 backdrop-blur-xl rounded-[28px] border border-white/65 overflow-hidden shadow-sm">
+            <div className="p-5 border-b border-white/60 flex items-center justify-between">
+              <h3 className="text-sm font-normal text-neutral-900">
                 Active Batches (FEFO Sorted)
               </h3>
-              <span className="text-xs text-gray-500 font-medium">
+              <span className="text-xs text-neutral-500 font-light">
                 Earliest expiry issued first
               </span>
             </div>
@@ -626,3 +623,4 @@ export default function InventoryPage() {
     </div>
   );
 }
+

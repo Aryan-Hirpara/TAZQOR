@@ -81,47 +81,45 @@ export default function ExpensesPage() {
   const totalExpenseAmount = expenses.reduce((acc, e) => acc + e.amount, 0);
 
   return (
-    <div className="min-h-screen">
-      <TopHeader
-        title="Business Expenses"
-        subtitle="Track operating expenditures, raw materials, packaging and logistics"
-      />
+    <div className="min-h-screen pb-12">
+      <TopHeader title="Business Expenses" />
 
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6 pt-2">
         {/* KPI Strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-3xl p-5 border border-[#E5E4EE] shadow-sm">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-              Total Expenses (This Month)
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
+            <span className="text-xs font-light text-neutral-500 block">
+              Total expenses (this month)
             </span>
-            <div className="text-2xl font-black text-rose-600 mt-1">
+            <div className="text-3xl font-normal text-rose-600 mt-1 tracking-tight">
               {formatINR(totalExpenseAmount)}
             </div>
-            <p className="text-[11px] text-gray-400 mt-0.5">Deducted from gross margin for net profit</p>
+            <p className="text-[11px] font-light text-neutral-500 mt-0.5">Deducted from gross margin for net profit</p>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 border border-[#E5E4EE] shadow-sm">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-              Largest Expense Category
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
+            <span className="text-xs font-light text-neutral-500 block">
+              Largest expense category
             </span>
-            <div className="text-2xl font-black text-gray-900 mt-1">
+            <div className="text-3xl font-normal text-neutral-900 mt-1 tracking-tight">
               Raw Materials
             </div>
-            <p className="text-[11px] text-gray-400 mt-0.5">₹ 34,500.00 spent this month</p>
+            <p className="text-[11px] font-light text-neutral-500 mt-0.5">₹34,500.00 spent this month</p>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 border border-[#E5E4EE] shadow-sm flex items-center justify-between">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-                Logged Records
+              <span className="text-xs font-light text-neutral-500 block">
+                Logged records
               </span>
-              <p className="text-sm font-extrabold text-gray-900 mt-1">{expenses.length} Expense Bills</p>
+              <p className="text-sm font-normal text-neutral-900 mt-0.5">{expenses.length} Expense Bills</p>
             </div>
             <Link
               href="/expenses/new"
-              className="px-4 py-2 rounded-full bg-[#0A0A0A] text-white text-xs font-bold shadow-sm"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-black text-white text-xs font-normal shadow-md hover:scale-105 active:scale-95 transition-all"
             >
-              Add Expense
+              <Plus className="w-3.5 h-3.5 text-[#E0FE52]" />
+              <span>Add Expense</span>
             </Link>
           </div>
         </div>
@@ -130,7 +128,7 @@ export default function ExpensesPage() {
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
           <div className="flex flex-1 items-center gap-2 max-w-lg">
             <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <input
                 type="text"
                 value={search}
@@ -201,3 +199,4 @@ export default function ExpensesPage() {
     </div>
   );
 }
+

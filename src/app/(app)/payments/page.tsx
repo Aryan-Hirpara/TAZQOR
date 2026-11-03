@@ -89,45 +89,42 @@ export default function PaymentsPage() {
   const totalCollected = payments.reduce((acc, p) => acc + p.amount, 0);
 
   return (
-    <div className="min-h-screen">
-      <TopHeader
-        title="Payment Collections & Receipts"
-        subtitle="Record payments, invoice allocations and advance balances"
-      />
+    <div className="min-h-screen pb-12">
+      <TopHeader title="Payment Collections" />
 
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6 pt-2">
         {/* KPI Strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-3xl p-5 border border-[#E5E4EE] shadow-sm">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-              Total Collections (This Month)
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
+            <span className="text-xs font-light text-neutral-500 block">
+              Total collections (this month)
             </span>
-            <div className="text-2xl font-black text-emerald-600 mt-1">
+            <div className="text-3xl font-normal text-emerald-600 mt-1 tracking-tight">
               {formatINR(totalCollected)}
             </div>
-            <p className="text-[11px] text-gray-400 mt-0.5">Across UPI, Bank Transfer & Cash</p>
+            <p className="text-[11px] font-light text-neutral-500 mt-0.5">Across UPI, Bank Transfer & Cash</p>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 border border-[#E5E4EE] shadow-sm">
-            <span className="text-xs font-bold text-amber-600 uppercase tracking-wider block">
-              Total Customer Advances
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
+            <span className="text-xs font-light text-neutral-500 block">
+              Total customer advances
             </span>
-            <div className="text-2xl font-black text-amber-700 mt-1">
-              ₹ 1,500.00
+            <div className="text-3xl font-normal text-neutral-900 mt-1 tracking-tight">
+              ₹1,500.00
             </div>
-            <p className="text-[11px] text-gray-400 mt-0.5">Unallocated payments held on account</p>
+            <p className="text-[11px] font-light text-neutral-500 mt-0.5">Unallocated payments held on account</p>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 border border-[#E5E4EE] shadow-sm flex items-center justify-between">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-                Customer Ledger
+              <span className="text-xs font-light text-neutral-500 block">
+                Customer ledger
               </span>
-              <p className="text-xs font-bold text-gray-900 mt-1">View Full Account Statements</p>
+              <p className="text-sm font-normal text-neutral-900 mt-0.5">View full account statements</p>
             </div>
             <Link
               href="/customers"
-              className="px-3.5 py-1.5 rounded-full bg-gray-100 text-gray-800 text-xs font-bold hover:bg-black hover:text-white transition-all"
+              className="px-4 py-1.5 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm"
             >
               Ledger
             </Link>
@@ -138,13 +135,13 @@ export default function PaymentsPage() {
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
           <div className="flex flex-1 items-center gap-2 max-w-lg">
             <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by receipt #, customer, reference..."
-                className="w-full h-11 pl-10 pr-4 text-xs bg-white rounded-full border border-[#E5E4EE] text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4F732] shadow-sm transition-all"
+                className="w-full h-10 pl-10 pr-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm transition-all"
               />
             </div>
 
@@ -236,3 +233,4 @@ export default function PaymentsPage() {
     </div>
   );
 }
+
