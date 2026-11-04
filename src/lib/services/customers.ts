@@ -130,8 +130,8 @@ const DEMO_CUSTOMERS: Customer[] = [
     status: "active",
     customer_code: "CUST-004",
     total_invoiced: 18200.00,
-    total_paid: 14500.00,
-    outstanding: 3700.00,
+    total_paid: 18200.00,
+    outstanding: 0.00,
     advance: 0.00,
     created_at: "2026-02-12T09:15:00Z",
   }

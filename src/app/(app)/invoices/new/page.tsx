@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { calculateInvoice, LineItemCalculationInput } from "@/lib/calculations/money";
+import { formatDocumentNumber } from "@/lib/calculations/financialYear";
 import { formatINR } from "@/lib/formatting/currency";
 
 interface BillLineItem {
@@ -144,7 +145,11 @@ export default function NewInvoicePage() {
     setSubmitting(true);
     try {
       await new Promise((r) => setTimeout(r, 800));
-      const generatedNumber = mode === "gst" ? "INV/2026-27/0003" : "BILL/2026-27/0002";
+      const generatedNumber = formatDocumentNumber(
+        mode === "gst" ? "INV" : "BILL",
+        mode === "gst" ? 3 : 2,
+        new Date()
+      );
       toast.success(`Invoice ${generatedNumber} finalized and FEFO stock deducted!`);
       router.push("/invoices");
     } catch {

@@ -27,7 +27,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
   // Sample finalized invoice data
   const invoice = {
     id,
-    invoice_number: "INV/2026-27/0001",
+    invoice_number: "INV/2025-26/0001",
     mode: "gst" as const,
     status: status,
     date: "2026-02-15",

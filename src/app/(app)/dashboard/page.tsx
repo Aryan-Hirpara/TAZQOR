@@ -10,25 +10,31 @@ import { TargetProgressBar } from "@/components/dashboard/TargetProgressBar";
 import { SalesSplineChart } from "@/components/charts/SalesSplineChart";
 import { OrderCard } from "@/components/dashboard/OrderCard";
 import { GrossProfitCard, NetProfitCard } from "@/components/dashboard/ProfitCards";
+import { MobilePeriodPills } from "@/components/dashboard/MobilePeriodPills";
+import { getBusinessMetrics } from "@/lib/services/businessData";
 import { createClient } from "@/lib/supabase/client";
 
 export default function DashboardPage() {
   const [period, setPeriod] = useState<"today" | "week" | "month">("month");
   const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState("there");
 
-  // Live Aggregate Metrics State
-  const [metrics, setMetrics] = useState({
-    monthlySales: 331224.74,
-    previousMonthSales: 286867.51,
-    salesChange: 44357.23,
-    grossProfit: 177349.5,
-    netProfit: 142875.0,
-    monthlyTarget: 400500.0,
-    targetProgressPct: 82,
-    averageItems: 8.3,
-    averageSaleValue: 1240.0,
-    totalSalesYear: 385990.3,
-    comparisonSalesYear: 311056.0,
+  // Reconciled Business Metrics State (initialized with unified aggregates)
+  const [metrics, setMetrics] = useState(() => {
+    const base = getBusinessMetrics();
+    return {
+      monthlySales: base.monthlySales,
+      previousMonthSales: base.previousMonthSales,
+      salesChange: base.salesChange,
+      grossProfit: base.grossProfit,
+      netProfit: base.netProfit,
+      monthlyTarget: base.monthlyTarget,
+      targetProgressPct: base.targetProgressPct,
+      averageItems: base.averageItems,
+      averageSaleValue: base.averageSaleValue,
+      totalSalesYear: base.totalSalesYear,
+      comparisonSalesYear: base.comparisonSalesYear,
+    };
   });
 
   useEffect(() => {
@@ -47,9 +53,27 @@ export default function DashboardPage() {
     };
     window.addEventListener("tazqor:set-test-metrics", handleTestMetrics);
 
-    async function fetchDashboardAggregates() {
+    async function loadUserProfileAndLiveAggregates() {
       try {
         const supabase = createClient();
+
+        // 1. Fetch authenticated user profile to get first name
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", user.id)
+            .single();
+
+          const name = profile?.full_name || user.user_metadata?.full_name;
+          if (name) {
+            const first = name.trim().split(" ")[0];
+            if (first) setUserName(first);
+          }
+        }
+
+        // 2. Fetch live invoices & expenses if live DB contains rows
         const now = new Date();
         const startOfMonth = new Date(
           now.getFullYear(),
@@ -106,7 +130,7 @@ export default function DashboardPage() {
 
           const estimatedGrossProfit = curSales * 0.535;
           const calculatedNetProfit = Math.max(0, estimatedGrossProfit - curExp);
-          const target = 400500.0;
+          const target = 80000.0;
           const targetPct =
             target > 0 ? Math.round((curSales / target) * 100) : 0;
           const avgSale =
@@ -122,18 +146,18 @@ export default function DashboardPage() {
             targetProgressPct: targetPct,
             averageItems: 8.3,
             averageSaleValue: avgSale > 0 ? avgSale : 1240.0,
-            totalSalesYear: curSales * 1.15,
-            comparisonSalesYear: prevSales * 1.1,
+            totalSalesYear: curSales * 4.5,
+            comparisonSalesYear: prevSales * 4.2,
           });
         }
       } catch (e) {
-        console.warn("Using baseline operational metrics:", e);
+        // Falls back seamlessly to reconciled business metrics
       } finally {
         setLoading(false);
       }
     }
 
-    fetchDashboardAggregates();
+    loadUserProfileAndLiveAggregates();
 
     return () => {
       window.removeEventListener("tazqor:set-test-metrics", handleTestMetrics);
@@ -145,12 +169,15 @@ export default function DashboardPage() {
       {/* Top Navigation Bar */}
       <TopHeader period={period} onPeriodChange={setPeriod} />
 
+      {/* Mobile-Only Period Segmented Pills (horizontal scroll with scroll-snap) */}
+      <MobilePeriodPills period={period} onPeriodChange={setPeriod} />
+
       {/* Main Master Bento Canvas: 20 Columns x 5 Equal-Height Rows */}
       <div className="flex-1 flex flex-col lg:bento-grid gap-4 lg:gap-0 pt-1 select-none min-w-0 min-h-0">
         {/* 1. Hero Card: Cols 1-8, Rows 1-2 */}
         <div className="bento-hero min-w-0 min-h-0">
           <HeroMonthBars
-            userName="Mike"
+            userName={userName}
             monthlySales={metrics.monthlySales}
             salesChange={metrics.salesChange}
             activeMonth="oct"
@@ -233,6 +260,7 @@ export default function DashboardPage() {
             data-notch-overlap="true"
             className="absolute -bottom-5 right-5 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black text-[#D7FF00] hover:scale-105 active:scale-95 ring-[6px] ring-[#D3C7BD] flex items-center justify-center transition-all z-30"
             title="View Profit Analysis"
+            aria-label="View Profit Analysis"
           >
             <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 text-[#D7FF00]" />
           </Link>

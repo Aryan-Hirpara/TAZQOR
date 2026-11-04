@@ -13,28 +13,30 @@ import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { formatINR } from "@/lib/formatting/currency";
 import { MobileSalesAnalyzing } from "@/components/dashboard/MobileSalesAnalyzing";
+import { getBusinessMetrics } from "@/lib/services/businessData";
 
 export default function ReportsPage() {
   const [period, setPeriod] = useState<"this_month" | "last_month" | "year">("this_month");
+  const metrics = getBusinessMetrics();
 
   const reportData = {
-    revenue: 331224.74,
-    costOfGoodsSold: 153875.24,
-    grossProfit: 177349.50,
-    grossMarginPct: 53.5,
-    operatingExpenses: 34474.50,
-    netProfit: 142875.00,
-    totalCollections: 198500.00,
-    totalOutstanding: 68420.00,
+    revenue: metrics.monthlySales, // 64,200.00
+    costOfGoodsSold: metrics.costOfGoodsSold, // 29,800.00
+    grossProfit: metrics.grossProfit, // 34,400.00
+    grossMarginPct: metrics.grossMarginPct, // 53.6%
+    operatingExpenses: metrics.operatingExpenses, // 8,200.00
+    netProfit: metrics.netProfit, // 26,200.00
+    totalCollections: metrics.totalCollected, // 57,700.00
+    totalOutstanding: metrics.totalOutstanding, // 6,500.00
     topProducts: [
-      { name: "TAZQOR Citrus Floor Cleaner (5 L)", sales: 148500, units: 330, share: 44.8 },
-      { name: "TAZQOR Sparkle Dish Wash Gel (5 L)", sales: 98800, units: 190, share: 29.8 },
-      { name: "TAZQOR Anti-Bacterial Hand Wash (500 mL)", sales: 42500, units: 500, share: 12.8 },
-      { name: "TAZQOR Ultra Toilet Cleaner (1 L)", sales: 41424, units: 360, share: 12.5 },
+      { name: "TAZQOR Citrus Floor Cleaner (5 L)", sales: 28500, units: 65, share: 44.4 },
+      { name: "TAZQOR Sparkle Dish Wash Gel (5 L)", sales: 18200, units: 35, share: 28.3 },
+      { name: "TAZQOR Anti-Bacterial Hand Wash (500 mL)", sales: 9400, units: 110, share: 14.6 },
+      { name: "TAZQOR Ultra Toilet Cleaner (1 L)", sales: 8100, units: 70, share: 12.6 },
     ],
     salesByCity: [
-      { city: "Ahmedabad", sales: 245000, percentage: 74 },
-      { city: "Gandhinagar", sales: 86224, percentage: 26 },
+      { city: "Ahmedabad", sales: 48500, percentage: 75.5 },
+      { city: "Gandhinagar", sales: 15700, percentage: 24.5 },
     ],
   };
 

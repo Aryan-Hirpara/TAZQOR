@@ -81,16 +81,23 @@ body {
   background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans);
-  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   -webkit-tap-highlight-color: transparent;
-  overflow-x: hidden;
 }
 
 /* Dark mode body background (mobile dark spec: #1C1C1A) */
-.dark body {
-  background: #1C1C1A;
+.dark body,
+body.dark {
+  background: #1C1C1A !important;
   background-attachment: fixed;
+  color: #F8FAFC;
+}
+
+.dark .glass-card {
+  background: rgba(36, 36, 34, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #F8FAFC;
 }
 
 /* Container query utility for card fluid typography */

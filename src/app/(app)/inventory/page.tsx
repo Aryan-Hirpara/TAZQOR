@@ -103,8 +103,8 @@ const DEMO_BATCHES: BatchItem[] = [
 ];
 
 const DEMO_MOVEMENTS: StockMovement[] = [
-  { id: "sm-01", date: "2026-02-15 14:30", product: "Floor Cleaner 5L", type: "sale_out", quantity: 12, batch_number: "B-FLR-2026-01", reason: "Invoice Finalization", ref_doc: "INV/2026-27/0001" },
-  { id: "sm-02", date: "2026-02-14 11:20", product: "Dish Wash 5L", type: "sale_out", quantity: 5, batch_number: "B-DSH-2026-01", reason: "Invoice Finalization", ref_doc: "INV/2026-27/0002" },
+  { id: "sm-01", date: "2026-02-15 14:30", product: "Floor Cleaner 5L", type: "sale_out", quantity: 12, batch_number: "B-FLR-2026-01", reason: "Invoice Finalization", ref_doc: "INV/2025-26/0001" },
+  { id: "sm-02", date: "2026-02-14 11:20", product: "Dish Wash 5L", type: "sale_out", quantity: 5, batch_number: "B-DSH-2026-01", reason: "Invoice Finalization", ref_doc: "INV/2025-26/0002" },
   { id: "sm-03", date: "2026-02-10 09:45", product: "Floor Cleaner 1L", type: "damage_out", quantity: 2, batch_number: "B-FLR-2026-02", reason: "Transport bottle puncture", ref_doc: "ADJ-001" },
   { id: "sm-04", date: "2026-02-01 10:00", product: "Dish Wash 5L", type: "purchase_in", quantity: 80, batch_number: "B-DSH-2026-01", reason: "Batch production receipt", ref_doc: "GRN-2026-02" },
   { id: "sm-05", date: "2026-01-15 09:00", product: "Floor Cleaner 5L", type: "opening_stock", quantity: 100, batch_number: "B-FLR-2026-01", reason: "Initial opening stock", ref_doc: "INIT" },

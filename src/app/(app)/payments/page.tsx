@@ -37,7 +37,7 @@ const DEMO_PAYMENTS: PaymentRecord[] = [
     payment_date: "2026-02-15",
     method: "upi",
     reference: "UPI/3489129034",
-    allocated_to: "INV/2026-27/0001 (₹12,000.00)",
+    allocated_to: "INV/2025-26/0001 (₹12,000.00)",
     advance: 0.00,
   },
   {
@@ -47,7 +47,7 @@ const DEMO_PAYMENTS: PaymentRecord[] = [
     payment_date: "2026-02-14",
     method: "bank_transfer",
     reference: "NEFT/ICICI/99812",
-    allocated_to: "INV/2026-27/0002 (₹42,000.00)",
+    allocated_to: "INV/2025-26/0002 (₹42,000.00)",
     advance: 0.00,
   },
   {
@@ -57,18 +57,8 @@ const DEMO_PAYMENTS: PaymentRecord[] = [
     payment_date: "2026-02-12",
     method: "cash",
     reference: "Cash Receipt #412",
-    allocated_to: "BILL/2026-27/0001 (₹3,700.00)",
+    allocated_to: "BILL/2025-26/0001 (₹3,700.00)",
     advance: 0.00,
-  },
-  {
-    id: "PAY-078",
-    customer_name: "Apex Co-Working Space",
-    amount: 15000.00,
-    payment_date: "2026-02-05",
-    method: "bank_transfer",
-    reference: "RTGS/HDFC/11234",
-    allocated_to: "Advance Deposit",
-    advance: 1500.00,
   },
 ];
 

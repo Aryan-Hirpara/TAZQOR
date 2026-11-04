@@ -30,14 +30,21 @@ export function GrossProfitCard({
         viewBox="0 0 300 300"
         aria-hidden="true"
         data-decorative="true"
-        className="absolute inset-0 w-full h-full pointer-events-none opacity-10 z-0"
+        className="absolute inset-0 w-full h-full pointer-events-none opacity-10 z-0 overflow-hidden"
         preserveAspectRatio="xMaxYMid slice"
       >
-        <circle cx="220" cy="80" r="40" fill="none" stroke="#000000" strokeWidth="1.2" />
-        <circle cx="220" cy="80" r="75" fill="none" stroke="#000000" strokeWidth="1.2" />
-        <circle cx="220" cy="80" r="110" fill="none" stroke="#000000" strokeWidth="1.2" />
-        <circle cx="220" cy="80" r="145" fill="none" stroke="#000000" strokeWidth="1.2" />
-        <circle cx="220" cy="80" r="180" fill="none" stroke="#000000" strokeWidth="1.2" />
+        <defs>
+          <clipPath id="gross-circle-clip">
+            <rect x="0" y="0" width="300" height="300" />
+          </clipPath>
+        </defs>
+        <g clipPath="url(#gross-circle-clip)">
+          <circle cx="220" cy="80" r="40" fill="none" stroke="#000000" strokeWidth="1.2" />
+          <circle cx="220" cy="80" r="75" fill="none" stroke="#000000" strokeWidth="1.2" />
+          <circle cx="220" cy="80" r="110" fill="none" stroke="#000000" strokeWidth="1.2" />
+          <circle cx="220" cy="80" r="145" fill="none" stroke="#000000" strokeWidth="1.2" />
+          <circle cx="220" cy="80" r="180" fill="none" stroke="#000000" strokeWidth="1.2" />
+        </g>
       </svg>
 
       {/* Top Row: Label & Margin */}
@@ -85,14 +92,21 @@ export function NetProfitCard({
         viewBox="0 0 300 300"
         aria-hidden="true"
         data-decorative="true"
-        className="absolute inset-0 w-full h-full pointer-events-none opacity-10 z-0"
+        className="absolute inset-0 w-full h-full pointer-events-none opacity-10 z-0 overflow-hidden"
         preserveAspectRatio="xMaxYMid slice"
       >
-        <circle cx="220" cy="180" r="35" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
-        <circle cx="220" cy="180" r="70" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
-        <circle cx="220" cy="180" r="105" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
-        <circle cx="220" cy="180" r="140" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
-        <circle cx="220" cy="180" r="175" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
+        <defs>
+          <clipPath id="net-circle-clip">
+            <rect x="0" y="0" width="300" height="300" />
+          </clipPath>
+        </defs>
+        <g clipPath="url(#net-circle-clip)">
+          <circle cx="220" cy="180" r="35" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
+          <circle cx="220" cy="180" r="70" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
+          <circle cx="220" cy="180" r="105" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
+          <circle cx="220" cy="180" r="140" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
+          <circle cx="220" cy="180" r="175" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
+        </g>
       </svg>
 
       {/* Top Row: Label & Margin */}

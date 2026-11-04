@@ -10,76 +10,16 @@ import {
   Clock,
   Printer,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { formatINR } from "@/lib/formatting/currency";
-
-interface InvoiceListItem {
-  id: string;
-  invoice_number: string;
-  customer_name: string;
-  mode: "gst" | "non_gst";
-  invoice_date: string;
-  due_date: string;
-  grand_total: number;
-  paid_amount: number;
-  outstanding: number;
-  status: "draft" | "finalized" | "cancelled";
-}
-
-const DEMO_INVOICES: InvoiceListItem[] = [
-  {
-    id: "inv-1",
-    invoice_number: "INV/2026-27/0001",
-    customer_name: "Shreeji Supermarket",
-    mode: "gst",
-    invoice_date: "2026-02-15",
-    due_date: "2026-03-01",
-    grand_total: 18500.00,
-    paid_amount: 12000.00,
-    outstanding: 6500.00,
-    status: "finalized",
-  },
-  {
-    id: "inv-2",
-    invoice_number: "BILL/2026-27/0001",
-    customer_name: "Radhe Krishna PG",
-    mode: "non_gst",
-    invoice_date: "2026-02-12",
-    due_date: "2026-02-12",
-    grand_total: 3700.00,
-    paid_amount: 3700.00,
-    outstanding: 0.00,
-    status: "finalized",
-  },
-  {
-    id: "inv-3",
-    invoice_number: "INV/2026-27/0002",
-    customer_name: "Hotel Pride Plaza",
-    mode: "gst",
-    invoice_date: "2026-02-10",
-    due_date: "2026-02-25",
-    grand_total: 42000.00,
-    paid_amount: 42000.00,
-    outstanding: 0.00,
-    status: "finalized",
-  },
-  {
-    id: "inv-4",
-    invoice_number: "DRAFT-003",
-    customer_name: "Apex Co-Working Space",
-    mode: "gst",
-    invoice_date: "2026-02-16",
-    due_date: "2026-03-02",
-    grand_total: 9400.00,
-    paid_amount: 0.00,
-    outstanding: 9400.00,
-    status: "draft",
-  },
-];
+import { formatDate } from "@/lib/formatting/dates";
+import { RECONCILED_INVOICES, InvoiceRecord } from "@/lib/services/businessData";
+import { FitNumber } from "@/components/ui/FitNumber";
 
 export default function InvoicesPage() {
-  const [invoices, setInvoices] = useState<InvoiceListItem[]>(DEMO_INVOICES);
+  const [invoices, setInvoices] = useState<InvoiceRecord[]>(RECONCILED_INVOICES);
   const [search, setSearch] = useState("");
   const [selectedMode, setSelectedMode] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -101,188 +41,295 @@ export default function InvoicesPage() {
     .filter((i) => i.status === "finalized")
     .reduce((sum, i) => sum + i.outstanding, 0);
 
+  const finalizedInvoices = invoices.filter((i) => i.status === "finalized");
+  const settledCount = finalizedInvoices.filter((i) => i.outstanding === 0).length;
+
   return (
     <div className="min-h-screen pb-12">
-      <TopHeader title="Invoices & Bills" />
+      <TopHeader title="Invoices & Bills" subtitle="GST & Cash Invoicing" />
 
-      <div className="space-y-6 pt-2">
-        {/* Summary KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
-            <span className="text-xs font-light text-neutral-500 block">
+      <div className="space-y-4 sm:space-y-6 pt-2">
+        {/* Summary KPIs: Compact 2-column cards on mobile, 3-column on desktop */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-5">
+          {/* Card 1: Total invoiced revenue */}
+          <div className="bg-white/55 dark:bg-[#242422]/80 backdrop-blur-xl border border-white/65 dark:border-white/10 rounded-[24px] p-4 sm:p-6 shadow-none">
+            <span className="text-[11px] sm:text-xs font-light text-neutral-500 dark:text-neutral-400 block">
               Total invoiced revenue
             </span>
-            <div className="text-3xl font-normal text-neutral-900 mt-1 tracking-tight">
-              {formatINR(totalBilled)}
+            <div className="mt-1">
+              <FitNumber
+                value={totalBilled}
+                maxFontSize={26}
+                className="tracking-tight text-neutral-900 dark:text-white font-semibold"
+              />
             </div>
-            <p className="text-[11px] font-light text-neutral-500 mt-0.5">Excludes cancelled & drafts</p>
+            <p className="text-[10px] sm:text-[11px] font-light text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
+              Excludes cancelled & drafts
+            </p>
           </div>
 
-          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
-            <span className="text-xs font-light text-neutral-500 block">
+          {/* Card 2: Unpaid receivables */}
+          <div className="bg-white/55 dark:bg-[#242422]/80 backdrop-blur-xl border border-white/65 dark:border-white/10 rounded-[24px] p-4 sm:p-6 shadow-none">
+            <span className="text-[11px] sm:text-xs font-light text-neutral-500 dark:text-neutral-400 block">
               Unpaid receivables
             </span>
-            <div className="text-3xl font-normal text-rose-600 mt-1 tracking-tight">
-              {formatINR(totalOutstanding)}
+            <div className="mt-1">
+              <FitNumber
+                value={totalOutstanding}
+                maxFontSize={26}
+                className="tracking-tight text-neutral-900 dark:text-white font-semibold"
+              />
             </div>
-            <p className="text-[11px] font-light text-neutral-500 mt-0.5">Pending collection from shops</p>
+            <p className="text-[10px] sm:text-[11px] font-light text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
+              Pending collection from shops
+            </p>
           </div>
 
-          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
-            <span className="text-xs font-light text-neutral-500 block">
-              Stock issue rule
+          {/* Card 3: Settled Bills (Replaces previous developer text per spec) */}
+          <div className="col-span-2 sm:col-span-1 bg-white/55 dark:bg-[#242422]/80 backdrop-blur-xl border border-white/65 dark:border-white/10 rounded-[24px] p-4 sm:p-6 shadow-none">
+            <span className="text-[11px] sm:text-xs font-light text-neutral-500 dark:text-neutral-400 block">
+              Settled bills
             </span>
-            <div className="text-sm font-normal text-neutral-900 mt-1">
-              Immutable & stock deducting
+            <div className="text-2xl sm:text-3xl font-semibold text-neutral-900 dark:text-white mt-1 tracking-tight flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#D7FF00] inline-block shrink-0" />
+              <span>{settledCount} / {finalizedInvoices.length}</span>
             </div>
-            <p className="text-[11px] font-light text-emerald-600 mt-0.5">
-              FEFO batches allocated atomically on finalize
+            <p className="text-[10px] sm:text-[11px] font-light text-neutral-500 dark:text-neutral-400 mt-0.5">
+              Paid in full with zero balance
             </p>
           </div>
         </div>
 
         {/* Filter and Action Bar */}
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-          <div className="flex flex-1 items-center gap-2 max-w-lg">
+          <div className="flex items-center gap-2 flex-1 max-w-lg">
+            {/* Search Input with visible search icon & short placeholder */}
             <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by bill number or shop..."
-                className="w-full h-10 pl-10 pr-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm transition-all"
+                placeholder="Search bills"
+                className="w-full h-10 pl-10 pr-4 text-xs bg-white/65 dark:bg-[#242422]/80 backdrop-blur-md rounded-full border border-white/70 dark:border-white/10 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#D7FF00] shadow-none transition-all"
               />
             </div>
 
-            <select
-              value={selectedMode}
-              onChange={(e) => setSelectedMode(e.target.value)}
-              className="h-10 px-3.5 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm"
-            >
-              <option value="all">All tax types</option>
-              <option value="gst">GST Tax Invoices</option>
-              <option value="non_gst">Non-GST Bills</option>
-            </select>
+            {/* Custom styled select */}
+            <div className="relative">
+              <select
+                value={selectedMode}
+                onChange={(e) => setSelectedMode(e.target.value)}
+                className="appearance-none h-10 pl-3.5 pr-8 text-xs bg-white/65 dark:bg-[#242422]/80 backdrop-blur-md rounded-full border border-white/70 dark:border-white/10 text-neutral-700 dark:text-neutral-200 font-light focus:outline-none focus:ring-2 focus:ring-[#D7FF00] shadow-none cursor-pointer"
+              >
+                <option value="all">All types</option>
+                <option value="gst">Tax Invoice (GST)</option>
+                <option value="non_gst">Cash Bill (Non-GST)</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
           </div>
 
           <Link
             href="/invoices/new"
-            className="flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-black text-white text-xs sm:text-sm font-normal shadow-md hover:scale-105 active:scale-95 transition-all"
+            className="flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-black text-white dark:bg-[#D7FF00] dark:text-black text-xs sm:text-sm font-normal shadow-none hover:scale-105 active:scale-95 transition-all cursor-pointer"
           >
-            <Plus className="w-4 h-4 text-[#E0FE52]" />
+            <Plus className="w-4 h-4 text-[#D7FF00] dark:text-black" />
             <span>Create Bill</span>
           </Link>
         </div>
 
-        {/* Invoices Table */}
-        <div className="hidden md:block bg-white/55 backdrop-blur-xl rounded-[28px] border border-white/65 overflow-hidden shadow-sm">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-white/40 border-b border-white/60 text-neutral-500 font-normal">
-              <tr>
-                <th className="py-4 px-6">Invoice #</th>
-                <th className="py-4 px-4">Customer</th>
-                <th className="py-4 px-4">Type</th>
-                <th className="py-4 px-4">Date</th>
-                <th className="py-4 px-4 text-right">Grand Total</th>
-                <th className="py-4 px-4 text-right">Paid</th>
-                <th className="py-4 px-4 text-right">Outstanding</th>
-                <th className="py-4 px-4 text-center">Status</th>
-                <th className="py-4 px-6 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/50">
+        {/* Invoice List: Desktop Table + Mobile Cards */}
+        {filteredInvoices.length === 0 ? (
+          <div className="bg-white/55 dark:bg-[#242422]/80 backdrop-blur-xl rounded-[28px] p-8 sm:p-12 text-center border border-white/65 dark:border-white/10 space-y-3">
+            <FileText className="w-10 h-10 text-neutral-300 dark:text-neutral-600 mx-auto" />
+            <h3 className="text-base font-normal text-neutral-900 dark:text-white">No Invoices Found</h3>
+            <p className="text-xs font-light text-neutral-500 dark:text-neutral-400 max-w-sm mx-auto">
+              No bills match your current filters. Clear filters or generate a new bill.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-white/55 dark:bg-[#242422]/80 backdrop-blur-xl rounded-[28px] border border-white/65 dark:border-white/10 overflow-x-auto shadow-none">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-white/40 dark:bg-neutral-800/40 border-b border-white/60 dark:border-white/10 text-neutral-500 dark:text-neutral-400 font-normal">
+                  <tr>
+                    <th className="py-4 px-6">Invoice # & Customer</th>
+                    <th className="py-4 px-4">Date</th>
+                    <th className="py-4 px-4">Type</th>
+                    <th className="py-4 px-4">Status</th>
+                    <th className="py-4 px-4 text-right">Total Amount</th>
+                    <th className="py-4 px-4 text-right">Outstanding</th>
+                    <th className="py-4 px-6 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/50 dark:divide-neutral-700/50">
+                  {filteredInvoices.map((inv) => (
+                    <tr key={inv.id} className="hover:bg-white/40 dark:hover:bg-neutral-800/40 transition-colors">
+                      <td className="py-4 px-6">
+                        <Link href={`/invoices/${inv.id}`} className="group">
+                          <div className="font-normal text-neutral-900 dark:text-white group-hover:text-black group-hover:underline text-sm tabular-nums">
+                            {inv.invoice_number}
+                          </div>
+                          <div className="text-[11px] font-light text-neutral-500 dark:text-neutral-400 mt-0.5">
+                            {inv.customer_name}
+                          </div>
+                        </Link>
+                      </td>
+
+                      <td className="py-4 px-4 text-neutral-700 dark:text-neutral-300 font-light">
+                        {formatDate(inv.invoice_date)}
+                      </td>
+
+                      <td className="py-4 px-4">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-light bg-white/60 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 uppercase border border-white/70 dark:border-white/10">
+                          {inv.mode === "gst" ? "GST Tax Invoice" : "Cash Bill"}
+                        </span>
+                      </td>
+
+                      <td className="py-4 px-4">
+                        {inv.status === "finalized" ? (
+                          inv.outstanding === 0 ? (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-light bg-white/70 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-white/70 dark:border-white/10">
+                              <span className="w-2 h-2 rounded-full bg-[#D7FF00]" />
+                              <span>Paid in full</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-light bg-white/70 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-white/70 dark:border-white/10">
+                              <span className="w-2 h-2 rounded-full bg-[#DB9595]" />
+                              <span>Partial</span>
+                            </span>
+                          )
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-light bg-white/70 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-white/70 dark:border-white/10">
+                            <span className="w-2 h-2 rounded-full bg-neutral-400" />
+                            <span>Draft</span>
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="py-4 px-4 text-right font-light text-neutral-800 dark:text-neutral-200">
+                        {formatINR(inv.grand_total)}
+                      </td>
+
+                      <td className="py-4 px-4 text-right font-semibold">
+                        {inv.outstanding > 0 ? (
+                          <span className="text-neutral-900 dark:text-white flex items-center justify-end gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-[#DB9595]" />
+                            <span>{formatINR(inv.outstanding)}</span>
+                          </span>
+                        ) : (
+                          <span className="text-neutral-700 dark:text-neutral-300 font-light flex items-center justify-end gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-[#D7FF00]" />
+                            <span>Settled</span>
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="py-4 px-6 text-right">
+                        <Link
+                          href={`/invoices/${inv.id}`}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/60 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 text-xs font-light hover:bg-black hover:text-white dark:hover:bg-[#D7FF00] dark:hover:text-black border border-white/70 dark:border-white/10 transition-all shadow-none"
+                        >
+                          <span>View</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards View: compact glass cards with palette dots and tabular-nums IDs */}
+            <div className="md:hidden space-y-3">
               {filteredInvoices.map((inv) => (
-                <tr key={inv.id} className="hover:bg-white/40 transition-colors">
-                  <td className="py-4 px-6 font-mono font-normal text-neutral-900">
-                    <Link href={`/invoices/${inv.id}`} className="hover:underline">
-                      {inv.invoice_number}
-                    </Link>
-                  </td>
-                  <td className="py-4 px-4 font-normal text-neutral-900">
-                    {inv.customer_name}
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-light bg-white/60 text-neutral-700 border border-white/70">
-                      {inv.mode === "gst" ? "GST Tax Invoice" : "Bill of Supply"}
+                <div
+                  key={inv.id}
+                  className="bg-white/55 dark:bg-[#242422]/80 backdrop-blur-xl rounded-[24px] p-4 border border-white/65 dark:border-white/10 shadow-none space-y-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <span className="text-[10px] tabular-nums font-normal text-neutral-500 dark:text-neutral-400 block mb-0.5">
+                        {inv.invoice_number}
+                      </span>
+                      <h4 className="text-sm font-semibold text-neutral-900 dark:text-white truncate">
+                        {inv.customer_name}
+                      </h4>
+                      <p className="text-xs font-light text-neutral-500 dark:text-neutral-400">
+                        {inv.mode === "gst" ? "Tax Invoice (GST)" : "Cash Bill"}
+                      </p>
+                    </div>
+
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-light bg-white/80 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-white/70 dark:border-white/10 shrink-0">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          inv.status === "finalized"
+                            ? inv.outstanding === 0
+                              ? "bg-[#D7FF00]"
+                              : "bg-[#DB9595]"
+                            : "bg-neutral-400"
+                        }`}
+                      />
+                      <span>
+                        {inv.status === "finalized"
+                          ? inv.outstanding === 0
+                            ? "Paid"
+                            : "Partial"
+                          : "Draft"}
+                      </span>
                     </span>
-                  </td>
-                  <td className="py-4 px-4 font-light text-neutral-500">
-                    {inv.invoice_date}
-                  </td>
-                  <td className="py-4 px-4 text-right font-normal text-neutral-900">
-                    {formatINR(inv.grand_total)}
-                  </td>
-                  <td className="py-4 px-4 text-right font-light text-emerald-600">
-                    {formatINR(inv.paid_amount)}
-                  </td>
-                  <td className="py-4 px-4 text-right font-normal text-rose-600">
-                    {inv.outstanding > 0 ? formatINR(inv.outstanding) : "—"}
-                  </td>
-                  <td className="py-4 px-4 text-center">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-light border capitalize ${
-                        inv.status === "finalized"
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
-                          : inv.status === "draft"
-                          ? "bg-amber-50 text-amber-700 border-amber-200/60"
-                          : "bg-rose-50 text-rose-700 border-rose-200/60"
-                      }`}
-                    >
-                      {inv.status}
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-white/40 dark:border-neutral-700/40">
+                    <span className="text-[11px] font-light text-neutral-500 dark:text-neutral-400">
+                      {formatDate(inv.invoice_date)}
                     </span>
-                  </td>
-                  <td className="py-4 px-6 text-right">
+                    <span className="text-sm font-semibold text-neutral-900 dark:text-white">
+                      {formatINR(inv.grand_total)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <div>
+                      {inv.outstanding > 0 ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-neutral-900 dark:text-white">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#DB9595]" />
+                          <span>{formatINR(inv.outstanding)} due</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-light text-neutral-700 dark:text-neutral-300">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#D7FF00]" />
+                          <span>Zero balance</span>
+                        </span>
+                      )}
+                    </div>
+
                     <Link
                       href={`/invoices/${inv.id}`}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/60 hover:bg-black hover:text-white text-neutral-800 text-xs font-light border border-white/70 transition-all shadow-sm"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-black text-white dark:bg-[#D7FF00] dark:text-black text-xs font-normal hover:scale-105 active:scale-95 transition-all shadow-none"
                     >
                       <span>View</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </Link>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile View */}
-        <div className="md:hidden space-y-3">
-          {filteredInvoices.map((inv) => (
-            <div
-              key={inv.id}
-              className="bg-white/55 backdrop-blur-xl rounded-[24px] p-5 border border-white/65 shadow-sm space-y-2.5"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <span className="text-[10px] font-mono text-neutral-400 block mb-0.5">
-                    {inv.invoice_number}
-                  </span>
-                  <h4 className="text-sm font-normal text-neutral-900">{inv.customer_name}</h4>
-                  <p className="text-xs font-light text-neutral-500">{inv.invoice_date}</p>
-                </div>
-                <span className="px-2 py-0.5 rounded-full bg-white/60 text-[10px] font-light border border-white/70 capitalize">
-                  {inv.status}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between pt-2 border-t border-white/50 text-xs">
-                <div>
-                  <span className="text-[10px] font-light text-neutral-400 block">Total</span>
-                  <span className="font-normal text-neutral-900">{formatINR(inv.grand_total)}</span>
-                </div>
-                <Link
-                  href={`/invoices/${inv.id}`}
-                  className="px-3 py-1 rounded-full bg-black text-white text-xs font-light shadow-sm"
-                >
-                  View
-                </Link>
-              </div>
             </div>
-          ))}
-        </div>
+          </>
+        )}
       </div>
+
+      {/* Mobile Floating Action Button (FAB) bottom-right */}
+      <Link
+        href="/invoices/new"
+        className="md:hidden fixed right-5 bottom-24 z-30 w-12 h-12 rounded-full bg-black text-[#D7FF00] dark:bg-[#D7FF00] dark:text-black flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all"
+        title="Create Bill"
+        aria-label="Create Bill"
+      >
+        <Plus className="w-6 h-6" />
+      </Link>
     </div>
   );
 }

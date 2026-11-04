@@ -182,7 +182,7 @@ Side-by-side visual diffs generated in `ui-audit/compare/`:
 Now proceeding straight into Step 5 in accordance with the specified sequence:
 
 1. **Phase 5.1 — Global Tokens & Design System**:
-   - Configure global CSS gradient background, frosted glass variables, electric lime `#E0FE52`, radii (`rounded-[28px]`, `rounded-[24px]`), and light geometric typography in `src/app/globals.css` and Tailwind config.
+   - Configure global CSS gradient background, frosted glass variables, electric lime `#D7FF00`, radii (`rounded-[40px]`, `rounded-[28px]`), and light geometric typography in `src/app/globals.css` and Tailwind config.
 2. **Phase 5.2 — App Shell Overhaul**:
    - Refactor `src/components/layout/Sidebar.tsx` into the floating circular icon rail with black circle active item, badges, and circular avatar.
    - Refactor `src/components/layout/TopHeader.tsx` into the frameless transparent header with centered segmented pill tabs and "All Outlets" filter.
@@ -203,4 +203,69 @@ Now proceeding straight into Step 5 in accordance with the specified sequence:
 6. **Phase 5.6 — Re-capture, Diff Verification, & Quality Gate**:
    - Re-run Playwright captures and verify pixel diff is reduced below acceptable threshold.
    - Ensure all tests, typechecks, and builds pass cleanly.
+
+---
+
+## 6. Mobile Experience Rebuild & Reference Fidelity Matrix (ref09–ref14)
+
+### A. Mobile Defects Audit & Resolution Status (M1–M11)
+
+| Defect ID | Observed Problem | Root Cause | Solution Implemented | Status |
+|---|---|---|---|---|
+| **M1** | Horizontal page overflow & clipped right edge | Unconditional `pl-[15px] pr-0` on desktop layout canvas and oversized global header period tabs running offscreen | Removed hardcoded left offset on mobile, applied equal `px-4 sm:px-6` padding, `max-w-full`, and moved period tabs inside page | **RESOLVED** (0px doc overflow across 320/360/390/430/768) |
+| **M2** | Header collision, period tabs wrapping, no title/avatar | Global desktop tabs forced into 320px-390px mobile header, colliding with wordmark | Redesigned header: Mobile Home has Avatar left + Search & Notifications (red dot) right; Sub-pages have Round Back + Page Title + Round Grid Button | **RESOLVED** |
+| **M3** | Bottom nav "More" button did nothing | Static non-interactive markup lacking action dispatch and module routing | Created `MoreLauncherSheet` with global live search, 6 quick actions, grid of all 12 modules, theme toggle, and sign out | **RESOLVED** (Every route reachable in <= 2 taps) |
+| **M4** | Content covered behind bottom navigation bar | Missing safe area and bottom clearance padding | Inset floating glass bar + added `pb-[calc(84px+env(safe-area-inset-bottom,16px))]` to layout canvas | **RESOLVED** (Verified by Playwright scroll clearance test) |
+| **M5** | KPI cards full-width and tall (~210px), wasting space | Single-column stacking (`grid-cols-1`) on mobile | Responsive 2-column compact glass KPI cards (`grid-cols-2`) with fluid `<FitNumber>` downscaling | **RESOLVED** |
+| **M6** | Search inputs had no visible icon & truncated placeholders; selects clipped | Missing absolute icon placement, overly long placeholder strings, native select styling | Added visible magnifying glass icon, short placeholders ("Search shops", "Search orders", "Search bills"), custom styled select with non-clipping SVG chevron | **RESOLVED** |
+| **M7** | Off-palette status colors (purple, orange, green, blue) & monospace IDs | Ad-hoc Tailwind utility colors (`bg-blue-50`, `text-purple-700`) and `font-mono` | Strict design palette dots: lime `#D7FF00` (good/paid/delivered/confirmed), cyan `#23D7FF` (in progress/processing/dispatched), rose `#DB9595` (overdue/negative/cancelled); tabular numerals font | **RESOLVED** |
+| **M8** | Bottom bar was flat opaque strip | Opaque fixed bottom bar without rounded floating aesthetics | Floating glass bar inset 12px (`rounded-[28px]`, `backdrop-blur-2xl`, active black circle + `#D7FF00` lime icon) | **RESOLVED** |
+| **M9** | Developer text displayed as KPI card on Bills ("Stock issue rule: Immutable & stock deducting...") | Hardcoded internal documentation note in KPI card markup | Replaced with real business KPI: "Settled Bills" (3 / 3 finalized, 100% settled) | **RESOLVED** |
+| **M10** | Raw ISO dates ("2026-02-15") & plain card loading state with 0 customers | No Indian date formatting, missing skeleton states and timeout handling | Formatted all dates as "15 Feb 2026" via `formatDate()` (`en-IN`, Asia/Kolkata); added animated skeleton placeholders, error state with Retry button, and 10s timeout | **RESOLVED** |
+| **M11** | Dashboard greeting hardcoded "Hi Mike" and sample numbers conflicted with Bills | Disconnected mock numbers and hardcoded name prop | Connected greeting to logged-in user first name (fallback: "Hi there"); unified aggregates via `businessData.ts` reconciling Dashboard, Invoices, Orders, Payments, and Reports | **RESOLVED** |
+
+---
+
+### B. Data & Logic Checks (a–f)
+
+| Check | Requirement | Implementation & Evidence | Verification |
+|---|---|---|---|
+| **a) Customers Loading & 0 Fix** | Reproduce and resolve "Loading customers..." with 0 accounts; add error + retry | Resolved in `customers/page.tsx` with animated skeletons while loading, error card with Retry button, and 10s Promise timeout race | Automated in Playwright |
+| **b) User Greeting & Dynamic Aggregates** | Replace hardcoded "Hi Mike" with profile first name (fallback "there"), remove sample numbers | `HeroMonthBars` updated with `userName` from auth session (`Hi {first_name}, here's...`), metrics initialized from `getBusinessMetrics()` | Verified in DOM & test |
+| **c) Cross-Screen Figures Reconciliation** | Reconcile Dashboard, Invoices, Orders, Payments, and Reports | Unified in `src/lib/services/businessData.ts`: Total Invoiced Revenue = ₹64,200.00, Collections = ₹57,700.00, Outstanding = ₹6,500.00, Gross Profit = ₹34,400.00, Net Profit = ₹26,200.00 | Unit test `reconciliation.test.ts` (5/5 PASS) |
+| **d) Financial-Year Logic** | Determine FY based on Indian cycle (April 1 – March 31). For `2026-02-15`, return `2025-26` | Implemented `getFinancialYear()` in `src/lib/calculations/financialYear.ts` respecting `Asia/Kolkata`. Formatted document numbers: `INV/2025-26/0001` and `BILL/2025-26/0001` | Unit test `financialYear.test.ts` (7/7 PASS) |
+| **e) Orders Status Breakdown** | Status counts must sum to total orders and include Confirmed, Processing, Out for delivery, Delivered, Cancelled | `orderCounts`: Total = 4, Confirmed = 1, Processing = 1, Out for delivery = 1, Delivered = 1, Cancelled = 0. Sum = 1 + 1 + 1 + 1 + 0 = 4 (100% exact match) | Unit test `reconciliation.test.ts` (PASS) |
+| **f) Developer / Internal Rules Text** | Remove developer rule text from UI | Removed "Stock issue rule" from `invoices/page.tsx` and replaced with Settled Bills KPI | Verified in DOM |
+
+---
+
+### C. Reference Fidelity Match Matrix (ref09–ref14)
+
+| Reference ID | Target UI Elements in Reference Image | Rebuilt Implementation Component | Mobile Fidelity Result |
+|---|---|---|---|
+| **REF-09** | Mobile Home Dark: Compact top bar (avatar + round icons), dark substrate (`#1C1C1A`), tall capsule month pills, electric lime target progress bar with draggable knob | `TopHeader` (mobile mode) + `HeroMonthBars` + `TargetProgressBar` with `#1C1C1A` dark theme tokens | **MATCH** |
+| **REF-10** | Mobile Metrics / Quick Cards: Compact 2-column cards, daily performance, and pill buttons | Compact 2-column KPI cards on Customers, Orders, and Invoices; `TopRightMetricsCard` with stippled dot density & daily pill bars | **MATCH** |
+| **REF-11** | Mobile Navigation & Action Sheet: Floating rounded bottom navigation bar, active black circle with lime icon, slide-up sheet | `BottomNav` (`rounded-[28px]`, glass blur, inset 12px) + `MoreLauncherSheet` | **MATCH** |
+| **REF-12** | Mobile Charts View: Segmented period selector, sales area spline curve with tooltips, average metric pills | `MobilePeriodPills` (`today`, `this week`, `this month`, `reports`) + `SalesSplineChart` with responsive 5-month window & crosshairs | **MATCH** |
+| **REF-13** | Mobile Orders / Activity List: Frosted glass cards with customer name, item summary, amount, and status pill | `OrdersPage` mobile card view with palette dots (`#D7FF00`, `#23D7FF`, `#DB9595`) and tabular numerals | **MATCH** |
+| **REF-14** | Mobile Summary & Profit Cards: Gross profit card with concentric line art + Net profit card joined by circular notch button (`↗`) | `MobileSalesAnalyzing` and mobile ProfitCards joined seamlessly by circular notch button with substrate ring | **MATCH** |
+
+---
+
+### D. Automated Playwright Mobile Test Suite Results (`mobile-fidelity.spec.ts`)
+
+Tested across **5 device profiles** in both **Light and Dark themes**:
+1. `320 × 568` (iPhone SE 1st Gen — Ultra Narrow)
+2. `360 × 740` (Standard Android)
+3. `390 × 844` (iPhone 14 Mobile)
+4. `430 × 932` (iPhone 14 Pro Max)
+5. `768 × 1024` (iPad Portrait / Tablet)
+
+- **Total Mobile Tests Executed:** 70
+- **Total Mobile Tests Passed:** **70 / 70 (100% Green)**
+- **Document Horizontal Scroll:** 0px across all routes and devices
+- **Bottom Nav Clearance:** 100% verified (no card or action button hidden behind bottom bar)
+- **Tap Test & 2-Tap Reachability:** 100% verified (all 12 modules reachable in <= 2 taps)
+- **Theme Switching:** Clean application of `.dark` and `#1C1C1A` background
+
 

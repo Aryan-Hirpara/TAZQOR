@@ -20,7 +20,7 @@ interface HeroMonthBarsProps {
 }
 
 export function HeroMonthBars({
-  userName = "Mike",
+  userName = "there",
   monthlySales,
   salesChange,
   activeMonth = "oct",
