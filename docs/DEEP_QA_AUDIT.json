@@ -1,0 +1,456 @@
+{
+  "timestamp": "2026-11-05T12:57:15.498Z",
+  "environment": {
+    "baseUrl": "http://localhost:3000",
+    "supabaseConfigured": true
+  },
+  "desktop": {
+    "viewport": "1440x960",
+    "routesChecked": 24,
+    "pageErrors": [],
+    "consoleErrors": [],
+    "networkErrors": [],
+    "layoutDefects": [],
+    "dataObservations": [
+      {
+        "route": "/dashboard",
+        "status": 200,
+        "rowsCount": 0,
+        "buttonsCount": 26,
+        "inputsCount": 0,
+        "headings": [
+          "Hi there, here's what's happening in your stores."
+        ]
+      },
+      {
+        "route": "/customers",
+        "status": 200,
+        "rowsCount": 4,
+        "buttonsCount": 7,
+        "inputsCount": 2,
+        "headings": [
+          "Customers",
+          "Customers"
+        ]
+      },
+      {
+        "route": "/customers/c1-shreeji",
+        "status": 200,
+        "rowsCount": 0,
+        "buttonsCount": 11,
+        "inputsCount": 0,
+        "headings": [
+          "Shreeji Supermarket",
+          "Shreeji Supermarket",
+          "Shreeji Supermarket"
+        ]
+      },
+      {
+        "route": "/customers/new",
+        "status": 200,
+        "rowsCount": 0,
+        "buttonsCount": 9,
+        "inputsCount": 12,
+        "headings": [
+          "Add New Customer",
+          "Add New Customer",
+          "Store Profile & Identity"
+        ]
+      },
+      {
+        "route": "/orders",
+        "status": 200,
+        "rowsCount": 7,
+        "buttonsCount": 7,
+        "inputsCount": 2,
+        "headings": [
+          "Customer Orders",
+          "Customer Orders"
+        ]
+      },
+      {
+        "route": "/orders/new",
+        "status": 200,
+        "rowsCount": 0,
+        "buttonsCount": 11,
+        "inputsCount": 8,
+        "headings": [
+          "Create Customer Order",
+          "Create Customer Order",
+          "Customer Account"
+        ]
+      },
+      {
+        "route": "/invoices",
+        "status": 200,
+        "rowsCount": 5,
+        "buttonsCount": 7,
+        "inputsCount": 2,
+        "headings": [
+          "Invoices & Bills",
+          "Invoices & Bills"
+        ]
+      },
+      {
+        "route": "/invoices/inv-1",
+        "status": 200,
+        "rowsCount": 2,
+        "buttonsCount": 9,
+        "inputsCount": 0,
+        "headings": [
+          "INV/2025-26/0001",
+          "INV/2025-26/0001",
+          "INV/2025-26/0001"
+        ]
+      },
+      {
+        "route": "/invoices/new",
+        "status": 200,
+        "rowsCount": 0,
+        "buttonsCount": 14,
+        "inputsCount": 12,
+        "headings": [
+          "Generate GST Tax Invoice",
+          "Generate GST Tax Invoice",
+          "Choose Document Type"
+        ]
+      },
+      {
+        "route": "/payments",
+        "status": 200,
+        "rowsCount": 4,
+        "buttonsCount": 11,
+        "inputsCount": 2,
+        "headings": [
+          "Payment Collections",
+          "Payment Collections"
+        ]
+      },
+      {
+        "route": "/payments/new",
+        "status": 200,
+        "rowsCount": 0,
+        "buttonsCount": 8,
+        "inputsCount": 6,
+        "headings": [
+          "Record Customer Payment",
+          "Record Customer Payment",
+          "Payment Details"
+        ]
+      },
+      {
+        "route": "/inventory",
+        "status": 200,
+        "rowsCount": 4,
+        "buttonsCount": 11,
+        "inputsCount": 0,
+        "headings": [
+          "Inventory & Batches",
+          "Inventory & Batches",
+          "Active Batches (FEFO Sorted)"
+        ]
+      },
+      {
+        "route": "/products",
+        "status": 200,
+        "rowsCount": 4,
+        "buttonsCount": 7,
+        "inputsCount": 2,
+        "headings": [
+          "Products & Packs",
+          "Products & Packs",
+          "TAZQOR Sparkle Dish Wash Gel"
+        ]
+      },
+      {
+        "route": "/products/new",
+        "status": 200,
+        "rowsCount": 0,
+        "buttonsCount": 11,
+        "inputsCount": 15,
+        "headings": [
+          "Add New Product",
+          "Add New Product",
+          "Product Line Details"
+        ]
+      },
+      {
+        "route": "/categories",
+        "status": 200,
+        "rowsCount": 0,
+        "buttonsCount": 8,
+        "inputsCount": 2,
+        "headings": [
+          "Product Categories",
+          "Product Categories",
+          "Add New Category"
+        ]
+      },
+      {
+        "route": "/map",
+        "status": 200,
+        "rowsCount": 0,
+        "buttonsCount": 12,
+        "inputsCount": 2,
+        "headings": [
+          "Store Map",
+          "Store Map",
+          "Radhe Krishna PG"
+        ]
+      },
+      {
+        "route": "/visits",
+        "status": 200,
+        "rowsCount": 0,
+        "buttonsCount": 9,
+        "inputsCount": 0,
+        "headings": [
+          "Shop Visits",
+          "Shop Visits",
+          "Shreeji Supermarket"
+        ]
+      },
+      {
+        "route": "/visits/new",
+        "status": 200,
+        "rowsCount": 0,
+        "buttonsCount": 9,
+        "inputsCount": 4,
+        "headings": [
+          "Log Customer Visit",
+          "Log Customer Visit",
+          "Visit & Conversation Log"
+        ]
+      },
+      {
+        "route": "/expenses",
+        "status": 200,
+        "rowsCount": 2,
+        "buttonsCount": 7,
+        "inputsCount": 2,
+        "headings": [
+          "Business Expenses",
+          "Business Expenses"
+        ]
+      },
+      {
+        "route": "/expenses/new",
+        "status": 200,
+        "rowsCount": 0,
+        "buttonsCount": 8,
+        "inputsCount": 6,
+        "headings": [
+          "Add Business Expense",
+          "Add Business Expense",
+          "Expense Details"
+        ]
+      },
+      {
+        "route": "/reports",
+        "status": 200,
+        "rowsCount": 0,
+        "buttonsCount": 16,
+        "inputsCount": 0,
+        "headings": [
+          "Sales Analyzing",
+          "Financial Reports",
+          "Financial Reports"
+        ]
+      },
+      {
+        "route": "/settings",
+        "status": 200,
+        "rowsCount": 0,
+        "buttonsCount": 9,
+        "inputsCount": 11,
+        "headings": [
+          "Business Settings",
+          "Business Settings",
+          "Legal Business Profile"
+        ]
+      },
+      {
+        "route": "/login",
+        "status": 200,
+        "rowsCount": 0,
+        "buttonsCount": 2,
+        "inputsCount": 2,
+        "headings": []
+      },
+      {
+        "route": "/offline",
+        "status": 200,
+        "rowsCount": 0,
+        "buttonsCount": 1,
+        "inputsCount": 0,
+        "headings": [
+          "You are currently offline"
+        ]
+      }
+    ]
+  },
+  "mobile": {
+    "viewport": "390x844 (iPhone)",
+    "routesChecked": 24,
+    "pageErrors": [],
+    "consoleErrors": [],
+    "networkErrors": [],
+    "layoutDefects": [],
+    "dataObservations": [
+      {
+        "route": "/dashboard",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/customers",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/customers/c1-shreeji",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/customers/new",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/orders",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/orders/new",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/invoices",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/invoices/inv-1",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/invoices/new",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/payments",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/payments/new",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/inventory",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/products",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/products/new",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/categories",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/map",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/visits",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/visits/new",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/expenses",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/expenses/new",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/reports",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/settings",
+        "status": 200,
+        "hasBottomNav": true
+      },
+      {
+        "route": "/login",
+        "status": 200,
+        "hasBottomNav": false
+      },
+      {
+        "route": "/offline",
+        "status": 200,
+        "hasBottomNav": false
+      }
+    ]
+  },
+  "formFlows": [
+    {
+      "flow": "Create Customer",
+      "status": "Submitted successfully",
+      "currentUrl": "http://localhost:3000/customers/new"
+    },
+    {
+      "flow": "Create Order",
+      "status": "Submitted successfully",
+      "currentUrl": "http://localhost:3000/orders/new"
+    },
+    {
+      "flow": "Record Expense",
+      "status": "Submitted successfully",
+      "currentUrl": "http://localhost:3000/expenses"
+    },
+    {
+      "flow": "Customer Search",
+      "status": "Filtered down to 0 matching elements"
+    },
+    {
+      "flow": "Mobile Drawer Navigation",
+      "status": "Opened drawer and navigated to /invoices cleanly"
+    },
+    {
+      "flow": "Map Pin Selection",
+      "status": "Clicked map pin successfully. Found 3 pins in Gujarat."
+    }
+  ],
+  "functionalBugs": [],
+  "dataObservations": {
+    "localStorageKeys": [],
+    "cookiesPresent": false
+  }
+}

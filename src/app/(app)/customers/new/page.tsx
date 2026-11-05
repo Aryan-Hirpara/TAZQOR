@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Sparkles, MapPin, Phone, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
+import { createCustomer } from "@/lib/services/customers";
 
 export default function NewCustomerPage() {
   const router = useRouter();
@@ -39,12 +40,16 @@ export default function NewCustomerPage() {
 
     setSubmitting(true);
     try {
-      // Simulate save
-      await new Promise((r) => setTimeout(r, 600));
-      toast.success(`Customer "${form.name}" created successfully!`);
+      await createCustomer({
+        ...form,
+        type: form.type as any,
+        lat: form.lat ? Number(form.lat) : undefined,
+        lng: form.lng ? Number(form.lng) : undefined,
+      });
+      toast.success(`Customer "${form.name}" created and synced to Supabase!`);
       router.push("/customers");
-    } catch {
-      toast.error("Failed to create customer");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to create customer");
     } finally {
       setSubmitting(false);
     }

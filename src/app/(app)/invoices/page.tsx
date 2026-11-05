@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   FileText,
@@ -17,12 +17,50 @@ import { formatINR } from "@/lib/formatting/currency";
 import { formatDate } from "@/lib/formatting/dates";
 import { RECONCILED_INVOICES, InvoiceRecord } from "@/lib/services/businessData";
 import { FitNumber } from "@/components/ui/FitNumber";
+import { createClient } from "@/lib/supabase/client";
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceRecord[]>(RECONCILED_INVOICES);
   const [search, setSearch] = useState("");
   const [selectedMode, setSelectedMode] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
+
+  useEffect(() => {
+    async function loadInvoices() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("invoices")
+          .select("*, customers(name, shop_name)")
+          .order("created_at", { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const mapped: InvoiceRecord[] = data.map((inv: any) => {
+            const custName = inv.customers?.shop_name || inv.customers?.name || "Customer";
+            return {
+              id: inv.id,
+              invoice_number: inv.invoice_number || "INV-LIVE",
+              customer_name: custName,
+              customer_id: inv.customer_id,
+              mode: (inv.mode as InvoiceRecord["mode"]) || "gst",
+              invoice_date: inv.invoice_date || new Date().toISOString().split("T")[0],
+              due_date: inv.due_date || inv.invoice_date || new Date().toISOString().split("T")[0],
+              grand_total: Number(inv.grand_total) || 0,
+              paid_amount: 0,
+              outstanding: Number(inv.grand_total) || 0,
+              status: (inv.status as InvoiceRecord["status"]) || "finalized",
+            };
+          });
+
+          const merged = [...mapped, ...RECONCILED_INVOICES.filter(ri => !mapped.some(m => m.id === ri.id))];
+          setInvoices(merged);
+        }
+      } catch (e) {
+        console.warn("Could not load invoices from Supabase", e);
+      }
+    }
+    loadInvoices();
+  }, []);
 
   const filteredInvoices = invoices.filter((inv) => {
     const matchSearch =

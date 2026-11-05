@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarCheck, MapPin, Save, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
+import { createClient } from "@/lib/supabase/client";
 
 export default function NewVisitPage() {
   const router = useRouter();
@@ -45,11 +46,28 @@ export default function NewVisitPage() {
 
     setSubmitting(true);
     try {
-      await new Promise((r) => setTimeout(r, 600));
-      toast.success("Visit log and follow-up scheduled successfully!");
+      const supabase = createClient();
+      let customerId = customer;
+      // If customer is a demo slug like "c1-shreeji", lookup or fallback to real UUID
+      if (customer.startsWith("c1") || !customer.includes("-")) {
+        const { data: c } = await supabase.from("customers").select("id").limit(1);
+        if (c && c[0]) customerId = c[0].id;
+      }
+
+      const { error } = await supabase.from("customer_visits").insert({
+        business_id: "00000000-0000-0000-0000-000000000001",
+        customer_id: customerId,
+        visit_date: visitDate,
+        outcome: outcome,
+        notes: outcome,
+      });
+
+      if (error) throw error;
+
+      toast.success("Visit log and follow-up scheduled and synced to Supabase!");
       router.push("/visits");
-    } catch {
-      toast.error("Failed to save visit log");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save visit log");
     } finally {
       setSubmitting(false);
     }

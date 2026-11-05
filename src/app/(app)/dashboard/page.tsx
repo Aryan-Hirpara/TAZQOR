@@ -108,11 +108,11 @@ export default function DashboardPage() {
         ] = await Promise.all([
           supabase
             .from("invoices")
-            .select("total_amount, created_at")
+            .select("grand_total, created_at")
             .gte("created_at", startOfMonth),
           supabase
             .from("invoices")
-            .select("total_amount")
+            .select("grand_total")
             .gte("created_at", startOfLastMonth)
             .lte("created_at", endOfLastMonth),
           supabase
@@ -123,11 +123,11 @@ export default function DashboardPage() {
 
         if (!curErr && curInvoices && curInvoices.length > 0) {
           const curSales = curInvoices.reduce(
-            (sum, inv) => sum + (Number(inv.total_amount) || 0),
+            (sum, inv) => sum + (Number(inv.grand_total) || 0),
             0
           );
           const prevSales = (prevInvoices || []).reduce(
-            (sum, inv) => sum + (Number(inv.total_amount) || 0),
+            (sum, inv) => sum + (Number(inv.grand_total) || 0),
             0
           );
           const curExp = (expensesData || []).reduce(

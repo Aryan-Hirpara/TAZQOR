@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import {
   Receipt,
   Plus,
@@ -69,6 +70,34 @@ export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<ExpenseItem[]>(DEMO_EXPENSES);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+
+  useEffect(() => {
+    async function loadExpenses() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("expenses")
+          .select("*")
+          .order("expense_date", { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const list: ExpenseItem[] = data.map((d: any) => ({
+            id: d.id,
+            date: d.expense_date,
+            category: "Operational",
+            vendor: d.vendor || "Supplier",
+            description: d.description || "Business Expense",
+            amount: Number(d.amount) || 0,
+            payment_method: d.payment_method || "Bank Transfer",
+          }));
+          setExpenses(list);
+        }
+      } catch (err) {
+        console.warn("Supabase expenses fallback:", err);
+      }
+    }
+    loadExpenses();
+  }, []);
 
   const filteredExpenses = expenses.filter((e) => {
     const matchSearch =

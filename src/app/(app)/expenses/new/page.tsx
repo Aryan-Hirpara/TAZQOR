@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Receipt, Save, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
+import { createClient } from "@/lib/supabase/client";
 
 export default function NewExpensePage() {
   const router = useRouter();
@@ -27,11 +28,22 @@ export default function NewExpensePage() {
 
     setSubmitting(true);
     try {
-      await new Promise((r) => setTimeout(r, 600));
-      toast.success("Expense recorded successfully!");
+      const supabase = createClient();
+      const { error } = await supabase.from("expenses").insert({
+        business_id: "00000000-0000-0000-0000-000000000001",
+        amount,
+        expense_date: date,
+        vendor: vendor || null,
+        payment_method: paymentMethod,
+        description: description || category,
+      });
+
+      if (error) throw error;
+
+      toast.success("Expense recorded and synced to Supabase!");
       router.push("/expenses");
-    } catch {
-      toast.error("Failed to record expense");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to record expense");
     } finally {
       setSubmitting(false);
     }

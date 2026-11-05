@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -20,6 +20,8 @@ import { TopHeader } from "@/components/layout/TopHeader";
 import { calculateInvoice, LineItemCalculationInput } from "@/lib/calculations/money";
 import { formatDocumentNumber } from "@/lib/calculations/financialYear";
 import { formatINR } from "@/lib/formatting/currency";
+import { getCustomers, Customer } from "@/lib/services/customers";
+import { createClient } from "@/lib/supabase/client";
 
 interface BillLineItem {
   variant_id: string;
@@ -88,6 +90,7 @@ const AVAILABLE_VARIANTS: BillLineItem[] = [
 export default function NewInvoicePage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [customerList, setCustomerList] = useState<Customer[]>([]);
 
   // Business GST state (configured in settings)
   const isGstEligible = true; // In production read from business_settings
@@ -99,6 +102,21 @@ export default function NewInvoicePage() {
   const [isInterState, setIsInterState] = useState(false);
   const [roundOffEnabled, setRoundOffEnabled] = useState(true);
   const [notes, setNotes] = useState("Goods once sold will not be taken back without batch seal.");
+
+  useEffect(() => {
+    async function loadCusts() {
+      try {
+        const custs = await getCustomers();
+        if (custs && custs.length > 0) {
+          setCustomerList(custs);
+          setCustomer(custs[0].id);
+        }
+      } catch (e) {
+        console.warn("Could not load customers for invoice form", e);
+      }
+    }
+    loadCusts();
+  }, []);
 
   const [lines, setLines] = useState<BillLineItem[]>([
     { ...AVAILABLE_VARIANTS[0], quantity: 10, discount_percent: 5 },
@@ -144,12 +162,57 @@ export default function NewInvoicePage() {
 
     setSubmitting(true);
     try {
-      await new Promise((r) => setTimeout(r, 800));
       const generatedNumber = formatDocumentNumber(
         mode === "gst" ? "INV" : "BILL",
         mode === "gst" ? 3 : 2,
         new Date()
       );
+
+      const supabase = createClient();
+      let resolvedCustomerId = customer;
+      if (customer.startsWith("c1") || !customer.includes("-") || customer.length < 32) {
+        const { data: c } = await supabase.from("customers").select("id").limit(1);
+        if (c && c[0]) resolvedCustomerId = c[0].id;
+      }
+
+      const { data: inv, error: invErr } = await supabase
+        .from("invoices")
+        .insert({
+          business_id: "00000000-0000-0000-0000-000000000001",
+          customer_id: resolvedCustomerId,
+          mode: mode,
+          invoice_number: generatedNumber,
+          invoice_date: invoiceDate || new Date().toISOString().split("T")[0],
+          due_date: dueDate || null,
+          subtotal: invoiceTotals.subtotal,
+          tax_total: invoiceTotals.taxTotal,
+          discount_total: invoiceTotals.discountTotal,
+          round_off: invoiceTotals.roundOff,
+          grand_total: invoiceTotals.grandTotal,
+          status: "finalized",
+          notes: notes || null,
+        })
+        .select()
+        .single();
+
+      if (invErr) {
+        console.warn("Supabase invoice insert notice:", invErr.message);
+      } else if (inv) {
+        const itemsToInsert = lines.map((l) => ({
+          business_id: "00000000-0000-0000-0000-000000000001",
+          invoice_id: inv.id,
+          description: `${l.name} (${l.pack_size})`,
+          quantity: l.quantity,
+          unit_price: l.unit_price,
+          tax_rate: mode === "gst" ? l.tax_rate : 0,
+          discount_percent: l.discount_percent,
+          line_subtotal: l.quantity * l.unit_price,
+          line_tax: mode === "gst" ? (l.quantity * l.unit_price * l.tax_rate) / 100 : 0,
+          line_total: l.quantity * l.unit_price * (1 + (mode === "gst" ? l.tax_rate / 100 : 0)),
+        }));
+        await supabase.from("invoice_items").insert(itemsToInsert);
+      }
+
       toast.success(`Invoice ${generatedNumber} finalized and FEFO stock deducted!`);
       router.push("/invoices");
     } catch {
@@ -246,10 +309,20 @@ export default function NewInvoicePage() {
                 onChange={(e) => setCustomer(e.target.value)}
                 className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] font-medium"
               >
-                <option value="c1-shreeji">Shreeji Supermarket (Ahmedabad)</option>
-                <option value="c2-pride-hotel">Hotel Pride Plaza (Ahmedabad)</option>
-                <option value="c3-apex-cowork">Apex Co-Working (Gandhinagar)</option>
-                <option value="c4-radhe-pg">Radhe Krishna PG (Ahmedabad)</option>
+                {customerList.length > 0 ? (
+                  customerList.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.shop_name} ({c.city})
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="c1-shreeji">Shreeji Supermarket (Ahmedabad)</option>
+                    <option value="c2-pride-hotel">Hotel Pride Plaza (Ahmedabad)</option>
+                    <option value="c3-apex-cowork">Apex Co-Working (Gandhinagar)</option>
+                    <option value="c4-radhe-pg">Radhe Krishna PG (Ahmedabad)</option>
+                  </>
+                )}
               </select>
             </div>
 

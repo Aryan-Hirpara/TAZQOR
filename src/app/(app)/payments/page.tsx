@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Wallet,
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { formatINR } from "@/lib/formatting/currency";
+import { createClient } from "@/lib/supabase/client";
 
 interface PaymentRecord {
   id: string;
@@ -66,6 +67,40 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<PaymentRecord[]>(DEMO_PAYMENTS);
   const [search, setSearch] = useState("");
   const [selectedMethod, setSelectedMethod] = useState("all");
+
+  useEffect(() => {
+    async function loadPayments() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("payments")
+          .select("*, customers(name, shop_name)")
+          .order("payment_date", { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const mapped: PaymentRecord[] = data.map((p: any) => {
+            const custName = p.customers?.shop_name || p.customers?.name || "Customer";
+            return {
+              id: p.id,
+              customer_name: custName,
+              amount: Number(p.amount) || 0,
+              payment_date: p.payment_date || new Date().toISOString().split("T")[0],
+              method: (p.method as PaymentRecord["method"]) || "upi",
+              reference: p.reference || "RECEIPT-LIVE",
+              allocated_to: p.notes || "Against Open Invoices",
+              advance: 0,
+            };
+          });
+
+          const merged = [...mapped, ...DEMO_PAYMENTS.filter(dp => !mapped.some(m => m.id === dp.id))];
+          setPayments(merged);
+        }
+      } catch (e) {
+        console.warn("Could not load payments from Supabase", e);
+      }
+    }
+    loadPayments();
+  }, []);
 
   const filteredPayments = payments.filter((p) => {
     const matchSearch =

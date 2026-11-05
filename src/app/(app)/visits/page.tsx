@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   CalendarCheck,
@@ -15,6 +15,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { TopHeader } from "@/components/layout/TopHeader";
+import { createClient } from "@/lib/supabase/client";
 
 interface VisitRecord {
   id: string;
@@ -72,6 +73,41 @@ const DEMO_VISITS: VisitRecord[] = [
 export default function VisitsPage() {
   const [visits, setVisits] = useState<VisitRecord[]>(DEMO_VISITS);
   const [filter, setFilter] = useState<"all" | "today" | "upcoming">("all");
+
+  useEffect(() => {
+    async function loadVisits() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("customer_visits")
+          .select("*, customers(name, shop_name)")
+          .order("visit_date", { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const mapped: VisitRecord[] = data.map((v: any) => {
+            const custName = v.customers?.name || "Customer";
+            const shopName = v.customers?.shop_name || custName;
+            return {
+              id: v.id,
+              customer_name: custName,
+              shop_name: shopName,
+              visit_date: v.visit_date || "Today",
+              outcome: v.outcome || v.notes || "Visited store",
+              next_follow_up: undefined,
+              gps_verified: true,
+              status: "completed",
+            };
+          });
+
+          const merged = [...mapped, ...DEMO_VISITS.filter(dv => !mapped.some(m => m.id === dv.id))];
+          setVisits(merged);
+        }
+      } catch (e) {
+        console.warn("Could not load visits from Supabase", e);
+      }
+    }
+    loadVisits();
+  }, []);
 
   return (
     <div className="min-h-screen pb-12">

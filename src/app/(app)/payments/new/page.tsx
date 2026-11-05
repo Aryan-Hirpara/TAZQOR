@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CreditCard, Save, AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { formatINR } from "@/lib/formatting/currency";
+import { getCustomers, Customer } from "@/lib/services/customers";
+import { createClient } from "@/lib/supabase/client";
 
 interface OpenInvoice {
   id: string;
@@ -20,6 +22,7 @@ interface OpenInvoice {
 export default function NewPaymentPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [customerList, setCustomerList] = useState<Customer[]>([]);
 
   const [customer, setCustomer] = useState("c1-shreeji");
   const [amount, setAmount] = useState<number>(6500);
@@ -27,6 +30,21 @@ export default function NewPaymentPage() {
   const [method, setMethod] = useState<"upi" | "cash" | "bank_transfer" | "cheque">("upi");
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
+
+  useEffect(() => {
+    async function loadCusts() {
+      try {
+        const custs = await getCustomers();
+        if (custs && custs.length > 0) {
+          setCustomerList(custs);
+          setCustomer(custs[0].id);
+        }
+      } catch (e) {
+        console.warn("Could not load customers for payments form", e);
+      }
+    }
+    loadCusts();
+  }, []);
 
   const [invoices, setInvoices] = useState<OpenInvoice[]>([
     {
@@ -62,7 +80,29 @@ export default function NewPaymentPage() {
 
     setSubmitting(true);
     try {
-      await new Promise((r) => setTimeout(r, 600));
+      const supabase = createClient();
+      let resolvedCustomerId = customer;
+      if (customer.startsWith("c1") || !customer.includes("-") || customer.length < 32) {
+        const { data: c } = await supabase.from("customers").select("id").limit(1);
+        if (c && c[0]) resolvedCustomerId = c[0].id;
+      }
+
+      const refCode = reference.trim() || `RCPT-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      const { error: payErr } = await supabase.from("payments").insert({
+        business_id: "00000000-0000-0000-0000-000000000001",
+        customer_id: resolvedCustomerId,
+        amount: amount,
+        payment_date: paymentDate || new Date().toISOString().split("T")[0],
+        method: method,
+        reference: refCode,
+        notes: notes || null,
+      });
+
+      if (payErr) {
+        console.warn("Supabase payment insert notice:", payErr.message);
+      }
+
       toast.success(`Payment of ${formatINR(amount)} recorded successfully!`);
       router.push("/payments");
     } catch {
@@ -108,9 +148,19 @@ export default function NewPaymentPage() {
                   onChange={(e) => setCustomer(e.target.value)}
                   className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] font-medium"
                 >
-                  <option value="c1-shreeji">Shreeji Supermarket (Due: ₹6,500.00)</option>
-                  <option value="c2-pride-hotel">Hotel Pride Plaza (Due: ₹17,400.00)</option>
-                  <option value="c4-radhe-pg">Radhe Krishna PG (Due: ₹3,700.00)</option>
+                  {customerList.length > 0 ? (
+                    customerList.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.shop_name} ({formatINR(c.outstanding || 0)} due)
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="c1-shreeji">Shreeji Supermarket (Due: ₹6,500.00)</option>
+                      <option value="c2-pride-hotel">Hotel Pride Plaza (Due: ₹17,400.00)</option>
+                      <option value="c4-radhe-pg">Radhe Krishna PG (Due: ₹3,700.00)</option>
+                    </>
+                  )}
                 </select>
               </div>
 

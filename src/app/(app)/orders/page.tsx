@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ShoppingCart,
@@ -18,11 +18,55 @@ import { TopHeader } from "@/components/layout/TopHeader";
 import { formatINR } from "@/lib/formatting/currency";
 import { formatDate } from "@/lib/formatting/dates";
 import { RECONCILED_ORDERS, OrderRecord } from "@/lib/services/businessData";
+import { createClient } from "@/lib/supabase/client";
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderRecord[]>(RECONCILED_ORDERS);
   const [search, setSearch] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
+
+  useEffect(() => {
+    async function loadOrders() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("orders")
+          .select("*, customers(name, shop_name), order_items(*)")
+          .order("created_at", { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const mapped: OrderRecord[] = data.map((o: any) => {
+            const customerName = o.customers?.shop_name || o.customers?.name || "Customer";
+            const itemCount = o.order_items?.length || 1;
+            const itemsSummary = o.notes || `${itemCount} item(s) ordered`;
+            const orderTotal = (o.order_items || []).reduce(
+              (sum: number, it: any) => sum + (Number(it.unit_price) * Number(it.quantity) || 0),
+              0
+            ) || 5500;
+
+            return {
+              id: o.id,
+              order_number: o.order_number || "ORD-LIVE",
+              customer_name: customerName,
+              customer_id: o.customer_id,
+              date: (o.created_at || new Date().toISOString()).split("T")[0],
+              items_summary: itemsSummary,
+              total: orderTotal,
+              status: (o.status as OrderRecord["status"]) || "confirmed",
+              invoiced: false,
+            };
+          });
+
+          // Prepend newly inserted orders before demo orders
+          const merged = [...mapped, ...RECONCILED_ORDERS.filter(ro => !mapped.some(m => m.id === ro.id))];
+          setOrders(merged);
+        }
+      } catch (e) {
+        console.warn("Could not load orders from Supabase", e);
+      }
+    }
+    loadOrders();
+  }, []);
 
   const filteredOrders = orders.filter((o) => {
     const matchSearch =

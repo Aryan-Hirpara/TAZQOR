@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Trash2, Save, Layers, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
+import { createProduct } from "@/lib/services/products";
 
 interface VariantRow {
   pack_size: string;
@@ -82,11 +83,18 @@ export default function NewProductPage() {
 
     setSubmitting(true);
     try {
-      await new Promise((r) => setTimeout(r, 600));
-      toast.success(`Product "${form.name}" with ${variants.length} pack variants created!`);
+      await createProduct({
+        name: form.name,
+        sku: form.sku,
+        hsn: form.hsn,
+        description: form.description,
+        category_id: form.category_id,
+        variants: variants,
+      });
+      toast.success(`Product "${form.name}" with ${variants.length} pack variants created and synced to Supabase!`);
       router.push("/products");
-    } catch {
-      toast.error("Failed to create product");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to create product");
     } finally {
       setSubmitting(false);
     }
