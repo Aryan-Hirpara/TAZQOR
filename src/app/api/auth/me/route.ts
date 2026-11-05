@@ -8,3 +8,4 @@ export async function GET(request: NextRequest) {
   }
   return NextResponse.json({ authenticated: true, user: session });
 }
+

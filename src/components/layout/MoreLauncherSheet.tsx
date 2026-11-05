@@ -155,7 +155,7 @@ export function MoreLauncherSheet({ isOpen, onClose }: MoreLauncherSheetProps) {
         {/* Header Bar */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 dark:border-neutral-800">
           <div className="flex items-center gap-2">
-            <TazqorLogo className="h-6 w-auto object-contain" height={24} />
+            <TazqorLogo className="h-6 w-auto object-contain" height={24} variant={isDark ? "dark" : "black"} />
           </div>
 
           <div className="flex items-center gap-2">

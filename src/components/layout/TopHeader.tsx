@@ -52,8 +52,13 @@ export function TopHeader({
         <div className="hidden md:flex items-center justify-between w-full">
           {/* Left: Wordmark logo (ONE logo only, no redundant logo in rail) */}
           <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="flex items-center gap-2 group focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 rounded-lg p-0.5">
-              <TazqorLogo className="h-7 w-auto object-contain" height={28} />
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/70 hover:bg-white/90 backdrop-blur-md border border-white/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all group focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 active:scale-95"
+              title="TAZQOR Home"
+              aria-label="TAZQOR Home"
+            >
+              <TazqorLogo className="h-6 sm:h-7 w-auto object-contain" height={26} />
             </Link>
             {title && (
               <div className="flex items-center gap-2 pl-3 border-l border-neutral-400/40">
@@ -165,8 +170,12 @@ export function TopHeader({
           {isHome ? (
             /* Mobile Home: Avatar left + Actions right */
             <>
-              <Link href="/dashboard" className="flex items-center gap-2 group min-h-[44px]">
-                <TazqorLogo className="h-6 w-auto object-contain" height={24} />
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/70 active:bg-white/90 backdrop-blur-md border border-white/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all group focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900"
+                aria-label="TAZQOR Home"
+              >
+                <TazqorLogo className="h-5 sm:h-6 w-auto object-contain" height={22} />
               </Link>
 
               <div className="flex items-center gap-2">
