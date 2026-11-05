@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { createClient } from "@/lib/supabase/client";
+import { formatDate } from "@/lib/formatting/dates";
 
 interface VisitRecord {
   id: string;
@@ -210,10 +211,10 @@ export default function VisitsPage() {
                 <p className="text-xs font-light text-neutral-600 max-w-2xl">{v.outcome}</p>
 
                 <div className="flex items-center gap-4 text-[11px] text-neutral-400 font-light pt-1">
-                  <span>Visit Time: {v.visit_date}</span>
+                  <span>Visit Date: {formatDate(v.visit_date)}</span>
                   {v.next_follow_up && (
                     <span className="text-neutral-700 font-normal">
-                      Next Follow-up: {v.next_follow_up}
+                      Next Follow-up: {formatDate(v.next_follow_up)}
                     </span>
                   )}
                 </div>

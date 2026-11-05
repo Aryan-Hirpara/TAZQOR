@@ -132,21 +132,21 @@ export default function NewPaymentPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Payment Form */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E5E4EE] shadow-sm space-y-4">
-            <h2 className="text-base font-bold text-gray-900 pb-3 border-b border-gray-100">
+          <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 space-y-4 shadow-none">
+            <h2 className="text-base font-normal text-neutral-900 pb-3 border-b border-white/40">
               Payment Details
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Customer Account *
                 </label>
                 <select
                   aria-label="Customer Account"
                   value={customer}
                   onChange={(e) => setCustomer(e.target.value)}
-                  className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] font-medium"
+                  className="w-full h-11 px-3 text-xs bg-white/70 backdrop-blur-md rounded-xl border border-white/80 font-light text-neutral-800 focus:outline-none focus:ring-2 focus:ring-[#D7FF00]"
                 >
                   {customerList.length > 0 ? (
                     customerList.map((c) => (
@@ -165,7 +165,7 @@ export default function NewPaymentPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Amount Received (₹) *
                 </label>
                 <input
@@ -175,31 +175,31 @@ export default function NewPaymentPage() {
                   value={amount}
                   onChange={(e) => setAmount(Number(e.target.value))}
                   required
-                  className="w-full h-11 px-4 text-xs font-bold text-gray-900 bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
+                  className="w-full h-11 px-4 text-xs font-semibold text-neutral-900 bg-white/70 backdrop-blur-md rounded-xl border border-white/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D7FF00]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Payment Date *
                 </label>
                 <input
                   type="date"
                   value={paymentDate}
                   onChange={(e) => setPaymentDate(e.target.value)}
-                  className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-11 px-3 text-xs bg-white/70 backdrop-blur-md rounded-xl border border-white/80 font-light text-neutral-800"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Payment Method *
                 </label>
                 <select
                   aria-label="Payment Method"
                   value={method}
                   onChange={(e) => setMethod(e.target.value as typeof method)}
-                  className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-11 px-3 text-xs bg-white/70 backdrop-blur-md rounded-xl border border-white/80 font-light text-neutral-800"
                 >
                   <option value="upi">UPI (GPay / PhonePe / Paytm)</option>
                   <option value="cash">Cash Collection</option>
@@ -209,7 +209,7 @@ export default function NewPaymentPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Transaction Reference / UTR / Cheque #
                 </label>
                 <input
@@ -217,18 +217,18 @@ export default function NewPaymentPage() {
                   value={reference}
                   onChange={(e) => setReference(e.target.value)}
                   placeholder="e.g. UPI/348912903 or Cheque #004512"
-                  className="w-full h-11 px-4 text-xs font-mono bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-11 px-4 text-xs font-mono bg-white/70 backdrop-blur-md rounded-xl border border-white/80"
                 />
               </div>
             </div>
           </div>
 
           {/* Invoice Allocations */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E5E4EE] shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+          <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 space-y-4 shadow-none">
+            <div className="flex items-center justify-between pb-3 border-b border-white/40">
               <div>
-                <h2 className="text-base font-bold text-gray-900">Allocate Against Open Invoices</h2>
-                <p className="text-xs text-gray-500">Apply money to reduce customer outstanding balance</p>
+                <h2 className="text-base font-normal text-neutral-900">Allocate Against Open Invoices</h2>
+                <p className="text-xs font-light text-neutral-500">Apply money to reduce customer outstanding balance</p>
               </div>
             </div>
 
@@ -236,24 +236,24 @@ export default function NewPaymentPage() {
               {invoices.map((inv, idx) => (
                 <div
                   key={inv.id}
-                  className="p-4 rounded-2xl bg-[#F9F8FD] border border-[#E5E4EE] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
+                  className="p-4 rounded-2xl bg-white/60 backdrop-blur-md border border-white/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
                 >
                   <div>
-                    <span className="font-mono font-bold text-gray-900">{inv.invoice_number}</span>
-                    <p className="text-[11px] text-gray-500 mt-0.5">
-                      Billed: {inv.date} • Total: {formatINR(inv.grand_total)} • Outstanding: <strong className="text-rose-700">{formatINR(inv.outstanding)}</strong>
+                    <span className="font-mono font-medium text-neutral-900">{inv.invoice_number}</span>
+                    <p className="text-[11px] font-light text-neutral-500 mt-0.5">
+                      Billed: {inv.date} • Total: {formatINR(inv.grand_total)} • Outstanding: <strong className="text-rose-700 font-medium">{formatINR(inv.outstanding)}</strong>
                     </p>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-500 text-[11px]">Apply: ₹</span>
+                    <span className="text-neutral-500 text-[11px] font-light">Apply: ₹</span>
                     <input
                       type="number"
                       step="0.01"
                       max={inv.outstanding}
                       value={inv.allocatedAmount}
                       onChange={(e) => handleAllocationChange(idx, Number(e.target.value))}
-                      className="w-28 h-9 px-2 text-xs font-bold bg-white rounded-lg border border-gray-200 text-right"
+                      className="w-28 h-9 px-2 text-xs font-semibold bg-white rounded-lg border border-neutral-200 text-right"
                     />
                   </div>
                 </div>
@@ -261,18 +261,18 @@ export default function NewPaymentPage() {
             </div>
 
             {/* Reconciliation Strip */}
-            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 text-xs space-y-1">
-              <div className="flex justify-between text-gray-600">
+            <div className="p-4 rounded-2xl bg-white/60 backdrop-blur-md border border-white/70 text-xs space-y-1">
+              <div className="flex justify-between text-neutral-600 font-light">
                 <span>Payment Amount:</span>
-                <span className="font-bold text-gray-900">{formatINR(amount)}</span>
+                <span className="font-semibold text-neutral-900">{formatINR(amount)}</span>
               </div>
-              <div className="flex justify-between text-gray-600">
+              <div className="flex justify-between text-neutral-600 font-light">
                 <span>Total Applied to Invoices:</span>
-                <span className="font-bold text-emerald-700">{formatINR(totalAllocated)}</span>
+                <span className="font-semibold text-emerald-800">{formatINR(totalAllocated)}</span>
               </div>
-              <div className="flex justify-between text-gray-600 pt-1 border-t border-gray-200 font-semibold">
+              <div className="flex justify-between text-neutral-600 font-light pt-1 border-t border-white/40">
                 <span>Customer Advance (Unallocated):</span>
-                <span className="text-amber-700 font-bold">{formatINR(advanceAmount)}</span>
+                <span className="text-amber-700 font-semibold">{formatINR(advanceAmount)}</span>
               </div>
             </div>
 
@@ -280,9 +280,9 @@ export default function NewPaymentPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full sm:w-auto px-8 h-12 rounded-full bg-[#0A0A0A] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:bg-black/90 active:scale-95 transition-all shadow-md disabled:opacity-50"
+                className="w-full sm:w-auto px-8 h-12 rounded-full bg-black text-white text-xs sm:text-sm font-normal flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-none disabled:opacity-50"
               >
-                <CreditCard className="w-4 h-4 text-[#D4F732]" />
+                <CreditCard className="w-4 h-4 text-[#D7FF00]" />
                 <span>{submitting ? "Processing..." : "Save Payment & Update Ledger"}</span>
               </button>
             </div>

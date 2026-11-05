@@ -35,7 +35,7 @@ export function BottomNav() {
       {/* Floating glass bar: inset 12px from edges, radius ~28px, backdrop blur, safe area padding */}
       <nav
         aria-label="Mobile Navigation"
-        className="md:hidden fixed left-3 right-3 bottom-3 z-40 bg-white/75 dark:bg-[#242422]/90 backdrop-blur-2xl rounded-[28px] border border-white/70 dark:border-white/10 shadow-lg px-1.5 h-16 flex items-center justify-around select-none"
+        className="md:hidden fixed left-3 right-3 bottom-3 z-40 bg-white/80 dark:bg-[#242422]/90 backdrop-blur-2xl rounded-[28px] border border-white/70 dark:border-white/10 shadow-lg px-1.5 h-16 flex items-center justify-around select-none outline-none"
       >
         {PRIMARY_MOBILE_ITEMS.map((item) => {
           const Icon = item.icon;
@@ -48,13 +48,13 @@ export function BottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center flex-1 h-full py-1 transition-all relative min-w-0",
+                "flex flex-col items-center justify-center flex-1 h-full py-1 transition-all relative min-w-0 outline-none focus:outline-none focus-visible:outline-none select-none [-webkit-tap-highlight-color:transparent]",
                 isActive ? "text-black dark:text-white" : "text-neutral-800 hover:text-black dark:text-neutral-200"
               )}
             >
               <div
                 className={cn(
-                  "w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0",
+                  "w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 outline-none",
                   isActive
                     ? "bg-black text-[#D7FF00] dark:bg-[#D7FF00] dark:text-black shadow-sm"
                     : "bg-transparent text-neutral-800 dark:text-neutral-200"
@@ -76,13 +76,13 @@ export function BottomNav() {
           aria-expanded={launcherOpen}
           aria-label="More navigation and actions"
           className={cn(
-            "flex flex-col items-center justify-center flex-1 h-full py-1 transition-all relative min-w-0 cursor-pointer",
+            "flex flex-col items-center justify-center flex-1 h-full py-1 transition-all relative min-w-0 cursor-pointer outline-none focus:outline-none focus-visible:outline-none select-none [-webkit-tap-highlight-color:transparent]",
             isMoreActive ? "text-black dark:text-white" : "text-neutral-800 hover:text-black dark:text-neutral-200"
           )}
         >
           <div
             className={cn(
-              "w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0",
+              "w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 outline-none",
               isMoreActive
                 ? "bg-black text-[#D7FF00] dark:bg-[#D7FF00] dark:text-black shadow-sm"
                 : "bg-transparent text-neutral-800 dark:text-neutral-200"

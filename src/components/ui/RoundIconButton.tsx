@@ -30,7 +30,7 @@ export function RoundIconButton({
 }: RoundIconButtonProps) {
   // Exact Spec: 42px circles, #E3E0EA, active = #000, zero drop shadows
   const baseClass = cn(
-    "relative flex items-center justify-center w-[42px] h-[42px] rounded-full transition-all group shrink-0 select-none",
+    "relative flex items-center justify-center w-[42px] h-[42px] rounded-full transition-all group shrink-0 select-none outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D7FF00]",
     isActive
       ? "bg-[#000000] text-white scale-100"
       : variant === "black"
@@ -46,11 +46,6 @@ export function RoundIconButton({
       {icon}
       {hasBadge && (
         <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#EF4444] ring-1 ring-white" />
-      )}
-      {label && (
-        <span className="absolute left-14 px-3 py-1.5 text-xs font-light text-white bg-black/95 rounded-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
-          {label}
-        </span>
       )}
     </>
   );

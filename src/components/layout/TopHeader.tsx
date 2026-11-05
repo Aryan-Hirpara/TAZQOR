@@ -62,8 +62,8 @@ export function TopHeader({
             )}
           </div>
 
-          {/* Center: Centered pill tabs (shown on desktop when on home/reports) */}
-          {(isHome || pathname === "/reports") && (
+          {/* Center: Centered pill tabs (shown on desktop when on home dashboard) */}
+          {isHome && (
             <div className="hidden xl:flex items-center gap-1 p-1 h-[42px] bg-white/30 backdrop-blur-md rounded-full border border-white/60">
               <button
                 type="button"
@@ -103,12 +103,7 @@ export function TopHeader({
               </button>
               <Link
                 href="/reports"
-                className={cn(
-                  "px-4 sm:px-5 py-1 text-xs sm:text-sm rounded-full transition-all h-full flex items-center",
-                  pathname === "/reports"
-                    ? "bg-black text-white font-normal"
-                    : "text-neutral-700 hover:text-black font-light hover:bg-white/40"
-                )}
+                className="px-4 sm:px-5 py-1 text-xs sm:text-sm rounded-full transition-all h-full flex items-center text-neutral-700 hover:text-black font-light hover:bg-white/40"
               >
                 Reports
               </Link>

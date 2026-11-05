@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { formatINR } from "@/lib/formatting/currency";
+import { formatDate } from "@/lib/formatting/dates";
 import { createClient } from "@/lib/supabase/client";
 
 interface PaymentRecord {
@@ -194,10 +195,10 @@ export default function PaymentsPage() {
         </div>
 
         {/* Payments Table */}
-        <div className="bg-white rounded-3xl border border-[#E5E4EE] overflow-hidden shadow-sm">
+        <div className="bg-white/55 backdrop-blur-xl rounded-[28px] border border-white/65 overflow-hidden shadow-none">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#F9F8FD] border-b border-[#E5E4EE] text-gray-500 font-bold uppercase tracking-wider">
+              <thead className="bg-white/40 border-b border-white/60 text-neutral-500 font-normal">
                 <tr>
                   <th className="py-4 px-6">Receipt #</th>
                   <th className="py-4 px-4">Customer</th>
@@ -208,34 +209,34 @@ export default function PaymentsPage() {
                   <th className="py-4 px-6 text-right">Receipt</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E5E4EE]">
+              <tbody className="divide-y divide-white/50">
                 {filteredPayments.map((p) => (
-                  <tr key={p.id} className="hover:bg-[#F9F8FD]/60 transition-colors">
-                    <td className="py-4 px-6 font-mono font-bold text-gray-900">
-                      {p.id}
+                  <tr key={p.id} className="hover:bg-white/40 transition-colors">
+                    <td className="py-4 px-6 font-mono font-medium text-neutral-900">
+                      {p.id.length > 12 ? `RCPT-${p.id.slice(0, 6).toUpperCase()}` : p.id}
                     </td>
 
-                    <td className="py-4 px-4 font-bold text-gray-900">
+                    <td className="py-4 px-4 font-normal text-neutral-900">
                       {p.customer_name}
                     </td>
 
-                    <td className="py-4 px-4 text-gray-500 font-medium">
-                      {p.payment_date}
+                    <td className="py-4 px-4 text-neutral-600 font-light">
+                      {formatDate(p.payment_date)}
                     </td>
 
                     <td className="py-4 px-4">
-                      <div className="flex items-center gap-1.5 font-bold uppercase text-[11px] text-gray-800">
-                        <CreditCard className="w-3.5 h-3.5 text-neutral-600" />
+                      <div className="flex items-center gap-1.5 font-light capitalize text-[11px] text-neutral-800">
+                        <CreditCard className="w-3.5 h-3.5 text-neutral-500" />
                         <span>{p.method.replace('_', ' ')}</span>
                       </div>
-                      <div className="text-[11px] font-mono text-neutral-600 mt-0.5">{p.reference}</div>
+                      <div className="text-[11px] font-mono text-neutral-500 mt-0.5">{p.reference}</div>
                     </td>
 
-                    <td className="py-4 px-4 text-right font-black text-sm text-emerald-800">
+                    <td className="py-4 px-4 text-right font-medium text-sm text-neutral-950">
                       +{formatINR(p.amount)}
                     </td>
 
-                    <td className="py-4 px-4 text-gray-600 font-medium">
+                    <td className="py-4 px-4 text-neutral-600 font-light">
                       {p.allocated_to}
                     </td>
 
@@ -243,7 +244,7 @@ export default function PaymentsPage() {
                       <button
                         type="button"
                         onClick={() => window.print()}
-                        className="inline-flex items-center justify-center gap-1 px-4 min-h-[44px] rounded-full bg-gray-100 text-gray-800 text-xs font-semibold hover:bg-black hover:text-white transition-all cursor-pointer"
+                        className="inline-flex items-center justify-center gap-1 px-4 min-h-[44px] rounded-full bg-white/70 text-neutral-800 text-xs font-light hover:bg-black hover:text-white transition-all cursor-pointer border border-white/80"
                       >
                         <Receipt className="w-3.5 h-3.5" />
                         <span>Receipt</span>

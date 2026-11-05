@@ -19,21 +19,16 @@ export function MobilePeriodPills({
   const isDashboard = pathname === "/dashboard" || pathname === "/";
 
   return (
-    <div
-      className={cn(
-        "md:hidden w-full overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory py-1 my-1",
-        className
-      )}
-    >
-      <div className="flex items-center gap-1.5 p-1 bg-white/40 dark:bg-neutral-800/60 backdrop-blur-md rounded-full border border-white/60 dark:border-white/10 w-fit shrink-0">
+    <div className={cn("md:hidden w-full py-1 my-1", className)}>
+      <div className="grid grid-cols-4 gap-1 p-1 bg-white/55 backdrop-blur-md rounded-full border border-white/60 w-full">
         <button
           type="button"
           onClick={() => onPeriodChange?.("today")}
           className={cn(
-            "px-4 py-2 text-xs rounded-full transition-all shrink-0 cursor-pointer snap-start min-h-[44px] flex items-center justify-center",
+            "py-2 px-1 text-[11px] sm:text-xs rounded-full transition-all cursor-pointer min-h-[42px] flex items-center justify-center text-center truncate",
             period === "today" && isDashboard
-              ? "bg-black text-white dark:bg-[#D7FF00] dark:text-black font-normal"
-              : "text-neutral-700 dark:text-neutral-300 font-light hover:bg-white/40"
+              ? "bg-black text-white font-normal shadow-sm"
+              : "text-neutral-700 font-light hover:bg-white/40"
           )}
         >
           Today
@@ -42,10 +37,10 @@ export function MobilePeriodPills({
           type="button"
           onClick={() => onPeriodChange?.("week")}
           className={cn(
-            "px-4 py-2 text-xs rounded-full transition-all shrink-0 cursor-pointer snap-start min-h-[44px] flex items-center justify-center",
+            "py-2 px-1 text-[11px] sm:text-xs rounded-full transition-all cursor-pointer min-h-[42px] flex items-center justify-center text-center truncate",
             period === "week" && isDashboard
-              ? "bg-black text-white dark:bg-[#D7FF00] dark:text-black font-normal"
-              : "text-neutral-700 dark:text-neutral-300 font-light hover:bg-white/40"
+              ? "bg-black text-white font-normal shadow-sm"
+              : "text-neutral-700 font-light hover:bg-white/40"
           )}
         >
           This Week
@@ -54,10 +49,10 @@ export function MobilePeriodPills({
           type="button"
           onClick={() => onPeriodChange?.("month")}
           className={cn(
-            "px-4 py-2 text-xs rounded-full transition-all shrink-0 cursor-pointer snap-start min-h-[44px] flex items-center justify-center",
+            "py-2 px-1 text-[11px] sm:text-xs rounded-full transition-all cursor-pointer min-h-[42px] flex items-center justify-center text-center truncate",
             period === "month" && isDashboard
-              ? "bg-black text-white dark:bg-[#D7FF00] dark:text-black font-normal"
-              : "text-neutral-700 dark:text-neutral-300 font-light hover:bg-white/40"
+              ? "bg-black text-white font-normal shadow-sm"
+              : "text-neutral-700 font-light hover:bg-white/40"
           )}
         >
           This Month
@@ -65,10 +60,10 @@ export function MobilePeriodPills({
         <Link
           href="/reports"
           className={cn(
-            "px-4 py-2 text-xs rounded-full transition-all shrink-0 cursor-pointer snap-start min-h-[44px] flex items-center justify-center",
+            "py-2 px-1 text-[11px] sm:text-xs rounded-full transition-all cursor-pointer min-h-[42px] flex items-center justify-center text-center truncate",
             pathname === "/reports"
-              ? "bg-black text-white dark:bg-[#D7FF00] dark:text-black font-normal"
-              : "text-neutral-700 dark:text-neutral-300 font-light hover:bg-white/40"
+              ? "bg-black text-white font-normal shadow-sm"
+              : "text-neutral-700 font-light hover:bg-white/40"
           )}
         >
           Reports

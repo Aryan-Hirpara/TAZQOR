@@ -170,11 +170,11 @@ export default function NewVisitPage() {
             </div>
           </div>
 
-          <div className="pt-2 text-right">
+          <div className="pt-2 flex justify-end">
             <button
               type="submit"
               disabled={submitting}
-              className="px-8 h-12 rounded-full bg-[#0A0A0A] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:bg-black/90 active:scale-95 transition-all shadow-md disabled:opacity-50 inline-flex"
+              className="w-full sm:w-auto px-8 h-12 rounded-full bg-[#0A0A0A] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:bg-black/90 active:scale-95 transition-all shadow-md disabled:opacity-50"
             >
               <Save className="w-4 h-4 text-[#D4F732]" />
               <span>{submitting ? "Logging Visit..." : "Save Visit & Schedule Follow-up"}</span>

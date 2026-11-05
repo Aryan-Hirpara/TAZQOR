@@ -215,9 +215,9 @@ export function SalesSplineChart({
         <div
           className="absolute pointer-events-none transition-all duration-200 z-20 flex flex-col items-center gap-1.5"
           style={{
-            left: `${(activePoint.x / 1000) * 100}%`,
+            left: `${Math.min(Math.max((activePoint.x / 1000) * 100, 12), 88)}%`,
             top: `${(activePoint.yCur / 260) * 100}%`,
-            transform: "translate(-50%, -120%)",
+            transform: activePoint.yCur < 75 ? "translate(-50%, 15px)" : "translate(-50%, -115%)",
           }}
         >
           {/* Top Pill: Solid Black with Electric Lime Text, NO drop shadow */}
