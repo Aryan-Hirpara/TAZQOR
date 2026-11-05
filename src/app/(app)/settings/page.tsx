@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Settings,
   Building2,
@@ -12,11 +13,13 @@ import {
   AlertCircle,
   Database,
   Lock,
+  LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [saving, setSaving] = useState(false);
 
   // Business profile state
@@ -295,6 +298,35 @@ export default function SettingsPage() {
           >
             <Download className="w-4 h-4" />
             <span>Download Complete System Backup (JSON)</span>
+          </button>
+        </div>
+
+        {/* Security & Account Session */}
+        <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-white/40">
+            <div>
+              <h2 className="text-base font-semibold text-neutral-900">Security & Sign Out</h2>
+              <p className="text-xs text-neutral-500 font-light">Manage your current active manager session</p>
+            </div>
+          </div>
+
+          <p className="text-xs text-neutral-600 font-light">
+            Signed in as <strong>owner@tazqor.com</strong> (Primary Administrator).
+          </p>
+
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await fetch("/api/auth/logout", { method: "POST" });
+              } catch {}
+              router.push("/login");
+              router.refresh();
+            }}
+            className="inline-flex items-center gap-2 px-6 h-11 rounded-full bg-rose-50 text-rose-700 text-xs font-medium hover:bg-rose-100 transition-all border border-rose-200/60 cursor-pointer"
+          >
+            <LogOut className="w-4 h-4 text-rose-600" />
+            <span>Sign Out of Account</span>
           </button>
         </div>
       </div>

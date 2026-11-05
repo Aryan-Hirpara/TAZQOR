@@ -304,14 +304,23 @@ export function MoreLauncherSheet({ isOpen, onClose }: MoreLauncherSheetProps) {
             <span>TAZQOR Enterprise</span>
           </div>
 
-          <Link
-            href="/login"
-            onClick={onClose}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+          <button
+            type="button"
+            onClick={async () => {
+              onClose();
+              try {
+                await fetch("/api/auth/logout", { method: "POST" });
+              } catch {
+                // best effort
+              }
+              router.push("/login");
+              router.refresh();
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Sign Out</span>
-          </Link>
+          </button>
         </div>
       </div>
     </div>

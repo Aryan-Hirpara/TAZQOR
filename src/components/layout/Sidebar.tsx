@@ -1,6 +1,8 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   LayoutDashboard,
   Users,
@@ -12,6 +14,8 @@ import {
   CalendarCheck,
   Mail,
   Bell,
+  LogOut,
+  Settings,
 } from "lucide-react";
 import { RoundIconButton } from "@/components/ui/RoundIconButton";
 
@@ -29,6 +33,18 @@ const PRIMARY_NAV = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // best effort
+    }
+    router.push("/login");
+    router.refresh();
+  };
 
   return (
     <aside
@@ -43,7 +59,7 @@ export function Sidebar() {
       <div className="h-2" />
 
       {/* Nav Group: 42px circles, 45px pitch (gap-[3px]), 8 primary icons */}
-      <nav className="flex flex-col items-center gap-[3px]">
+      <nav aria-label="Main Navigation" className="flex flex-col items-center gap-[3px]">
         {PRIMARY_NAV.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -63,7 +79,7 @@ export function Sidebar() {
       </nav>
 
       {/* Bottom Group: Pinned Mail (red dot), Bell (red dot), User Avatar */}
-      <div className="flex flex-col items-center gap-[3px] pb-2">
+      <div className="flex flex-col items-center gap-[3px] pb-2 relative">
         <RoundIconButton
           icon={<Mail className="w-4 h-4 text-neutral-800" />}
           label="Messages"
@@ -75,13 +91,59 @@ export function Sidebar() {
           hasBadge
         />
 
-        {/* 42px User Avatar */}
-        <div
-          className="w-[42px] h-[42px] rounded-full bg-black text-[#D7FF00] border border-white/80 flex items-center justify-center text-xs font-semibold cursor-pointer hover:scale-105 active:scale-95 transition-transform select-none"
-          title="TAZQOR Store Manager"
+        {/* 42px User Avatar with Popover */}
+        <button
+          type="button"
+          onClick={() => setUserMenuOpen(!userMenuOpen)}
+          className="w-[42px] h-[42px] rounded-full bg-black text-[#D7FF00] border border-white/80 flex items-center justify-center text-xs font-semibold cursor-pointer hover:scale-105 active:scale-95 transition-transform select-none outline-none focus-visible:ring-2 focus-visible:ring-[#D7FF00]"
+          title="Account Menu"
+          aria-expanded={userMenuOpen}
         >
           TQ
-        </div>
+        </button>
+
+        {/* User Account Popover */}
+        {userMenuOpen && (
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setUserMenuOpen(false)}
+            />
+            <div className="absolute left-14 bottom-2 z-50 w-56 p-3 bg-white/95 backdrop-blur-2xl rounded-2xl border border-white/80 shadow-xl space-y-2 text-left">
+              <div className="px-1.5 py-1">
+                <span className="text-[10px] uppercase font-semibold text-neutral-400 block tracking-wider">
+                  Signed in as
+                </span>
+                <span className="text-xs font-semibold text-neutral-900 block truncate">
+                  TAZQOR Owner
+                </span>
+                <span className="text-[11px] font-light text-neutral-500 block truncate">
+                  owner@tazqor.com
+                </span>
+              </div>
+
+              <div className="pt-1.5 border-t border-neutral-100 flex flex-col gap-1 text-xs">
+                <Link
+                  href="/settings"
+                  onClick={() => setUserMenuOpen(false)}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-neutral-700 hover:bg-neutral-100 font-light transition-colors"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                  <span>Settings</span>
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 font-normal transition-colors cursor-pointer w-full text-left"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </aside>
   );

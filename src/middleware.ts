@@ -4,22 +4,21 @@ import { updateSession } from "@/utils/supabase/middleware";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Static files and internal routes are always allowed
+  // Static files, manifest, icons, and auth API endpoints are always allowed
   if (
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
+    pathname.startsWith("/api/auth") ||
     pathname.startsWith("/static") ||
+    pathname.startsWith("/icon-") ||
+    pathname.startsWith("/apple-touch-icon") ||
+    pathname === "/manifest.webmanifest" ||
+    pathname === "/favicon.ico" ||
     pathname.includes(".")
   ) {
     return NextResponse.next();
   }
 
-  // If visiting root '/', redirect to '/dashboard'
-  if (pathname === "/") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
-  // Refresh Supabase session cookies
+  // Handle session check and route protection
   return await updateSession(request);
 }
 
