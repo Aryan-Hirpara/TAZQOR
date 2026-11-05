@@ -119,7 +119,7 @@ export function SalesSplineChart({
           {/* "+ Show More" outlined pill next to legend per Addendum */}
           <button
             type="button"
-            className="flex items-center gap-1 px-3 py-1 bg-white/40 hover:bg-white/70 border border-white/80 rounded-full text-[11px] font-normal text-neutral-800 transition-all ml-1"
+            className="flex items-center gap-1 px-3 min-h-[44px] bg-white/40 hover:bg-white/70 border border-white/80 rounded-full text-[11px] font-normal text-neutral-800 transition-all ml-1 cursor-pointer"
           >
             <Plus className="w-3 h-3" />
             <span>Show More</span>
@@ -243,12 +243,12 @@ export function SalesSplineChart({
                 key={m}
                 type="button"
                 onClick={() => setActiveMonthIdx(idx)}
-                className={`transition-all ${
+                className={`transition-all min-h-[44px] flex items-center justify-center cursor-pointer ${
                   isFar ? "hidden sm:inline-flex" : "inline-flex"
                 } ${
                   isActive
-                    ? "bg-black text-white px-3.5 py-0.5 rounded-full text-xs font-normal items-center gap-1"
-                    : "text-black/55 hover:text-black text-[11px] px-2 py-0.5 rounded-full border border-white/30 hover:border-white/80"
+                    ? "bg-black text-white px-3.5 py-1 rounded-full text-xs font-normal items-center gap-1"
+                    : "text-black/55 hover:text-black text-[11px] px-2 py-1 rounded-full border border-white/30 hover:border-white/80"
                 }`}
               >
                 {/* Selected month pill with << >> markers per Addendum */}

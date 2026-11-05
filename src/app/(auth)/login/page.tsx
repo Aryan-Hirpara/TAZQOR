@@ -70,7 +70,7 @@ export default function LoginPage() {
             Admin Email
           </label>
           <div className="relative">
-            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600" />
             <input
               type="email"
               value={email}
@@ -89,19 +89,20 @@ export default function LoginPage() {
             </label>
           </div>
           <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600" />
             <input
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••••••"
               required
-              className="w-full h-11 pl-10 pr-10 text-xs bg-white/70 rounded-full border border-white/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E0FE52] transition-all"
+              className="w-full h-11 pl-10 pr-12 text-xs bg-white/70 rounded-full border border-white/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E0FE52] transition-all"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-neutral-600 hover:text-black cursor-pointer"
+              aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -125,7 +126,7 @@ export default function LoginPage() {
       </form>
 
       <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-        <p className="text-[11px] text-gray-400">
+        <p className="text-[11px] text-neutral-600">
           Private single-owner system. Public self-registration is disabled.
         </p>
       </div>

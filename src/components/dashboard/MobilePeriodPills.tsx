@@ -30,7 +30,7 @@ export function MobilePeriodPills({
           type="button"
           onClick={() => onPeriodChange?.("today")}
           className={cn(
-            "px-4 py-1.5 text-xs rounded-full transition-all shrink-0 cursor-pointer snap-start",
+            "px-4 py-2 text-xs rounded-full transition-all shrink-0 cursor-pointer snap-start min-h-[44px] flex items-center justify-center",
             period === "today" && isDashboard
               ? "bg-black text-white dark:bg-[#D7FF00] dark:text-black font-normal"
               : "text-neutral-700 dark:text-neutral-300 font-light hover:bg-white/40"
@@ -42,7 +42,7 @@ export function MobilePeriodPills({
           type="button"
           onClick={() => onPeriodChange?.("week")}
           className={cn(
-            "px-4 py-1.5 text-xs rounded-full transition-all shrink-0 cursor-pointer snap-start",
+            "px-4 py-2 text-xs rounded-full transition-all shrink-0 cursor-pointer snap-start min-h-[44px] flex items-center justify-center",
             period === "week" && isDashboard
               ? "bg-black text-white dark:bg-[#D7FF00] dark:text-black font-normal"
               : "text-neutral-700 dark:text-neutral-300 font-light hover:bg-white/40"
@@ -54,7 +54,7 @@ export function MobilePeriodPills({
           type="button"
           onClick={() => onPeriodChange?.("month")}
           className={cn(
-            "px-4 py-1.5 text-xs rounded-full transition-all shrink-0 cursor-pointer snap-start",
+            "px-4 py-2 text-xs rounded-full transition-all shrink-0 cursor-pointer snap-start min-h-[44px] flex items-center justify-center",
             period === "month" && isDashboard
               ? "bg-black text-white dark:bg-[#D7FF00] dark:text-black font-normal"
               : "text-neutral-700 dark:text-neutral-300 font-light hover:bg-white/40"
@@ -65,7 +65,7 @@ export function MobilePeriodPills({
         <Link
           href="/reports"
           className={cn(
-            "px-4 py-1.5 text-xs rounded-full transition-all shrink-0 cursor-pointer snap-start",
+            "px-4 py-2 text-xs rounded-full transition-all shrink-0 cursor-pointer snap-start min-h-[44px] flex items-center justify-center",
             pathname === "/reports"
               ? "bg-black text-white dark:bg-[#D7FF00] dark:text-black font-normal"
               : "text-neutral-700 dark:text-neutral-300 font-light hover:bg-white/40"

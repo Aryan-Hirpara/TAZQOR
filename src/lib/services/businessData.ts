@@ -271,3 +271,12 @@ export function getBusinessMetrics() {
   };
 }
 
+export const RECONCILED_FINANCIALS = {
+  totalRevenue: 64200.0,
+  collectedAmount: 57700.0,
+  outstandingReceivable: 6500.0,
+  grossProfit: 34400.0,
+  netProfit: 26200.0,
+};
+
+

@@ -54,6 +54,13 @@ export default function DashboardPage() {
     window.addEventListener("tazqor:set-test-metrics", handleTestMetrics);
 
     async function loadUserProfileAndLiveAggregates() {
+      // If local dev or placeholder Supabase credentials, use reconciled data seamlessly without unhandled network exceptions
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const supabase = createClient();
 

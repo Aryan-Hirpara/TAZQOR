@@ -170,7 +170,7 @@ export default function NewInvoicePage() {
         <div>
           <Link
             href="/invoices"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-black transition-colors"
+            className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-semibold text-neutral-600 hover:text-black transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Cancel and back to invoices</span>
@@ -241,6 +241,7 @@ export default function NewInvoicePage() {
                 Customer Account *
               </label>
               <select
+                aria-label="Customer Account"
                 value={customer}
                 onChange={(e) => setCustomer(e.target.value)}
                 className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] font-medium"
@@ -288,7 +289,7 @@ export default function NewInvoicePage() {
             <button
               type="button"
               onClick={addLine}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-100 text-gray-800 text-xs font-bold hover:bg-[#0A0A0A] hover:text-white transition-all"
+              className="flex items-center gap-1 px-4 min-h-[44px] rounded-full bg-gray-100 text-gray-800 text-xs font-bold hover:bg-[#0A0A0A] hover:text-white transition-all"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add Item</span>
@@ -367,7 +368,7 @@ export default function NewInvoicePage() {
 
                     <div className="sm:col-span-2 flex items-center justify-end gap-2">
                       <div className="text-right">
-                        <span className="block text-[10px] text-gray-400">Total</span>
+                        <span className="block text-[10px] text-neutral-600">Total</span>
                         <span className="text-xs font-black text-gray-900">
                           {formatINR(res?.lineTotal || 0)}
                         </span>
@@ -375,7 +376,8 @@ export default function NewInvoicePage() {
                       <button
                         type="button"
                         onClick={() => removeLine(idx)}
-                        className="p-1.5 text-rose-500 hover:text-rose-700"
+                        className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-rose-500 hover:text-rose-700"
+                        title="Remove line"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

@@ -83,7 +83,7 @@ export default function CustomerDetailClient({ id }: { id: string }) {
         <div>
           <Link
             href="/customers"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-black transition-colors"
+            className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-semibold text-neutral-600 hover:text-black transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to All Customers</span>
@@ -265,7 +265,7 @@ export default function CustomerDetailClient({ id }: { id: string }) {
                         {inv.mode}
                       </span>
                     </div>
-                    <p className="text-[11px] text-gray-400 mt-0.5">Date: {inv.date}</p>
+                    <p className="text-[11px] text-neutral-600 mt-0.5">Date: {inv.date}</p>
                   </div>
                   <div className="text-right">
                     <span className="text-xs font-bold text-gray-900 block">
@@ -276,7 +276,7 @@ export default function CustomerDetailClient({ id }: { id: string }) {
                         Due: {formatINR(inv.balance)}
                       </span>
                     ) : (
-                      <span className="text-[11px] font-semibold text-emerald-600">Paid</span>
+                      <span className="text-[11px] font-semibold text-emerald-800">Paid</span>
                     )}
                   </div>
                 </div>
@@ -295,7 +295,7 @@ export default function CustomerDetailClient({ id }: { id: string }) {
                         {ord.status}
                       </span>
                     </div>
-                    <p className="text-[11px] text-gray-400 mt-0.5">{ord.itemsCount} Items • {ord.date}</p>
+                    <p className="text-[11px] text-neutral-600 mt-0.5">{ord.itemsCount} Items • {ord.date}</p>
                   </div>
                   <div className="text-right">
                     <span className="text-xs font-bold text-gray-900 block">
@@ -318,10 +318,10 @@ export default function CustomerDetailClient({ id }: { id: string }) {
                         {pay.method}
                       </span>
                     </div>
-                    <p className="text-[11px] text-gray-400 mt-0.5">Ref: {pay.ref} • {pay.date}</p>
+                    <p className="text-[11px] text-neutral-600 mt-0.5">Ref: {pay.ref} • {pay.date}</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-xs font-bold text-emerald-600 block">
+                    <span className="text-xs font-bold text-emerald-800 block">
                       +{formatINR(pay.amount)}
                     </span>
                   </div>
@@ -336,7 +336,7 @@ export default function CustomerDetailClient({ id }: { id: string }) {
                 <div key={v.id} className="py-3.5 space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-gray-900">Visit on {v.date}</span>
-                    <span className="text-[10px] text-gray-400">Next: {v.nextDate}</span>
+                    <span className="text-[10px] text-neutral-600">Next: {v.nextDate}</span>
                   </div>
                   <p className="text-xs text-gray-600">{v.outcome}</p>
                 </div>

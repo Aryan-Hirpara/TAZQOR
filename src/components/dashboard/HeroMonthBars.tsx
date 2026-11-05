@@ -47,11 +47,11 @@ export function HeroMonthBars({
       {/* Top Greeting Headline per spec:
           "Hi Mike," SemiBold, "here's" Light Italic, "what's happening in your stores." SemiBold */}
       <div className="space-y-1">
-        <h2 className="text-xl sm:text-2xl lg:text-[28px] lg:leading-[34px] tracking-tight text-neutral-900">
+        <h1 className="text-xl sm:text-2xl lg:text-[28px] lg:leading-[34px] tracking-tight text-neutral-900">
           <span className="font-semibold">Hi {userName}, </span>
           <span className="font-light italic">here&apos;s </span>
           <span className="font-semibold">what&apos;s happening in your stores.</span>
-        </h2>
+        </h1>
       </div>
 
       {/* Middle: 6 Month Pill Bars (lowercase, active black with lime top cap) */}

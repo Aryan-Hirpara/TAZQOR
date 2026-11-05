@@ -94,7 +94,7 @@ export default function VisitsPage() {
             <span className="text-xs font-light text-neutral-500 block">
               Total logged this month
             </span>
-            <div className="text-3xl font-normal text-emerald-600 mt-1 tracking-tight">
+            <div className="text-3xl font-normal text-emerald-800 mt-1 tracking-tight">
               18 Visits
             </div>
             <p className="text-[11px] font-light text-neutral-500 mt-0.5">14 Resulted in fresh orders</p>
@@ -118,7 +118,7 @@ export default function VisitsPage() {
           <div className="flex items-center gap-1.5 p-1 bg-white/55 backdrop-blur-md rounded-full border border-white/70 shadow-sm">
             <button
               onClick={() => setFilter("all")}
-              className={`px-4 py-1.5 text-xs font-light rounded-full transition-all ${
+              className={`px-4 min-h-[44px] flex items-center justify-center text-xs font-light rounded-full transition-all cursor-pointer ${
                 filter === "all" ? "bg-black text-white font-normal shadow-sm" : "text-neutral-700 hover:text-black"
               }`}
             >
@@ -126,7 +126,7 @@ export default function VisitsPage() {
             </button>
             <button
               onClick={() => setFilter("today")}
-              className={`px-4 py-1.5 text-xs font-light rounded-full transition-all ${
+              className={`px-4 min-h-[44px] flex items-center justify-center text-xs font-light rounded-full transition-all cursor-pointer ${
                 filter === "today" ? "bg-black text-white font-normal shadow-sm" : "text-neutral-700 hover:text-black"
               }`}
             >
@@ -150,8 +150,8 @@ export default function VisitsPage() {
               key={v.id}
               className="bg-white/55 backdrop-blur-xl rounded-[24px] p-5 sm:p-6 border border-white/65 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
             >
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
+              <div className="space-y-1.5 min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
                   <h3 className="text-base font-normal text-neutral-900">{v.customer_name}</h3>
                   <span className="text-[11px] font-light text-neutral-500">({v.shop_name})</span>
                   {v.gps_verified && (
@@ -186,7 +186,7 @@ export default function VisitsPage() {
               <div className="flex items-center gap-2 shrink-0">
                 <Link
                   href="/customers"
-                  className="px-4 py-1.5 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm"
+                  className="px-4 min-h-[44px] flex items-center justify-center rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm cursor-pointer"
                 >
                   View Shop
                 </Link>

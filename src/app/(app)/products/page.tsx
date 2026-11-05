@@ -56,7 +56,7 @@ export default function ProductsPage() {
             <span className="text-xs font-light text-neutral-500 block">
               Active pack sizes (SKUs)
             </span>
-            <div className="text-3xl font-normal text-emerald-600 mt-1 tracking-tight">
+            <div className="text-3xl font-normal text-emerald-800 mt-1 tracking-tight">
               {totalVariantsCount}
             </div>
             <p className="text-[11px] font-light text-neutral-500 mt-0.5">5L Cans, 1L, 500mL Bottles</p>
@@ -71,7 +71,7 @@ export default function ProductsPage() {
             </div>
             <Link
               href="/categories"
-              className="px-4 py-1.5 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm"
+              className="px-4 min-h-[44px] flex items-center justify-center rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm cursor-pointer"
             >
               Categories
             </Link>
@@ -93,6 +93,7 @@ export default function ProductsPage() {
             </div>
 
             <select
+              aria-label="Filter products by category"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="h-10 px-3.5 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm"
@@ -132,7 +133,7 @@ export default function ProductsPage() {
                     <span className="text-[11px] font-semibold text-blue-800 bg-blue-50 px-2.5 py-0.5 rounded-full">
                       {product.category_name}
                     </span>
-                    <span className="text-[10px] font-mono text-gray-400">
+                    <span className="text-[10px] font-mono text-neutral-600">
                       HSN: {product.hsn}
                     </span>
                   </div>
@@ -165,7 +166,7 @@ export default function ProductsPage() {
                       return (
                         <tr key={v.id} className="hover:bg-gray-50/60">
                           <td className="py-3 px-4 font-bold text-gray-900 flex items-center gap-2">
-                            <Tag className="w-3.5 h-3.5 text-gray-400" />
+                            <Tag className="w-3.5 h-3.5 text-neutral-600" />
                             <span>{v.pack_size}</span>
                             <span className="text-[11px] text-gray-500 font-normal">({v.name})</span>
                           </td>

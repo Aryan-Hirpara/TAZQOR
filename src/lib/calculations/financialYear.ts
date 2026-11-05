@@ -118,3 +118,10 @@ export function formatDocumentNumber(
   const seqStr = String(sequence).padStart(padding, "0");
   return `${prefix}/${fy}/${seqStr}`;
 }
+
+export function formatInvoiceNumberForFY(
+  sequence: number,
+  date: Date | string = new Date()
+): string {
+  return formatDocumentNumber("INV", sequence, date);
+}

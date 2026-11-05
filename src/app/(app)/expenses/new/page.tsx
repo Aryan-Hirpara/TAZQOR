@@ -48,7 +48,7 @@ export default function NewExpensePage() {
         <div>
           <Link
             href="/expenses"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-black transition-colors"
+            className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-semibold text-neutral-600 hover:text-black transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Cancel and back to expenses</span>
@@ -63,10 +63,12 @@ export default function NewExpensePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              <label htmlFor="expense-category" className="block text-xs font-bold text-gray-700 mb-1.5">
                 Expense Category *
               </label>
               <select
+                id="expense-category"
+                aria-label="Expense Category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
@@ -82,10 +84,12 @@ export default function NewExpensePage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              <label htmlFor="expense-amount" className="block text-xs font-bold text-gray-700 mb-1.5">
                 Expense Amount (₹) *
               </label>
               <input
+                id="expense-amount"
+                aria-label="Expense Amount"
                 type="number"
                 step="0.01"
                 min="1"
@@ -98,10 +102,12 @@ export default function NewExpensePage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              <label htmlFor="expense-date" className="block text-xs font-bold text-gray-700 mb-1.5">
                 Expense Date *
               </label>
               <input
+                id="expense-date"
+                aria-label="Expense Date"
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
@@ -110,10 +116,12 @@ export default function NewExpensePage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              <label htmlFor="expense-payment-method" className="block text-xs font-bold text-gray-700 mb-1.5">
                 Payment Method
               </label>
               <select
+                id="expense-payment-method"
+                aria-label="Payment Method"
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
                 className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
@@ -126,10 +134,12 @@ export default function NewExpensePage() {
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              <label htmlFor="expense-vendor" className="block text-xs font-bold text-gray-700 mb-1.5">
                 Vendor / Supplier Name
               </label>
               <input
+                id="expense-vendor"
+                aria-label="Vendor or Supplier Name"
                 type="text"
                 value={vendor}
                 onChange={(e) => setVendor(e.target.value)}

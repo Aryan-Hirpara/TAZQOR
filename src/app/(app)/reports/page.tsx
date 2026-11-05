@@ -88,7 +88,7 @@ export default function ReportsPage() {
           <div className="flex items-center gap-1.5 p-1 bg-white/55 backdrop-blur-md rounded-full border border-white/70 shadow-sm">
             <button
               onClick={() => setPeriod("this_month")}
-              className={`px-4 py-1.5 text-xs font-light rounded-full transition-all ${
+              className={`px-4 min-h-[44px] flex items-center justify-center text-xs font-light rounded-full transition-all cursor-pointer ${
                 period === "this_month" ? "bg-black text-white font-normal shadow-sm" : "text-neutral-700 hover:text-black"
               }`}
             >
@@ -96,7 +96,7 @@ export default function ReportsPage() {
             </button>
             <button
               onClick={() => setPeriod("last_month")}
-              className={`px-4 py-1.5 text-xs font-light rounded-full transition-all ${
+              className={`px-4 min-h-[44px] flex items-center justify-center text-xs font-light rounded-full transition-all cursor-pointer ${
                 period === "last_month" ? "bg-black text-white font-normal shadow-sm" : "text-neutral-700 hover:text-black"
               }`}
             >
@@ -104,7 +104,7 @@ export default function ReportsPage() {
             </button>
             <button
               onClick={() => setPeriod("year")}
-              className={`px-4 py-1.5 text-xs font-light rounded-full transition-all ${
+              className={`px-4 min-h-[44px] flex items-center justify-center text-xs font-light rounded-full transition-all cursor-pointer ${
                 period === "year" ? "bg-black text-white font-normal shadow-sm" : "text-neutral-700 hover:text-black"
               }`}
             >

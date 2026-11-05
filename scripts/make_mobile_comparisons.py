@@ -76,3 +76,4 @@ create_side_by_side(
 )
 
 print("All mobile comparison side-by-sides generated!")
+

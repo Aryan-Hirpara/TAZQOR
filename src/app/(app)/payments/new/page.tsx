@@ -83,7 +83,7 @@ export default function NewPaymentPage() {
         <div>
           <Link
             href="/payments"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-black transition-colors"
+            className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-semibold text-neutral-600 hover:text-black transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Cancel and back to payments</span>
@@ -103,6 +103,7 @@ export default function NewPaymentPage() {
                   Customer Account *
                 </label>
                 <select
+                  aria-label="Customer Account"
                   value={customer}
                   onChange={(e) => setCustomer(e.target.value)}
                   className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] font-medium"
@@ -145,6 +146,7 @@ export default function NewPaymentPage() {
                   Payment Method *
                 </label>
                 <select
+                  aria-label="Payment Method"
                   value={method}
                   onChange={(e) => setMethod(e.target.value as typeof method)}
                   className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
@@ -189,7 +191,7 @@ export default function NewPaymentPage() {
                   <div>
                     <span className="font-mono font-bold text-gray-900">{inv.invoice_number}</span>
                     <p className="text-[11px] text-gray-500 mt-0.5">
-                      Billed: {inv.date} • Total: {formatINR(inv.grand_total)} • Outstanding: <strong className="text-rose-600">{formatINR(inv.outstanding)}</strong>
+                      Billed: {inv.date} • Total: {formatINR(inv.grand_total)} • Outstanding: <strong className="text-rose-700">{formatINR(inv.outstanding)}</strong>
                     </p>
                   </div>
 

@@ -155,6 +155,7 @@ export default function OrdersPage() {
             {/* Custom styled select */}
             <div className="relative">
               <select
+                aria-label="Filter order status"
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
                 className="appearance-none h-10 pl-3.5 pr-8 text-xs bg-white/65 dark:bg-[#242422]/80 backdrop-blur-md rounded-full border border-white/70 dark:border-white/10 text-neutral-700 dark:text-neutral-200 font-light focus:outline-none focus:ring-2 focus:ring-[#D7FF00] shadow-none cursor-pointer"
@@ -299,7 +300,7 @@ export default function OrdersPage() {
                     {!o.invoiced && (
                       <Link
                         href={`/invoices/new?order_id=${o.id}`}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/70 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 text-xs font-light hover:bg-[#D7FF00] hover:text-black border border-white/70 dark:border-white/10 transition-all shadow-none"
+                        className="inline-flex items-center justify-center gap-1 px-4 min-h-[44px] rounded-full bg-white/70 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 text-xs font-light hover:bg-[#D7FF00] hover:text-black border border-white/70 dark:border-white/10 transition-all shadow-none"
                       >
                         <FilePlus className="w-3.5 h-3.5" />
                         <span>Generate Bill</span>
@@ -307,7 +308,7 @@ export default function OrdersPage() {
                     )}
                     <Link
                       href={`/orders/${o.id}`}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-black text-white dark:bg-[#D7FF00] dark:text-black text-xs font-normal hover:scale-105 active:scale-95 transition-all shadow-none"
+                      className="inline-flex items-center justify-center gap-1 px-4 min-h-[44px] rounded-full bg-black text-white dark:bg-[#D7FF00] dark:text-black text-xs font-normal hover:scale-105 active:scale-95 transition-all shadow-none"
                     >
                       <span>View</span>
                       <ChevronRight className="w-3.5 h-3.5" />

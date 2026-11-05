@@ -83,7 +83,7 @@ export default function NewCustomerPage() {
         <div>
           <Link
             href="/customers"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-black transition-colors"
+            className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-semibold text-neutral-600 hover:text-black transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Cancel and back to customers</span>
@@ -143,6 +143,7 @@ export default function NewCustomerPage() {
                 Customer Type
               </label>
               <select
+                aria-label="Customer Type"
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
                 className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D4F732]"

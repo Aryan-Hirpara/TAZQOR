@@ -141,6 +141,7 @@ export default function ExpensesPage() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
+              aria-label="Filter expenses by category"
               className="h-11 px-3 text-xs bg-white rounded-full border border-[#E5E4EE] text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#D4F732] shadow-sm"
             >
               <option value="all">All Categories</option>
@@ -162,7 +163,7 @@ export default function ExpensesPage() {
 
         {/* Expenses Table */}
         <div className="bg-white rounded-3xl border border-[#E5E4EE] overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Expenses table container">
             <table className="w-full text-left text-xs">
               <thead className="bg-[#F9F8FD] border-b border-[#E5E4EE] text-gray-500 font-bold uppercase tracking-wider">
                 <tr>

@@ -63,6 +63,7 @@ export default function StoreMapPage() {
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
+              aria-label="Filter stores by type"
               className="h-10 px-3.5 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm"
             >
               <option value="all">All Types</option>
@@ -78,7 +79,7 @@ export default function StoreMapPage() {
             <button
               type="button"
               onClick={() => setViewMode("map")}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-light transition-all ${
+              className={`flex items-center justify-center gap-1.5 px-4 min-h-[44px] rounded-full text-xs font-light transition-all cursor-pointer ${
                 viewMode === "map" ? "bg-black text-white font-normal shadow-sm" : "text-neutral-700 hover:text-black"
               }`}
             >
@@ -88,7 +89,7 @@ export default function StoreMapPage() {
             <button
               type="button"
               onClick={() => setViewMode("list")}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-light transition-all ${
+              className={`flex items-center justify-center gap-1.5 px-4 min-h-[44px] rounded-full text-xs font-light transition-all cursor-pointer ${
                 viewMode === "list" ? "bg-black text-white font-normal shadow-sm" : "text-neutral-700 hover:text-black"
               }`}
             >
@@ -130,7 +131,7 @@ export default function StoreMapPage() {
                       <MapPin className="w-4 h-4 fill-current" />
                       <div className="text-left pr-1">
                         <div className="text-xs font-black leading-tight">{c.name}</div>
-                        <div className="text-[10px] text-gray-400 leading-tight">{c.city}</div>
+                        <div className={`text-[10px] leading-tight ${isSelected ? "text-neutral-300" : "text-neutral-600"}`}>{c.city}</div>
                       </div>
                     </button>
                   );
@@ -230,7 +231,7 @@ export default function StoreMapPage() {
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5">{c.shop_name} • {c.city}, {c.state}</p>
                     {c.lat && c.lng && (
-                      <p className="text-[11px] font-mono text-gray-400 mt-1">
+                      <p className="text-[11px] font-mono text-neutral-600 mt-1">
                         GPS: {c.lat}, {c.lng}
                       </p>
                     )}

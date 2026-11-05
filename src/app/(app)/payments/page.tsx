@@ -89,7 +89,7 @@ export default function PaymentsPage() {
             <span className="text-xs font-light text-neutral-500 block">
               Total collections (this month)
             </span>
-            <div className="text-3xl font-normal text-emerald-600 mt-1 tracking-tight">
+            <div className="text-3xl font-normal text-emerald-800 mt-1 tracking-tight">
               {formatINR(totalCollected)}
             </div>
             <p className="text-[11px] font-light text-neutral-500 mt-0.5">Across UPI, Bank Transfer & Cash</p>
@@ -114,7 +114,7 @@ export default function PaymentsPage() {
             </div>
             <Link
               href="/customers"
-              className="px-4 py-1.5 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm"
+              className="px-4 min-h-[44px] flex items-center justify-center rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm cursor-pointer"
             >
               Ledger
             </Link>
@@ -136,6 +136,7 @@ export default function PaymentsPage() {
             </div>
 
             <select
+              aria-label="Filter payment method"
               value={selectedMethod}
               onChange={(e) => setSelectedMethod(e.target.value)}
               className="h-11 px-3 text-xs bg-white rounded-full border border-[#E5E4EE] text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#D4F732] shadow-sm"
@@ -189,13 +190,13 @@ export default function PaymentsPage() {
 
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-1.5 font-bold uppercase text-[11px] text-gray-800">
-                        <CreditCard className="w-3.5 h-3.5 text-gray-400" />
+                        <CreditCard className="w-3.5 h-3.5 text-neutral-600" />
                         <span>{p.method.replace('_', ' ')}</span>
                       </div>
-                      <div className="text-[11px] font-mono text-gray-400 mt-0.5">{p.reference}</div>
+                      <div className="text-[11px] font-mono text-neutral-600 mt-0.5">{p.reference}</div>
                     </td>
 
-                    <td className="py-4 px-4 text-right font-black text-sm text-emerald-600">
+                    <td className="py-4 px-4 text-right font-black text-sm text-emerald-800">
                       +{formatINR(p.amount)}
                     </td>
 
@@ -207,7 +208,7 @@ export default function PaymentsPage() {
                       <button
                         type="button"
                         onClick={() => window.print()}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-100 text-gray-800 text-xs font-semibold hover:bg-black hover:text-white transition-all"
+                        className="inline-flex items-center justify-center gap-1 px-4 min-h-[44px] rounded-full bg-gray-100 text-gray-800 text-xs font-semibold hover:bg-black hover:text-white transition-all cursor-pointer"
                       >
                         <Receipt className="w-3.5 h-3.5" />
                         <span>Receipt</span>

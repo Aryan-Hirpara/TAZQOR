@@ -44,7 +44,8 @@ export function OrderCard({
         {/* Circular Arrow Button (NO drop shadow) */}
         <Link
           href={href}
-          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/60 hover:bg-black hover:text-white border border-white text-neutral-800 flex items-center justify-center transition-all group-hover:scale-105 active:scale-95 shrink-0"
+          aria-label={`View ${type} details`}
+          className="w-8 h-8 min-w-[32px] min-h-[32px] rounded-full bg-white/60 hover:bg-black hover:text-white border border-white text-neutral-800 flex items-center justify-center transition-all group-hover:scale-105 active:scale-95 shrink-0"
           title={`View ${type}`}
         >
           <ArrowUpRight className="w-3.5 h-3.5" />

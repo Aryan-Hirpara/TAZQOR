@@ -192,19 +192,19 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-200 flex items-start gap-3">
+            <label htmlFor="gst-confirm" className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-center gap-3 min-h-[44px] cursor-pointer">
               <input
                 type="checkbox"
                 id="gst-confirm"
                 checked={profile.gst_confirmed}
                 onChange={(e) => setProfile({ ...profile, gst_confirmed: e.target.checked })}
-                className="mt-1 w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
+                className="w-5 h-5 rounded text-neutral-900 focus:ring-neutral-900 cursor-pointer shrink-0"
               />
-              <label htmlFor="gst-confirm" className="text-xs text-purple-950 font-medium">
+              <span className="text-xs text-neutral-900 font-medium">
                 <strong>I confirm TAZQOR is officially registered under GST.</strong> Enable generation of GST Tax Invoices.
                 (Unchecking this disables the GST mode and restricts billing to Non-GST Bills of Supply).
-              </label>
-            </div>
+              </span>
+            </label>
           </div>
 
           {/* Numbering & Financial Year */}
@@ -228,7 +228,7 @@ export default function SettingsPage() {
                   onChange={(e) => setInvoiceSettings({ ...invoiceSettings, invoice_prefix: e.target.value })}
                   className="w-full h-11 px-4 text-xs font-mono bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
                 />
-                <span className="text-[10px] text-gray-400 mt-1 block">e.g. INV/2026-27/0001</span>
+                <span className="text-[10px] text-neutral-600 mt-1 block">e.g. INV/2026-27/0001</span>
               </div>
 
               <div>
@@ -241,7 +241,7 @@ export default function SettingsPage() {
                   onChange={(e) => setInvoiceSettings({ ...invoiceSettings, bill_prefix: e.target.value })}
                   className="w-full h-11 px-4 text-xs font-mono bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
                 />
-                <span className="text-[10px] text-gray-400 mt-1 block">e.g. BILL/2026-27/0001</span>
+                <span className="text-[10px] text-neutral-600 mt-1 block">e.g. BILL/2026-27/0001</span>
               </div>
 
               <div>
@@ -249,6 +249,7 @@ export default function SettingsPage() {
                   Financial Year Cycle
                 </label>
                 <select
+                  aria-label="Financial Year Cycle"
                   value={invoiceSettings.fy_start_month}
                   onChange={(e) => setInvoiceSettings({ ...invoiceSettings, fy_start_month: Number(e.target.value) })}
                   className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"

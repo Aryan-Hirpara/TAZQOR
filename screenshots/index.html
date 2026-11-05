@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TAZQOR • Complete Website & Mobile App Screenshots</title>
+  <style>
+    :root {
+      --bg: #F4F2F8;
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --border: rgba(0, 0, 0, 0.08);
+      --text: #111827;
+      --text-muted: #6B7280;
+      --lime: #D7FF00;
+      --dark: #121212;
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 32px 24px; }
+    header { max-width: 1400px; margin: 0 auto 32px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo-badge { background: #000; color: var(--lime); font-weight: 800; font-size: 18px; padding: 6px 14px; border-radius: 9999px; letter-spacing: -0.5px; }
+    h1 { font-size: 24px; font-weight: 700; color: #111; }
+    .stats { display: flex; gap: 12px; }
+    .stat-pill { background: #fff; border: 1px solid var(--border); padding: 8px 16px; border-radius: 9999px; font-size: 13px; font-weight: 600; }
+    
+    .view-toggles { display: flex; gap: 8px; max-width: 1400px; margin: 0 auto 24px; }
+    .toggle-btn { background: #fff; border: 1px solid var(--border); padding: 8px 18px; border-radius: 9999px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .toggle-btn.active { background: #000; color: #fff; border-color: #000; }
+
+    .grid { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 24px; }
+    .card { background: var(--card-bg); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.04); display: flex; flex-col; transition: transform 0.2s; }
+    .card:hover { transform: translateY(-2px); }
+    .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .card-title { font-size: 15px; font-weight: 700; color: #111; }
+    .card-route { font-size: 11px; font-family: monospace; color: var(--text-muted); background: rgba(0,0,0,0.05); padding: 2px 8px; border-radius: 6px; }
+    
+    .media-container { padding: 16px; display: flex; gap: 16px; background: rgba(0,0,0,0.02); }
+    .preview-box { flex: 1; display: flex; flex-direction: column; align-items: center; }
+    .preview-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
+    .preview-img-wrap { width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid rgba(0,0,0,0.08); background: #fff; cursor: zoom-in; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .preview-img-wrap img { width: 100%; height: auto; display: block; object-fit: contain; }
+
+    /* Modal for zoom */
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 999; justify-content: center; align-items: center; padding: 24px; }
+    .modal.active { display: flex; }
+    .modal img { max-width: 90vw; max-height: 90vh; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); object-fit: contain; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo-badge">TAZQOR</div>
+      <div>
+        <h1>Visual Inventory & Screenshots</h1>
+        <p style="font-size: 13px; color: var(--text-muted);">Complete visual gallery for Desktop Web & Mobile App</p>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat-pill">🖥️ 24 Web Screens</div>
+      <div class="stat-pill">📱 25 Mobile Screens</div>
+      <div class="stat-pill">✨ High-DPI Retina (2x)</div>
+    </div>
+  </header>
+
+  <div class="view-toggles">
+    <button class="toggle-btn active" onclick="filterView('both')">Compare Both (Desktop + Mobile)</button>
+    <button class="toggle-btn" onclick="filterView('desktop')">Desktop Web Only</button>
+    <button class="toggle-btn" onclick="filterView('mobile')">Mobile App Only</button>
+  </div>
+
+  <div class="grid">
+    
+    <div class="card" id="card-dashboard">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#01</span>
+          <span class="card-title">Dashboard & Analytics Overview</span>
+        </div>
+        <span class="card-route">/dashboard</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/01_dashboard.png')">
+            <img src="desktop/01_dashboard.png" alt="Desktop Dashboard & Analytics Overview" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/01_dashboard.png')">
+            <img src="mobile/01_dashboard.png" alt="Mobile Dashboard & Analytics Overview" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-customers">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#02</span>
+          <span class="card-title">Customers Directory</span>
+        </div>
+        <span class="card-route">/customers</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/02_customers.png')">
+            <img src="desktop/02_customers.png" alt="Desktop Customers Directory" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/02_customers.png')">
+            <img src="mobile/02_customers.png" alt="Mobile Customers Directory" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-customer_detail">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#03</span>
+          <span class="card-title">Customer Detail (Shreeji Supermarket)</span>
+        </div>
+        <span class="card-route">/customers/c1-shreeji</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/03_customer_detail.png')">
+            <img src="desktop/03_customer_detail.png" alt="Desktop Customer Detail (Shreeji Supermarket)" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/03_customer_detail.png')">
+            <img src="mobile/03_customer_detail.png" alt="Mobile Customer Detail (Shreeji Supermarket)" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-customer_new">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#04</span>
+          <span class="card-title">Add New Customer</span>
+        </div>
+        <span class="card-route">/customers/new</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/04_customer_new.png')">
+            <img src="desktop/04_customer_new.png" alt="Desktop Add New Customer" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/04_customer_new.png')">
+            <img src="mobile/04_customer_new.png" alt="Mobile Add New Customer" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-orders">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#05</span>
+          <span class="card-title">Orders Management</span>
+        </div>
+        <span class="card-route">/orders</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/05_orders.png')">
+            <img src="desktop/05_orders.png" alt="Desktop Orders Management" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/05_orders.png')">
+            <img src="mobile/05_orders.png" alt="Mobile Orders Management" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-order_new">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#06</span>
+          <span class="card-title">Create New Order</span>
+        </div>
+        <span class="card-route">/orders/new</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/06_order_new.png')">
+            <img src="desktop/06_order_new.png" alt="Desktop Create New Order" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/06_order_new.png')">
+            <img src="mobile/06_order_new.png" alt="Mobile Create New Order" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-invoices">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#07</span>
+          <span class="card-title">Invoices & Bills of Supply</span>
+        </div>
+        <span class="card-route">/invoices</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/07_invoices.png')">
+            <img src="desktop/07_invoices.png" alt="Desktop Invoices & Bills of Supply" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/07_invoices.png')">
+            <img src="mobile/07_invoices.png" alt="Mobile Invoices & Bills of Supply" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-invoice_detail">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#08</span>
+          <span class="card-title">Tax Invoice Detail View</span>
+        </div>
+        <span class="card-route">/invoices/inv-1</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/08_invoice_detail.png')">
+            <img src="desktop/08_invoice_detail.png" alt="Desktop Tax Invoice Detail View" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/08_invoice_detail.png')">
+            <img src="mobile/08_invoice_detail.png" alt="Mobile Tax Invoice Detail View" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-invoice_new">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#09</span>
+          <span class="card-title">Create GST Tax Invoice</span>
+        </div>
+        <span class="card-route">/invoices/new</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/09_invoice_new.png')">
+            <img src="desktop/09_invoice_new.png" alt="Desktop Create GST Tax Invoice" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/09_invoice_new.png')">
+            <img src="mobile/09_invoice_new.png" alt="Mobile Create GST Tax Invoice" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-payments">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#10</span>
+          <span class="card-title">Payment Collections & Receipts</span>
+        </div>
+        <span class="card-route">/payments</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/10_payments.png')">
+            <img src="desktop/10_payments.png" alt="Desktop Payment Collections & Receipts" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/10_payments.png')">
+            <img src="mobile/10_payments.png" alt="Mobile Payment Collections & Receipts" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-payment_new">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#11</span>
+          <span class="card-title">Record Payment Collection</span>
+        </div>
+        <span class="card-route">/payments/new</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/11_payment_new.png')">
+            <img src="desktop/11_payment_new.png" alt="Desktop Record Payment Collection" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/11_payment_new.png')">
+            <img src="mobile/11_payment_new.png" alt="Mobile Record Payment Collection" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-inventory">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#12</span>
+          <span class="card-title">Stock & Inventory Batches</span>
+        </div>
+        <span class="card-route">/inventory</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/12_inventory.png')">
+            <img src="desktop/12_inventory.png" alt="Desktop Stock & Inventory Batches" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/12_inventory.png')">
+            <img src="mobile/12_inventory.png" alt="Mobile Stock & Inventory Batches" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-products">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#13</span>
+          <span class="card-title">Products & SKU Catalog</span>
+        </div>
+        <span class="card-route">/products</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/13_products.png')">
+            <img src="desktop/13_products.png" alt="Desktop Products & SKU Catalog" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/13_products.png')">
+            <img src="mobile/13_products.png" alt="Mobile Products & SKU Catalog" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-product_new">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#14</span>
+          <span class="card-title">Add New Product</span>
+        </div>
+        <span class="card-route">/products/new</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/14_product_new.png')">
+            <img src="desktop/14_product_new.png" alt="Desktop Add New Product" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/14_product_new.png')">
+            <img src="mobile/14_product_new.png" alt="Mobile Add New Product" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-categories">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#15</span>
+          <span class="card-title">Product Categories</span>
+        </div>
+        <span class="card-route">/categories</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/15_categories.png')">
+            <img src="desktop/15_categories.png" alt="Desktop Product Categories" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/15_categories.png')">
+            <img src="mobile/15_categories.png" alt="Mobile Product Categories" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-map">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#16</span>
+          <span class="card-title">Gujarat Territory & Store Map</span>
+        </div>
+        <span class="card-route">/map</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/16_map.png')">
+            <img src="desktop/16_map.png" alt="Desktop Gujarat Territory & Store Map" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/16_map.png')">
+            <img src="mobile/16_map.png" alt="Mobile Gujarat Territory & Store Map" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-visits">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#17</span>
+          <span class="card-title">Field Visits Tracker</span>
+        </div>
+        <span class="card-route">/visits</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/17_visits.png')">
+            <img src="desktop/17_visits.png" alt="Desktop Field Visits Tracker" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/17_visits.png')">
+            <img src="mobile/17_visits.png" alt="Mobile Field Visits Tracker" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-visit_new">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#18</span>
+          <span class="card-title">Schedule Field Visit</span>
+        </div>
+        <span class="card-route">/visits/new</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/18_visit_new.png')">
+            <img src="desktop/18_visit_new.png" alt="Desktop Schedule Field Visit" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/18_visit_new.png')">
+            <img src="mobile/18_visit_new.png" alt="Mobile Schedule Field Visit" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-expenses">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#19</span>
+          <span class="card-title">Operating Expenses</span>
+        </div>
+        <span class="card-route">/expenses</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/19_expenses.png')">
+            <img src="desktop/19_expenses.png" alt="Desktop Operating Expenses" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/19_expenses.png')">
+            <img src="mobile/19_expenses.png" alt="Mobile Operating Expenses" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-expense_new">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#20</span>
+          <span class="card-title">Record Operating Expense</span>
+        </div>
+        <span class="card-route">/expenses/new</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/20_expense_new.png')">
+            <img src="desktop/20_expense_new.png" alt="Desktop Record Operating Expense" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/20_expense_new.png')">
+            <img src="mobile/20_expense_new.png" alt="Mobile Record Operating Expense" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-reports">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#21</span>
+          <span class="card-title">Reports & Sales Analysis</span>
+        </div>
+        <span class="card-route">/reports</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/21_reports.png')">
+            <img src="desktop/21_reports.png" alt="Desktop Reports & Sales Analysis" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/21_reports.png')">
+            <img src="mobile/21_reports.png" alt="Mobile Reports & Sales Analysis" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-settings">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#22</span>
+          <span class="card-title">Business Profile & GST Settings</span>
+        </div>
+        <span class="card-route">/settings</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/22_settings.png')">
+            <img src="desktop/22_settings.png" alt="Desktop Business Profile & GST Settings" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/22_settings.png')">
+            <img src="mobile/22_settings.png" alt="Mobile Business Profile & GST Settings" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-login">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#23</span>
+          <span class="card-title">Authentication & Sign In</span>
+        </div>
+        <span class="card-route">/login</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/23_login.png')">
+            <img src="desktop/23_login.png" alt="Desktop Authentication & Sign In" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/23_login.png')">
+            <img src="mobile/23_login.png" alt="Mobile Authentication & Sign In" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-offline">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#24</span>
+          <span class="card-title">Offline Fallback Screen</span>
+        </div>
+        <span class="card-route">/offline</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/24_offline.png')">
+            <img src="desktop/24_offline.png" alt="Desktop Offline Fallback Screen" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/24_offline.png')">
+            <img src="mobile/24_offline.png" alt="Mobile Offline Fallback Screen" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card-mobile_more_drawer">
+      <div class="card-header">
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #6366F1; margin-right: 6px;">#25</span>
+          <span class="card-title">Mobile More Navigation Drawer</span>
+        </div>
+        <span class="card-route">/dashboard (Drawer Open)</span>
+      </div>
+      <div class="media-container">
+        <div class="preview-box box-desktop">
+          <div class="preview-label">🖥️ Desktop Web (1440x960)</div>
+          <div class="preview-img-wrap" onclick="openZoom('desktop/25_mobile_more_drawer.png')">
+            <img src="desktop/25_mobile_more_drawer.png" alt="Desktop Mobile More Navigation Drawer" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\'padding:40px;font-size:12px;color:#999;display:block;text-align:center;\'>N/A for Mobile Drawer</span>'"/>
+          </div>
+        </div>
+        <div class="preview-box box-mobile" style="max-width: 170px;">
+          <div class="preview-label">📱 Mobile App</div>
+          <div class="preview-img-wrap" onclick="openZoom('mobile/25_mobile_more_drawer.png')">
+            <img src="mobile/25_mobile_more_drawer.png" alt="Mobile Mobile More Navigation Drawer" loading="lazy" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="zoomModal" class="modal" onclick="this.classList.remove('active')">
+    <img id="zoomImg" src="" alt="Zoomed view" />
+  </div>
+
+  <script>
+    function openZoom(src) {
+      document.getElementById('zoomImg').src = src;
+      document.getElementById('zoomModal').classList.add('active');
+    }
+    function filterView(type) {
+      document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      const deskBoxes = document.querySelectorAll('.box-desktop');
+      const mobBoxes = document.querySelectorAll('.box-mobile');
+      if (type === 'both') {
+        deskBoxes.forEach(b => b.style.display = 'flex');
+        mobBoxes.forEach(b => b.style.display = 'flex');
+      } else if (type === 'desktop') {
+        deskBoxes.forEach(b => b.style.display = 'flex');
+        mobBoxes.forEach(b => b.style.display = 'none');
+      } else if (type === 'mobile') {
+        deskBoxes.forEach(b => b.style.display = 'none');
+        mobBoxes.forEach(b => b.style.display = 'flex');
+      }
+    }
+  </script>
+</body>
+</html>

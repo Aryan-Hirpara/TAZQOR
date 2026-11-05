@@ -1,0 +1,22 @@
+{
+  "max_allowed": 10,
+  "exemptions": [
+    {
+      "id": "EX-001",
+      "route": "/map",
+      "check": "G5",
+      "selector": ".leaflet-control-attribution a",
+      "rationale": "Third-party OpenStreetMap required legal attribution links adhere to OSM standard micro-typography",
+      "expires": "2026-12-31"
+    },
+    {
+      "id": "EX-002",
+      "route": "/test/canary",
+      "check": "ALL",
+      "selector": "[data-canary]",
+      "rationale": "Intentional defects on dedicated canary page to test harness detection capabilities (H1)",
+      "expires": "permanent"
+    }
+  ]
+}
+

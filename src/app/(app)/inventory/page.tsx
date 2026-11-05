@@ -241,7 +241,7 @@ export default function InventoryPage() {
             <span className="text-xs font-light text-neutral-500 block">
               Total units on hand
             </span>
-            <div className="text-3xl font-normal text-emerald-600 mt-1 tracking-tight">
+            <div className="text-3xl font-normal text-emerald-800 mt-1 tracking-tight">
               {totalStockUnits} Units
             </div>
             <p className="text-[11px] font-light text-neutral-500 mt-0.5">Across active FEFO batches</p>
@@ -253,7 +253,7 @@ export default function InventoryPage() {
                 FEFO policy
               </span>
               <p className="text-sm text-neutral-900 font-normal mt-0.5">First-Expiry-First-Out</p>
-              <p className="text-[11px] text-emerald-600 font-light">Automatic allocation on billing</p>
+              <p className="text-[11px] text-emerald-800 font-light">Automatic allocation on billing</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-[#E0FE52] text-black flex items-center justify-center font-normal shadow-sm">
               ✓
@@ -266,7 +266,7 @@ export default function InventoryPage() {
           <div className="flex items-center gap-1.5 p-1 bg-white/55 backdrop-blur-md rounded-full border border-white/70 shadow-sm">
             <button
               onClick={() => setActiveTab("batches")}
-              className={`px-4 py-1.5 text-xs font-light rounded-full transition-all ${
+              className={`px-4 min-h-[44px] flex items-center justify-center text-xs font-light rounded-full transition-all cursor-pointer ${
                 activeTab === "batches"
                   ? "bg-black text-white font-normal shadow-sm"
                   : "text-neutral-700 hover:text-black"
@@ -276,7 +276,7 @@ export default function InventoryPage() {
             </button>
             <button
               onClick={() => setActiveTab("movements")}
-              className={`px-4 py-1.5 text-xs font-light rounded-full transition-all ${
+              className={`px-4 min-h-[44px] flex items-center justify-center text-xs font-light rounded-full transition-all cursor-pointer ${
                 activeTab === "movements"
                   ? "bg-black text-white font-normal shadow-sm"
                   : "text-neutral-700 hover:text-black"
@@ -432,6 +432,7 @@ export default function InventoryPage() {
                 Product Variant
               </label>
               <select
+                aria-label="Product Variant"
                 value={receiveForm.product_variant}
                 onChange={(e) => setReceiveForm({ ...receiveForm, product_variant: e.target.value })}
                 className="w-full h-10 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
@@ -552,6 +553,7 @@ export default function InventoryPage() {
                 Select Batch
               </label>
               <select
+                aria-label="Select Batch"
                 value={adjustForm.batch_id}
                 onChange={(e) => setAdjustForm({ ...adjustForm, batch_id: e.target.value })}
                 className="w-full h-10 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
@@ -570,6 +572,7 @@ export default function InventoryPage() {
                   Adjustment Type
                 </label>
                 <select
+                  aria-label="Adjustment Type"
                   value={adjustForm.type}
                   onChange={(e) => setAdjustForm({ ...adjustForm, type: e.target.value })}
                   className="w-full h-10 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"

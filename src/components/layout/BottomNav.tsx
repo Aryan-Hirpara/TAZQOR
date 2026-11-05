@@ -49,7 +49,7 @@ export function BottomNav() {
               href={item.href}
               className={cn(
                 "flex flex-col items-center justify-center flex-1 h-full py-1 transition-all relative min-w-0",
-                isActive ? "text-black dark:text-white" : "text-neutral-500 hover:text-black dark:text-neutral-400"
+                isActive ? "text-black dark:text-white" : "text-neutral-800 hover:text-black dark:text-neutral-200"
               )}
             >
               <div
@@ -57,12 +57,12 @@ export function BottomNav() {
                   "w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0",
                   isActive
                     ? "bg-black text-[#D7FF00] dark:bg-[#D7FF00] dark:text-black shadow-sm"
-                    : "bg-transparent text-neutral-600 dark:text-neutral-300"
+                    : "bg-transparent text-neutral-800 dark:text-neutral-200"
                 )}
               >
                 <Icon className="w-4 h-4" />
               </div>
-              <span className="text-[10px] mt-0.5 tracking-tight font-light truncate max-w-full">
+              <span className="text-[10px] mt-0.5 tracking-tight font-medium truncate max-w-full">
                 {item.label}
               </span>
             </Link>
@@ -77,7 +77,7 @@ export function BottomNav() {
           aria-label="More navigation and actions"
           className={cn(
             "flex flex-col items-center justify-center flex-1 h-full py-1 transition-all relative min-w-0 cursor-pointer",
-            isMoreActive ? "text-black dark:text-white" : "text-neutral-500 hover:text-black dark:text-neutral-400"
+            isMoreActive ? "text-black dark:text-white" : "text-neutral-800 hover:text-black dark:text-neutral-200"
           )}
         >
           <div
@@ -85,12 +85,12 @@ export function BottomNav() {
               "w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0",
               isMoreActive
                 ? "bg-black text-[#D7FF00] dark:bg-[#D7FF00] dark:text-black shadow-sm"
-                : "bg-transparent text-neutral-600 dark:text-neutral-300"
+                : "bg-transparent text-neutral-800 dark:text-neutral-200"
             )}
           >
             <Menu className="w-4 h-4" />
           </div>
-          <span className="text-[10px] mt-0.5 tracking-tight font-light truncate max-w-full">
+          <span className="text-[10px] mt-0.5 tracking-tight font-medium truncate max-w-full">
             More
           </span>
         </button>

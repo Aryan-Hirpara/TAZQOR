@@ -57,7 +57,7 @@ export function TopHeader({
             </Link>
             {title && (
               <div className="flex items-center gap-2 pl-3 border-l border-neutral-400/40">
-                <span className="text-sm font-light text-neutral-700 dark:text-neutral-300 tracking-tight">{title}</span>
+                <h1 className="text-sm font-light text-neutral-700 dark:text-neutral-300 tracking-tight">{title}</h1>
               </div>
             )}
           </div>
@@ -170,7 +170,7 @@ export function TopHeader({
           {isHome ? (
             /* Mobile Home: Avatar left + Actions right */
             <>
-              <Link href="/dashboard" className="flex items-center gap-2 group">
+              <Link href="/dashboard" className="flex items-center gap-2 group min-h-[44px]">
                 <TazqorLogo className="h-6 w-auto object-contain" height={24} />
               </Link>
 

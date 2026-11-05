@@ -66,7 +66,7 @@ export default function NewVisitPage() {
         <div>
           <Link
             href="/visits"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-black transition-colors"
+            className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-semibold text-neutral-600 hover:text-black transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Cancel and back to visits</span>
@@ -85,6 +85,7 @@ export default function NewVisitPage() {
                 Customer Store *
               </label>
               <select
+                aria-label="Customer Store"
                 value={customer}
                 onChange={(e) => setCustomer(e.target.value)}
                 className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] font-medium"

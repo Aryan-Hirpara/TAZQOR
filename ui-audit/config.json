@@ -1,0 +1,60 @@
+{
+  "version": "1.0.0",
+  "name": "TAZQOR UI Verification Harness Configuration",
+  "browsers": [
+    "chromium",
+    "webkit"
+  ],
+  "viewports": [
+    { "name": "iphone-se-1st", "width": 320, "height": 568, "isTouch": true },
+    { "name": "android-standard", "width": 360, "height": 740, "isTouch": true },
+    { "name": "iphone-standard", "width": 390, "height": 844, "isTouch": true },
+    { "name": "iphone-pro-max", "width": 430, "height": 932, "isTouch": true },
+    { "name": "ipad-portrait", "width": 768, "height": 1024, "isTouch": true },
+    { "name": "ipad-landscape", "width": 1024, "height": 768, "isTouch": true },
+    { "name": "laptop-hd", "width": 1280, "height": 720, "isTouch": false },
+    { "name": "desktop-mid", "width": 1470, "height": 800, "isTouch": false },
+    { "name": "design-canvas", "width": 1440, "height": 960, "isTouch": false },
+    { "name": "desktop-fhd", "width": 1920, "height": 1080, "isTouch": false },
+    { "name": "phone-landscape", "width": 844, "height": 390, "isTouch": true }
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "checks": [
+    { "id": "G1", "category": "Geometry", "name": "No document horizontal overflow" },
+    { "id": "G2", "category": "Geometry", "name": "No element extends past viewport right edge" },
+    { "id": "G3", "category": "Geometry", "name": "Card boundary containment" },
+    { "id": "G4", "category": "Geometry", "name": "No overlapping sibling cards" },
+    { "id": "G5", "category": "Geometry", "name": "Minimum touch targets (44x44px)" },
+    { "id": "G6", "category": "Geometry", "name": "Bottom nav safe-area clearance" },
+    { "id": "G7", "category": "Geometry", "name": "Fixed/sticky element stability" },
+    { "id": "G8", "category": "Geometry", "name": "Responsive reflow (no collapsed zero-width)" },
+    { "id": "G9", "category": "Geometry", "name": "Chart containment in card" },
+    { "id": "G10", "category": "Geometry", "name": "Concentric circles pointer-events none & clipped" },
+    { "id": "F1", "category": "Function", "name": "Route reachability (200 OK & non-empty)" },
+    { "id": "F2", "category": "Function", "name": "Interactive state reachability" },
+    { "id": "F3", "category": "Function", "name": "Bottom nav More launcher sheet" },
+    { "id": "F4", "category": "Function", "name": "Form fields operable" },
+    { "id": "F5", "category": "Function", "name": "Print stylesheet for invoice" },
+    { "id": "D1", "category": "Design", "name": "Typography token compliance" },
+    { "id": "D2", "category": "Design", "name": "Color token compliance" },
+    { "id": "D3", "category": "Design", "name": "Card styling (glass & no box shadow)" },
+    { "id": "D4", "category": "Design", "name": "Currency formatting standard" },
+    { "id": "D5", "category": "Design", "name": "Number scaling without clipping" },
+    { "id": "A1", "category": "Accessibility", "name": "Zero axe-core critical/serious violations" },
+    { "id": "P1", "category": "Performance", "name": "FCP <= 1.2s and CLS <= 0.05" },
+    { "id": "I1", "category": "Integrity", "name": "Financial invariant reconciliation" },
+    { "id": "I2", "category": "Integrity", "name": "Indian Financial Year naming convention" },
+    { "id": "I3", "category": "Integrity", "name": "Order status sum invariant" },
+    { "id": "H1", "category": "Harness", "name": "Canary detection verification" },
+    { "id": "H2", "category": "Harness", "name": "Zero false passes" }
+  ],
+  "thresholds": {
+    "fcpMaxMs": 1200,
+    "clsMax": 0.05,
+    "axeMaxCriticalOrSerious": 0
+  }
+}
+

@@ -119,7 +119,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
         <div className="print:hidden flex flex-wrap items-center justify-between gap-4">
           <Link
             href="/invoices"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-black transition-colors"
+            className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-semibold text-neutral-600 hover:text-black transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Invoices</span>
@@ -188,7 +188,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
           {/* Bill To */}
           <div className="py-6 border-b border-gray-200 grid grid-cols-2 gap-6">
             <div className="space-y-1">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+              <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider block">
                 Billed To (Customer)
               </span>
               <h3 className="text-sm font-bold text-gray-900">{invoice.customer.name}</h3>
@@ -202,7 +202,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
             </div>
 
             <div className="text-right space-y-2">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+              <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider block">
                 Payment Status
               </span>
               <div className="text-base font-black text-gray-900">
@@ -222,7 +222,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
           <div className="py-6 border-b border-gray-200 overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-gray-200 text-gray-400 font-bold uppercase text-[10px]">
+                <tr className="border-b border-gray-200 text-neutral-600 font-bold uppercase text-[10px]">
                   <th className="py-2">Item Description</th>
                   <th className="py-2">HSN</th>
                   <th className="py-2">Batch</th>
@@ -243,7 +243,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
                   <tr key={i}>
                     <td className="py-3 font-semibold text-gray-900">
                       <div>{item.name}</div>
-                      <div className="text-[10px] text-gray-400 font-mono">{item.sku}</div>
+                      <div className="text-[10px] text-neutral-600 font-mono">{item.sku}</div>
                     </td>
                     <td className="py-3 font-mono text-gray-600">{item.hsn}</td>
                     <td className="py-3 font-mono text-gray-600">{item.batch}</td>
@@ -291,7 +291,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
                 </>
               )}
 
-              <div className="flex justify-between text-gray-400 text-[11px]">
+              <div className="flex justify-between text-neutral-600 text-[11px]">
                 <span>Round off:</span>
                 <span>{invoice.round_off.toFixed(2)}</span>
               </div>
@@ -316,7 +316,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
             <div className="text-right flex flex-col justify-between items-end">
               <p className="font-bold text-gray-700">For TAZQOR Clean Solutions LLP</p>
               <div className="h-10" />
-              <p className="border-t border-gray-300 pt-1 w-48 text-center text-gray-400">
+              <p className="border-t border-gray-300 pt-1 w-48 text-center text-neutral-600">
                 Authorized Signatory
               </p>
             </div>

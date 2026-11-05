@@ -36,7 +36,8 @@ export function MobileSalesAnalyzing({
       <div className="flex items-center justify-between mb-5">
         <Link
           href="/dashboard"
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+          aria-label="Back to dashboard"
+          className={`w-11 h-11 min-h-[44px] min-w-[44px] rounded-full flex items-center justify-center transition-all ${
             isDark
               ? "bg-[#282826] hover:bg-[#343431] text-white"
               : "bg-white/60 hover:bg-white text-black border border-white/80"
@@ -53,18 +54,20 @@ export function MobileSalesAnalyzing({
           <button
             type="button"
             onClick={() => setMode(isDark ? "light" : "dark")}
-            className={`p-1 rounded-full text-xs transition-colors ${
+            aria-label="Toggle light or dark preview"
+            className={`w-11 h-11 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full text-xs transition-colors cursor-pointer ${
               isDark ? "text-neutral-400 hover:text-white" : "text-neutral-600 hover:text-black"
             }`}
             title="Toggle Light/Dark Variant"
           >
-            {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
         </div>
 
         <button
           type="button"
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+          aria-label="Dashboard grid options"
+          className={`w-11 h-11 min-h-[44px] min-w-[44px] rounded-full flex items-center justify-center transition-all ${
             isDark
               ? "bg-[#282826] hover:bg-[#343431] text-white"
               : "bg-white/60 hover:bg-white text-black border border-white/80"

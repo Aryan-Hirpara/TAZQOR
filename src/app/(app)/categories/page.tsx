@@ -60,7 +60,7 @@ export default function CategoriesPage() {
         <div>
           <Link
             href="/products"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-black transition-colors"
+            className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-semibold text-neutral-600 hover:text-black transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Products</span>
@@ -134,7 +134,7 @@ export default function CategoriesPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-mono text-gray-400">Order: #{cat.sortOrder}</span>
+                  <span className="text-[11px] font-mono text-neutral-600">Order: #{cat.sortOrder}</span>
                 </div>
               </div>
             ))}
