@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Printer,
+  Download,
+  Loader2,
   FileText,
   Share2,
   Ban,
@@ -23,6 +25,7 @@ import { TazqorLogo } from "@/components/brand/TazqorLogo";
 export default function InvoiceDetailClient({ id }: { id: string }) {
   const router = useRouter();
   const [cancelling, setCancelling] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [status, setStatus] = useState<"finalized" | "cancelled">("finalized");
 
   // Sample finalized invoice data
@@ -89,7 +92,62 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
   };
 
   const handlePrint = () => {
+    const originalTitle = document.title;
+    const safeNumber = (invoice.invoice_number || "Bill").replace(/[/\\?%*:|"<>]/g, "-");
+    document.title = `Invoice_${safeNumber}`;
     window.print();
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 1500);
+  };
+
+  const handleDownloadPdf = async () => {
+    const invoiceEl = document.getElementById("printable-invoice");
+    if (!invoiceEl) {
+      toast.error("Invoice document element not found");
+      return;
+    }
+
+    setIsDownloadingPdf(true);
+    const toastId = toast.loading("Generating high-resolution invoice PDF...");
+
+    try {
+      const html2canvas = (await import("html2canvas-pro")).default;
+      const { jsPDF } = await import("jspdf");
+
+      const canvas = await html2canvas(invoiceEl, {
+        scale: 2, // 2x resolution for sharp print quality
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        windowWidth: 1024,
+      });
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
+      const margin = 10; // 10mm margins
+      const printWidth = pageWidth - margin * 2;
+      const printHeight = (canvas.height * printWidth) / canvas.width;
+
+      pdf.addImage(imgData, "JPEG", margin, margin, printWidth, printHeight);
+
+      const safeNumber = (invoice.invoice_number || "Bill").replace(/[/\\?%*:|"<>]/g, "-");
+      const filename = `Invoice_${safeNumber}.pdf`;
+      pdf.save(filename);
+
+      toast.success(`${filename} saved to your Downloads!`, { id: toastId });
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      toast.error("Could not generate direct PDF. Please use Print Bill > Save as PDF.", { id: toastId });
+    } finally {
+      setIsDownloadingPdf(false);
+    }
   };
 
   const handleCancelInvoice = () => {
@@ -114,7 +172,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
         />
       </div>
 
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-4xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-4xl mx-auto print:p-0 print:m-0 print:max-w-none print:space-y-0">
         {/* Navigation & Actions Bar (Hidden on print) */}
         <div className="print:hidden flex flex-wrap items-center justify-between gap-4">
           <Link
@@ -131,31 +189,52 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
                 type="button"
                 onClick={handleCancelInvoice}
                 disabled={cancelling}
-                className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-rose-50 text-rose-700 text-xs font-bold border border-rose-200 hover:bg-rose-100 transition-all disabled:opacity-50"
+                className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-rose-50 text-rose-700 text-xs font-bold border border-rose-200 hover:bg-rose-100 transition-all disabled:opacity-50 cursor-pointer"
               >
                 <Ban className="w-3.5 h-3.5" />
                 <span>{cancelling ? "Reversing..." : "Cancel Invoice"}</span>
               </button>
             )}
 
+            {/* Print Bill (Native browser print formatted strictly for A4 invoice) */}
             <button
               type="button"
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-5 h-10 rounded-full bg-[#0A0A0A] text-white text-xs font-bold shadow-md hover:bg-black/90 active:scale-95 transition-all"
+              className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-white/80 text-neutral-800 text-xs font-semibold shadow-none border border-neutral-300/80 hover:bg-white active:scale-95 transition-all cursor-pointer"
+              title="Print bill on connected printer or save via browser dialog"
             >
-              <Printer className="w-3.5 h-3.5 text-[#D4F732]" />
-              <span>Print / Download PDF</span>
+              <Printer className="w-3.5 h-3.5 text-neutral-700" />
+              <span>Print Bill</span>
+            </button>
+
+            {/* Direct Download PDF to local downloads folder */}
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              className="flex items-center gap-1.5 px-5 h-10 rounded-full bg-[#0A0A0A] text-white text-xs font-semibold shadow-md hover:bg-black/90 active:scale-95 transition-all disabled:opacity-60 cursor-pointer"
+              title="Download PDF directly to your Downloads folder"
+            >
+              {isDownloadingPdf ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#D7FF00]" />
+              ) : (
+                <Download className="w-3.5 h-3.5 text-[#D7FF00]" />
+              )}
+              <span>{isDownloadingPdf ? "Saving PDF..." : "Download PDF"}</span>
             </button>
           </div>
         </div>
 
         {/* Printable Branded Document Card */}
-        <div className="bg-white rounded-3xl p-8 sm:p-12 border border-[#E5E4EE] shadow-lg text-xs print:p-0 print:border-none print:shadow-none print:rounded-none">
+        <div
+          id="printable-invoice"
+          className="printable-document bg-white rounded-3xl p-8 sm:p-12 border border-[#E5E4EE] shadow-lg text-xs print:p-0 print:border-none print:shadow-none print:rounded-none"
+        >
           {/* Header */}
           <div className="flex items-start justify-between border-b border-gray-200 pb-6">
             <div className="space-y-1">
               <div className="flex items-center gap-2 mb-2">
-                <TazqorLogo className="h-8 w-auto object-contain" height={32} variant="light" />
+                <TazqorLogo className="h-8 w-auto object-contain" height={32} variant="black" />
               </div>
               <p className="text-gray-700 font-bold text-sm mt-1">{invoice.business.name}</p>
               <p className="text-gray-500">{invoice.business.address}</p>

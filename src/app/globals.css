@@ -275,3 +275,92 @@ body.dark {
     grid-row: 5 / span 1 !important;
   }
 }
+
+/* ========================================================
+   PRINT SPECIFICATION: CLEAN INVOICE & BILL PRINTING
+   Eliminates all app UI chrome, sidebars, headers, bottom bars,
+   and page backgrounds so ONLY the clean bill is printed.
+   ======================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm 8mm 10mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    line-height: 1.35 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Force hide all navigation chrome */
+  header,
+  aside,
+  nav,
+  [data-sidebar],
+  [data-bottom-nav],
+  .print\:hidden {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Flatten layout wrappers */
+  main,
+  div[class*="min-h-screen"],
+  div[class*="flex-1"] {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Printable invoice document card */
+  #printable-invoice,
+  .printable-document {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #111111 !important;
+    page-break-inside: avoid !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+  }
+
+  a[href]:after {
+    content: none !important;
+  }
+}
+
