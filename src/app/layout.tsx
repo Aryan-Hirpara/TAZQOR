@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   title: "TAZQOR — Business Manager",
   description: "Operations and business management system for TAZQOR cleaning products",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/apple-touch-icon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
