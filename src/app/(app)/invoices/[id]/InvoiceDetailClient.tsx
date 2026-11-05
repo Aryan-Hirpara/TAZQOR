@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { formatINR } from "@/lib/formatting/currency";
+import { TazqorLogo } from "@/components/brand/TazqorLogo";
 
 export default function InvoiceDetailClient({ id }: { id: string }) {
   const router = useRouter();
@@ -153,13 +154,8 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
           {/* Header */}
           <div className="flex items-start justify-between border-b border-gray-200 pb-6">
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#0A0A0A] text-[#D4F732] flex items-center justify-center font-bold">
-                  TQ
-                </div>
-                <h1 className="text-xl font-extrabold text-[#0A0A0A] tracking-tight">
-                  TAZQOR
-                </h1>
+              <div className="flex items-center gap-2 mb-2">
+                <TazqorLogo className="h-8 w-auto object-contain" height={32} variant="light" />
               </div>
               <p className="text-gray-700 font-bold text-sm mt-1">{invoice.business.name}</p>
               <p className="text-gray-500">{invoice.business.address}</p>

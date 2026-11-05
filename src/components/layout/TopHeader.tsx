@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MoreLauncherSheet } from "./MoreLauncherSheet";
+import { TazqorLogo } from "@/components/brand/TazqorLogo";
 
 interface TopHeaderProps {
   title?: string;
@@ -50,18 +51,13 @@ export function TopHeader({
         {/* ==================== DESKTOP HEADER VIEW (md:flex) ==================== */}
         <div className="hidden md:flex items-center justify-between w-full">
           {/* Left: Wordmark logo (ONE logo only, no redundant logo in rail) */}
-          <div className="flex items-center gap-2.5">
-            <Link href="/dashboard" className="flex items-center gap-2 group">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-black text-[#D7FF00] group-hover:scale-105 transition-transform">
-                <Sparkles className="w-4 h-4 fill-current" />
-              </div>
-              <span className="font-semibold text-neutral-900 tracking-tight text-lg leading-none">
-                TAZQOR
-              </span>
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard" className="flex items-center gap-2 group focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 rounded-lg p-0.5">
+              <TazqorLogo className="h-7 w-auto object-contain" height={28} />
             </Link>
             {title && (
-              <div className="flex items-center gap-2 pl-2 border-l border-neutral-400/40">
-                <span className="text-sm font-light text-neutral-700 tracking-tight">{title}</span>
+              <div className="flex items-center gap-2 pl-3 border-l border-neutral-400/40">
+                <span className="text-sm font-light text-neutral-700 dark:text-neutral-300 tracking-tight">{title}</span>
               </div>
             )}
           </div>
@@ -174,14 +170,8 @@ export function TopHeader({
           {isHome ? (
             /* Mobile Home: Avatar left + Actions right */
             <>
-              <Link href="/settings" className="flex items-center gap-2 group">
-                <div className="w-9 h-9 rounded-full bg-black text-[#D7FF00] flex items-center justify-center text-xs font-semibold shadow-sm">
-                  TQ
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-semibold text-sm leading-tight text-neutral-900 dark:text-white">TAZQOR</span>
-                  <span className="text-[10px] font-light text-neutral-500 dark:text-neutral-400">Stores Overview</span>
-                </div>
+              <Link href="/dashboard" className="flex items-center gap-2 group">
+                <TazqorLogo className="h-6 w-auto object-contain" height={24} />
               </Link>
 
               <div className="flex items-center gap-2">

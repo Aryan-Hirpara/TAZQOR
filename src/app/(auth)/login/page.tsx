@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Sparkles, Eye, EyeOff, Lock, Mail, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { TazqorLogo } from "@/components/brand/TazqorLogo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -56,12 +57,7 @@ export default function LoginPage() {
     <div className="bg-white/60 backdrop-blur-2xl rounded-[32px] p-8 sm:p-10 border border-white/75 shadow-2xl shadow-black/5">
       {/* Brand Header */}
       <div className="flex flex-col items-center text-center mb-8">
-        <div className="w-14 h-14 rounded-full bg-black text-[#E0FE52] flex items-center justify-center shadow-lg mb-4 hover:scale-105 transition-transform">
-          <Sparkles className="w-6 h-6 fill-current" />
-        </div>
-        <h1 className="text-2xl font-normal tracking-tight text-neutral-900">
-          TAZQOR
-        </h1>
+        <TazqorLogo className="h-10 w-auto object-contain mb-3" height={40} />
         <p className="text-xs tracking-wider text-neutral-500 font-light mt-1">
           Business Management System
         </p>

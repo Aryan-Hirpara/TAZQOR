@@ -29,6 +29,7 @@ import {
   FileText,
   Sparkles,
 } from "lucide-react";
+import { TazqorLogo } from "@/components/brand/TazqorLogo";
 import { cn } from "@/lib/utils";
 
 interface MoreLauncherSheetProps {
@@ -154,10 +155,7 @@ export function MoreLauncherSheet({ isOpen, onClose }: MoreLauncherSheetProps) {
         {/* Header Bar */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 dark:border-neutral-800">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-black text-[#D7FF00] flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 fill-current" />
-            </div>
-            <span className="font-semibold text-base tracking-tight">TAZQOR Navigation</span>
+            <TazqorLogo className="h-6 w-auto object-contain" height={24} />
           </div>
 
           <div className="flex items-center gap-2">
