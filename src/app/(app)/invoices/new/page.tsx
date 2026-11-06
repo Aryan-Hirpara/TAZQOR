@@ -241,25 +241,25 @@ export default function NewInvoicePage() {
         </div>
 
         {/* GST Mode Selector & Security Gate Banner */}
-        <div className="bg-white rounded-3xl p-6 border border-[#E5E4EE] shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+        <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 border border-white/65 shadow-none space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/40">
             <div>
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
+              <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
                 Billing Mode
               </span>
-              <h2 className="text-base font-extrabold text-gray-900 mt-0.5">
+              <h2 className="text-base font-normal text-neutral-900 mt-0.5">
                 Choose Document Type
               </h2>
             </div>
 
-            <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-full">
+            <div className="flex items-center gap-1.5 p-1 bg-white/65 backdrop-blur-md rounded-full border border-white/70 shadow-sm">
               <button
                 type="button"
                 onClick={() => setMode("gst")}
-                className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${
+                className={`px-4 py-2 text-xs rounded-full transition-all cursor-pointer ${
                   mode === "gst"
-                    ? "bg-[#0A0A0A] text-white shadow-sm"
-                    : "text-gray-600 hover:text-black"
+                    ? "bg-black text-white font-normal shadow-sm"
+                    : "text-neutral-700 hover:text-black font-light"
                 }`}
               >
                 GST Tax Invoice
@@ -267,10 +267,10 @@ export default function NewInvoicePage() {
               <button
                 type="button"
                 onClick={() => setMode("non_gst")}
-                className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${
+                className={`px-4 py-2 text-xs rounded-full transition-all cursor-pointer ${
                   mode === "non_gst"
-                    ? "bg-[#0A0A0A] text-white shadow-sm"
-                    : "text-gray-600 hover:text-black"
+                    ? "bg-black text-white font-normal shadow-sm"
+                    : "text-neutral-700 hover:text-black font-light"
                 }`}
               >
                 Non-GST Bill / Receipt
@@ -280,18 +280,18 @@ export default function NewInvoicePage() {
 
           {/* Mode Info Callout */}
           {mode === "gst" ? (
-            <div className="p-3.5 rounded-2xl bg-purple-50/70 border border-purple-200 text-xs text-purple-900 flex items-start gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-purple-700 shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-2xl bg-white/60 border border-white/80 text-xs text-neutral-800 flex items-start gap-2.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold">GST Tax Invoice Mode Active:</span> In compliance with GST laws,
+                <span className="font-medium text-neutral-900">GST Tax Invoice Mode Active:</span> In compliance with GST laws,
                 item HSN codes, taxable values, and {isInterState ? "IGST (18%)" : "CGST (9%) + SGST (9%)"} split will be printed.
               </div>
             </div>
           ) : (
-            <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
-              <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-2xl bg-white/60 border border-white/80 text-xs text-neutral-800 flex items-start gap-2.5">
+              <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold">Non-GST Bill of Supply Mode:</span> Tax claims, GSTIN and &quot;Tax Invoice&quot; wording
+                <span className="font-medium text-neutral-900">Non-GST Bill of Supply Mode:</span> Tax claims, GSTIN and &quot;Tax Invoice&quot; wording
                 will NOT appear on this bill as mandated by law.
               </div>
             </div>
@@ -300,14 +300,14 @@ export default function NewInvoicePage() {
           {/* Customer, Dates & Place of Supply */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              <label className="block text-xs font-light text-neutral-600 mb-1.5">
                 Customer Account *
               </label>
               <select
                 aria-label="Customer Account"
                 value={customer}
                 onChange={(e) => setCustomer(e.target.value)}
-                className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] font-medium"
+                className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
               >
                 {customerList.length > 0 ? (
                   customerList.map((c) => (
@@ -327,44 +327,44 @@ export default function NewInvoicePage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              <label className="block text-xs font-light text-neutral-600 mb-1.5">
                 Invoice Date *
               </label>
               <input
                 type="date"
                 value={invoiceDate}
                 onChange={(e) => setInvoiceDate(e.target.value)}
-                className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              <label className="block text-xs font-light text-neutral-600 mb-1.5">
                 Payment Due Date
               </label>
               <input
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
               />
             </div>
           </div>
         </div>
 
         {/* Invoice Line Items */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E5E4EE] shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+        <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 shadow-none space-y-4">
+          <div className="flex items-center justify-between border-b border-white/40 pb-3">
             <div>
-              <h2 className="text-base font-bold text-gray-900">Line Items & Calculations</h2>
-              <p className="text-xs text-gray-500">Live batch allocation check per line</p>
+              <h2 className="text-base font-normal text-neutral-900">Line Items & Calculations</h2>
+              <p className="text-xs font-light text-neutral-500">Live batch allocation check per line</p>
             </div>
             <button
               type="button"
               onClick={addLine}
-              className="flex items-center gap-1 px-4 min-h-[44px] rounded-full bg-gray-100 text-gray-800 text-xs font-bold hover:bg-[#0A0A0A] hover:text-white transition-all"
+              className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-3.5 h-3.5 text-[#E0FE52]" />
               <span>Add Item</span>
             </button>
           </div>
@@ -375,23 +375,23 @@ export default function NewInvoicePage() {
               return (
                 <div
                   key={idx}
-                  className="p-4 rounded-2xl bg-[#F9F8FD] border border-[#E5E4EE] space-y-3"
+                  className="p-4 rounded-2xl bg-white/60 border border-white/70 space-y-3"
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                     <div className="sm:col-span-4">
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                      <label className="block text-[11px] font-normal text-neutral-700 mb-1">
                         Product Variant
                       </label>
                       <input
                         type="text"
                         value={`${line.name} (${line.pack_size})`}
                         readOnly
-                        className="w-full h-9 px-3 text-xs bg-white rounded-lg border border-gray-200 font-semibold text-gray-900"
+                        className="w-full h-10 px-3 text-xs bg-white/80 rounded-xl border border-neutral-200/70 font-normal text-neutral-900"
                       />
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                      <label className="block text-[11px] font-normal text-neutral-700 mb-1">
                         Qty (Units)
                       </label>
                       <input
@@ -403,12 +403,12 @@ export default function NewInvoicePage() {
                           copy[idx].quantity = Number(e.target.value);
                           setLines(copy);
                         }}
-                        className="w-full h-9 px-2.5 text-xs bg-white rounded-lg border border-gray-200"
+                        className="w-full h-10 px-3 text-xs bg-white/80 rounded-xl border border-neutral-200/70 text-neutral-900"
                       />
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                      <label className="block text-[11px] font-normal text-neutral-700 mb-1">
                         Price (₹)
                       </label>
                       <input
@@ -419,12 +419,12 @@ export default function NewInvoicePage() {
                           copy[idx].unit_price = Number(e.target.value);
                           setLines(copy);
                         }}
-                        className="w-full h-9 px-2.5 text-xs bg-white rounded-lg border border-gray-200"
+                        className="w-full h-10 px-3 text-xs bg-white/80 rounded-xl border border-neutral-200/70 text-neutral-900"
                       />
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                      <label className="block text-[11px] font-normal text-neutral-700 mb-1">
                         Disc %
                       </label>
                       <input
@@ -435,14 +435,14 @@ export default function NewInvoicePage() {
                           copy[idx].discount_percent = Number(e.target.value);
                           setLines(copy);
                         }}
-                        className="w-full h-9 px-2.5 text-xs bg-white rounded-lg border border-gray-200"
+                        className="w-full h-10 px-3 text-xs bg-white/80 rounded-xl border border-neutral-200/70 text-neutral-900"
                       />
                     </div>
 
                     <div className="sm:col-span-2 flex items-center justify-end gap-2">
                       <div className="text-right">
                         <span className="block text-[10px] text-neutral-600">Total</span>
-                        <span className="text-xs font-black text-gray-900">
+                        <span className="text-xs font-semibold text-neutral-900">
                           {formatINR(res?.lineTotal || 0)}
                         </span>
                       </div>
@@ -459,18 +459,18 @@ export default function NewInvoicePage() {
 
                   {/* Tax Breakdown Strip (for GST mode) */}
                   {mode === "gst" && res && (
-                    <div className="flex flex-wrap items-center gap-4 text-[11px] pt-2 border-t border-gray-200/60 text-gray-600 font-medium">
-                      <span>HSN: <strong className="font-mono text-gray-800">{line.hsn}</strong></span>
-                      <span>Taxable Base: <strong>{formatINR(res.lineSubtotal)}</strong></span>
+                    <div className="flex flex-wrap items-center gap-4 text-[11px] pt-2 border-t border-neutral-200/60 text-neutral-600 font-light">
+                      <span>HSN: <strong className="font-mono text-neutral-800 font-normal">{line.hsn}</strong></span>
+                      <span>Taxable Base: <strong className="font-normal text-neutral-800">{formatINR(res.lineSubtotal)}</strong></span>
                       {!isInterState ? (
                         <>
-                          <span>CGST (9%): <strong>{formatINR(res.cgstAmount)}</strong></span>
-                          <span>SGST (9%): <strong>{formatINR(res.sgstAmount)}</strong></span>
+                          <span>CGST (9%): <strong className="font-normal text-neutral-800">{formatINR(res.cgstAmount)}</strong></span>
+                          <span>SGST (9%): <strong className="font-normal text-neutral-800">{formatINR(res.sgstAmount)}</strong></span>
                         </>
                       ) : (
-                        <span>IGST (18%): <strong>{formatINR(res.igstAmount)}</strong></span>
+                        <span>IGST (18%): <strong className="font-normal text-neutral-800">{formatINR(res.igstAmount)}</strong></span>
                       )}
-                      <span className="ml-auto text-emerald-700 text-[10px]">
+                      <span className="ml-auto text-emerald-700 text-[10px] font-normal">
                         ✓ {line.stock_on_hand} in FEFO batches
                       </span>
                     </div>
@@ -481,23 +481,23 @@ export default function NewInvoicePage() {
           </div>
 
           {/* Totals Summary Calculation Breakdown */}
-          <div className="pt-6 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-start gap-6">
+          <div className="pt-6 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-start gap-6">
             <div className="w-full sm:max-w-md space-y-2">
-              <label className="block text-xs font-bold text-gray-700">
+              <label className="block text-xs font-normal text-neutral-700">
                 Invoice Terms & Notes
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
-                className="w-full p-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                className="w-full p-3.5 text-xs bg-white/60 backdrop-blur-md rounded-2xl border border-neutral-200/80 text-neutral-900"
               />
             </div>
 
-            <div className="w-full sm:w-72 bg-[#F9F8FD] p-4 rounded-2xl border border-[#E5E4EE] space-y-2.5 text-xs">
-              <div className="flex justify-between text-gray-600">
+            <div className="w-full sm:w-72 bg-white/60 backdrop-blur-md p-4 rounded-2xl border border-white/70 space-y-2.5 text-xs">
+              <div className="flex justify-between text-neutral-600">
                 <span>Taxable Subtotal:</span>
-                <span className="font-semibold text-gray-900">{formatINR(invoiceTotals.subtotal)}</span>
+                <span className="font-semibold text-neutral-900">{formatINR(invoiceTotals.subtotal)}</span>
               </div>
 
               {invoiceTotals.discountTotal > 0 && (
@@ -527,9 +527,9 @@ export default function NewInvoicePage() {
                 </div>
               )}
 
-              <div className="pt-2 border-t border-gray-200 flex justify-between items-baseline">
-                <span className="font-extrabold text-sm text-gray-900">Grand Total:</span>
-                <span className="text-xl font-black text-[#0A0A0A]">
+              <div className="pt-2.5 border-t border-neutral-200/60 flex justify-between items-baseline">
+                <span className="font-normal text-xs sm:text-sm text-neutral-600">Grand Total:</span>
+                <span className="text-xl sm:text-2xl font-semibold text-neutral-900 tracking-tight">
                   {formatINR(invoiceTotals.grandTotal)}
                 </span>
               </div>
@@ -537,14 +537,14 @@ export default function NewInvoicePage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-4 border-t border-gray-100 flex flex-wrap items-center justify-end gap-3">
+          <div className="pt-4 border-t border-neutral-100 flex flex-wrap items-center justify-end gap-3">
             <button
               type="button"
               onClick={() => {
                 toast.success("Draft saved successfully");
                 router.push("/invoices");
               }}
-              className="px-6 h-11 rounded-full bg-white text-gray-800 border border-[#E5E4EE] text-xs font-bold hover:border-black transition-all"
+              className="px-6 h-11 rounded-full bg-white/70 text-neutral-800 border border-white/80 text-xs font-normal hover:bg-white hover:text-black transition-all shadow-sm"
             >
               Save as Draft
             </button>
@@ -553,7 +553,7 @@ export default function NewInvoicePage() {
               type="button"
               onClick={handleFinalize}
               disabled={submitting}
-              className="px-8 h-12 rounded-full bg-[#0A0A0A] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:bg-black/90 active:scale-95 transition-all shadow-md disabled:opacity-50"
+              className="px-8 h-11 rounded-full bg-black text-white text-xs sm:text-sm font-normal flex items-center justify-center gap-2 hover:bg-neutral-800 active:scale-95 transition-all shadow-sm disabled:opacity-50"
             >
               <FileText className="w-4 h-4 text-[#D4F732]" />
               <span>{submitting ? "Finalizing & Deducting Stock..." : "Finalize & Issue Stock"}</span>

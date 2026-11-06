@@ -91,32 +91,32 @@ export default function CustomerDetailClient({ id }: { id: string }) {
         </div>
 
         {/* Customer Header Card */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E5E4EE] shadow-sm space-y-6">
+        <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 shadow-none space-y-6">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                <span className="text-xs font-mono font-normal px-2.5 py-0.5 rounded-full bg-white/70 border border-white/80 text-neutral-700">
                   {customer.customer_code}
                 </span>
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 capitalize">
+                <span className="text-xs font-normal px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 capitalize">
                   {customer.status}
                 </span>
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 capitalize">
+                <span className="text-xs font-normal px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-800 capitalize">
                   {customer.type}
                 </span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#0A0A0A] tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-semibold text-neutral-900 tracking-tight">
                 {customer.name}
               </h2>
-              <p className="text-sm font-medium text-gray-500">
-                {customer.shop_name} • Contact: <span className="text-black font-semibold">{customer.contact_person}</span>
+              <p className="text-sm font-light text-neutral-500">
+                {customer.shop_name} • Contact: <span className="text-neutral-900 font-normal">{customer.contact_person}</span>
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <a
                 href={`tel:${customer.phone.replace(/\s+/g, "")}`}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-gray-100 text-gray-800 text-xs font-bold hover:bg-gray-200 transition-all"
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm"
               >
                 <Phone className="w-3.5 h-3.5 text-blue-600" />
                 <span>Call</span>
@@ -127,7 +127,7 @@ export default function CustomerDetailClient({ id }: { id: string }) {
                   href={`https://wa.me/${customer.whatsapp.replace(/[^0-9]/g, "")}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold hover:bg-emerald-100 border border-emerald-200 transition-all"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm"
                 >
                   <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
                   <span>WhatsApp</span>
@@ -139,7 +139,7 @@ export default function CustomerDetailClient({ id }: { id: string }) {
                   href={`https://www.google.com/maps/dir/?api=1&destination=${customer.lat},${customer.lng}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-blue-50 text-blue-800 text-xs font-bold hover:bg-blue-100 border border-blue-200 transition-all"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm"
                 >
                   <MapPin className="w-3.5 h-3.5 text-blue-600" />
                   <span>Directions</span>
@@ -148,42 +148,51 @@ export default function CustomerDetailClient({ id }: { id: string }) {
             </div>
           </div>
 
-          {/* 4 Financial Balances Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
-            <div className="p-4 rounded-2xl bg-[#F9F8FD] border border-[#E5E4EE]">
-              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
+          {/* 4 Financial Balances Cards - Unified Typography */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pt-4 border-t border-white/50">
+            <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-5 shadow-none">
+              <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
                 Total Invoiced
               </span>
-              <span className="text-lg sm:text-xl font-black text-gray-900 mt-1 block">
+              <span className="text-2xl sm:text-3xl font-semibold text-neutral-900 mt-1 block tracking-tight">
                 {formatINR(customer.total_invoiced)}
               </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100">
-              <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider block">
+            <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-5 shadow-none">
+              <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
                 Total Paid
               </span>
-              <span className="text-lg sm:text-xl font-black text-emerald-800 mt-1 block">
-                {formatINR(customer.total_paid)}
-              </span>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="w-2 h-2 rounded-full bg-[#D7FF00]" />
+                <span className="text-2xl sm:text-3xl font-semibold text-neutral-900 tracking-tight">
+                  {formatINR(customer.total_paid)}
+                </span>
+              </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-rose-50/50 border border-rose-100">
-              <span className="text-[11px] font-bold text-rose-700 uppercase tracking-wider block">
+            <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-5 shadow-none">
+              <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
                 Outstanding Balance
               </span>
-              <span className="text-lg sm:text-xl font-black text-rose-800 mt-1 block">
-                {formatINR(customer.outstanding)}
-              </span>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="w-2 h-2 rounded-full bg-rose-400" />
+                <span className="text-2xl sm:text-3xl font-semibold text-neutral-900 tracking-tight">
+                  {formatINR(customer.outstanding)}
+                </span>
+              </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-100">
-              <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider block">
+            <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-5 shadow-none">
+              <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
                 Advance Deposit
               </span>
-              <span className="text-lg sm:text-xl font-black text-amber-800 mt-1 block">
-                {formatINR(customer.advance)}
-              </span>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="text-2xl sm:text-3xl font-semibold text-neutral-900 tracking-tight">
+                  {formatINR(customer.advance)}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -201,10 +210,10 @@ export default function CustomerDetailClient({ id }: { id: string }) {
           </div>
 
           {/* Quick Transaction Action Strip */}
-          <div className="flex flex-wrap items-center gap-2.5 pt-4 border-t border-gray-100">
+          <div className="flex flex-wrap items-center gap-2.5 pt-4 border-t border-white/40">
             <Link
               href={`/invoices/new?customerId=${customer.id}`}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#0A0A0A] text-white text-xs font-bold shadow-sm hover:bg-black/80 transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-black text-white text-xs font-normal shadow-sm hover:scale-105 active:scale-95 transition-all"
             >
               <FilePlus className="w-3.5 h-3.5 text-[#D4F732]" />
               <span>Create Bill / Invoice</span>
@@ -212,7 +221,7 @@ export default function CustomerDetailClient({ id }: { id: string }) {
 
             <Link
               href={`/orders/new?customerId=${customer.id}`}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-gray-900 border border-[#E5E4EE] text-xs font-bold shadow-sm hover:border-black transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/70 text-neutral-800 border border-white/80 text-xs font-normal shadow-sm hover:bg-white transition-all"
             >
               <ShoppingCart className="w-3.5 h-3.5" />
               <span>New Order</span>
@@ -220,7 +229,7 @@ export default function CustomerDetailClient({ id }: { id: string }) {
 
             <Link
               href={`/payments/new?customerId=${customer.id}`}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-gray-900 border border-[#E5E4EE] text-xs font-bold shadow-sm hover:border-black transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/70 text-neutral-800 border border-white/80 text-xs font-normal shadow-sm hover:bg-white transition-all"
             >
               <CreditCard className="w-3.5 h-3.5" />
               <span>Record Payment</span>
@@ -228,7 +237,7 @@ export default function CustomerDetailClient({ id }: { id: string }) {
 
             <Link
               href={`/visits/new?customerId=${customer.id}`}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-gray-900 border border-[#E5E4EE] text-xs font-bold shadow-sm hover:border-black transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/70 text-neutral-800 border border-white/80 text-xs font-normal shadow-sm hover:bg-white transition-all"
             >
               <CalendarPlus className="w-3.5 h-3.5" />
               <span>Record Visit</span>
@@ -237,16 +246,16 @@ export default function CustomerDetailClient({ id }: { id: string }) {
         </div>
 
         {/* History Tabs */}
-        <div className="bg-white rounded-3xl p-6 border border-[#E5E4EE] shadow-sm space-y-6">
-          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 overflow-x-auto no-scrollbar">
+        <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 border border-white/65 shadow-none space-y-6">
+          <div className="flex items-center gap-2 border-b border-white/40 pb-3 overflow-x-auto no-scrollbar">
             {(["invoices", "orders", "payments", "visits"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 text-xs font-bold rounded-full capitalize transition-all whitespace-nowrap ${
+                className={`px-4 py-2 text-xs font-normal rounded-full capitalize transition-all whitespace-nowrap ${
                   activeTab === tab
-                    ? "bg-[#0A0A0A] text-white"
-                    : "text-gray-500 hover:text-black hover:bg-gray-100"
+                    ? "bg-black text-white shadow-sm"
+                    : "text-neutral-600 hover:text-black hover:bg-white/60"
                 }`}
               >
                 {tab}
@@ -255,28 +264,28 @@ export default function CustomerDetailClient({ id }: { id: string }) {
           </div>
 
           {activeTab === "invoices" && (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-white/40">
               {sampleInvoices.map((inv) => (
                 <div key={inv.id} className="py-3.5 flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-gray-900">{inv.id}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-semibold uppercase">
+                      <span className="text-xs font-normal text-neutral-900">{inv.id}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-normal uppercase">
                         {inv.mode}
                       </span>
                     </div>
-                    <p className="text-[11px] text-neutral-600 mt-0.5">Date: {inv.date}</p>
+                    <p className="text-[11px] text-neutral-500 font-light mt-0.5">Date: {inv.date}</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-xs font-bold text-gray-900 block">
+                    <span className="text-xs font-normal text-neutral-900 block">
                       {formatINR(inv.total)}
                     </span>
                     {inv.balance > 0 ? (
-                      <span className="text-[11px] font-semibold text-rose-600">
+                      <span className="text-[11px] font-medium text-rose-600">
                         Due: {formatINR(inv.balance)}
                       </span>
                     ) : (
-                      <span className="text-[11px] font-semibold text-emerald-800">Paid</span>
+                      <span className="text-[11px] font-medium text-emerald-800">Paid</span>
                     )}
                   </div>
                 </div>
@@ -285,20 +294,20 @@ export default function CustomerDetailClient({ id }: { id: string }) {
           )}
 
           {activeTab === "orders" && (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-white/40">
               {sampleOrders.map((ord) => (
                 <div key={ord.id} className="py-3.5 flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-gray-900">{ord.id}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-medium capitalize">
+                      <span className="text-xs font-normal text-neutral-900">{ord.id}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/80 border border-white/80 text-neutral-700 font-light capitalize">
                         {ord.status}
                       </span>
                     </div>
-                    <p className="text-[11px] text-neutral-600 mt-0.5">{ord.itemsCount} Items • {ord.date}</p>
+                    <p className="text-[11px] text-neutral-500 font-light mt-0.5">{ord.itemsCount} Items • {ord.date}</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-xs font-bold text-gray-900 block">
+                    <span className="text-xs font-normal text-neutral-900 block">
                       {formatINR(ord.total)}
                     </span>
                   </div>
@@ -308,20 +317,20 @@ export default function CustomerDetailClient({ id }: { id: string }) {
           )}
 
           {activeTab === "payments" && (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-white/40">
               {samplePayments.map((pay) => (
                 <div key={pay.id} className="py-3.5 flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-gray-900">{pay.id}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium">
+                      <span className="text-xs font-normal text-neutral-900">{pay.id}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-light">
                         {pay.method}
                       </span>
                     </div>
-                    <p className="text-[11px] text-neutral-600 mt-0.5">Ref: {pay.ref} • {pay.date}</p>
+                    <p className="text-[11px] text-neutral-500 font-light mt-0.5">Ref: {pay.ref} • {pay.date}</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-xs font-bold text-emerald-800 block">
+                    <span className="text-xs font-medium text-emerald-800 block">
                       +{formatINR(pay.amount)}
                     </span>
                   </div>
@@ -331,14 +340,14 @@ export default function CustomerDetailClient({ id }: { id: string }) {
           )}
 
           {activeTab === "visits" && (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-white/40">
               {sampleVisits.map((v) => (
                 <div key={v.id} className="py-3.5 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-900">Visit on {v.date}</span>
-                    <span className="text-[10px] text-neutral-600">Next: {v.nextDate}</span>
+                    <span className="text-xs font-normal text-neutral-900">Visit on {v.date}</span>
+                    <span className="text-[10px] text-neutral-500 font-light">Next: {v.nextDate}</span>
                   </div>
-                  <p className="text-xs text-gray-600">{v.outcome}</p>
+                  <p className="text-xs text-neutral-600 font-light">{v.outcome}</p>
                 </div>
               ))}
             </div>

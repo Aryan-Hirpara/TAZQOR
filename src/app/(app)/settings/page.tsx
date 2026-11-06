@@ -139,37 +139,37 @@ export default function SettingsPage() {
                   type="text"
                   value={`${profile.city}, ${profile.state}`}
                   readOnly
-                  className="w-full h-11 px-4 text-xs bg-gray-100 rounded-xl border border-[#E5E4EE] text-gray-600"
+                  className="w-full h-10 px-4 text-xs bg-white/50 rounded-full border border-white/60 text-neutral-600"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-light text-neutral-700 mb-1.5">
                   PIN Code
                 </label>
                 <input
                   type="text"
                   value={profile.pin}
                   onChange={(e) => setProfile({ ...profile, pin: e.target.value })}
-                  className="w-full h-11 px-4 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-10 px-4 text-xs bg-white/70 rounded-full border border-white/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
                 />
               </div>
             </div>
           </div>
 
           {/* GST Configuration & Gating */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E5E4EE] shadow-sm space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-              <ShieldCheck className="w-5 h-5 text-purple-700" />
+          <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 shadow-none space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-white/50">
+              <ShieldCheck className="w-5 h-5 text-neutral-700" />
               <div>
-                <h2 className="text-base font-bold text-gray-900">GST Registration & Tax Gating</h2>
-                <p className="text-xs text-gray-500">GST mode is strictly gated until eligibility is explicitly confirmed</p>
+                <h2 className="text-base font-normal text-neutral-900">GST Registration & Tax Gating</h2>
+                <p className="text-xs font-light text-neutral-500">GST mode is strictly gated until eligibility is explicitly confirmed</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-light text-neutral-700 mb-1.5">
                   GSTIN (15-character Goods & Services Tax ID)
                 </label>
                 <input
@@ -178,24 +178,24 @@ export default function SettingsPage() {
                   onChange={(e) => setProfile({ ...profile, gstin: e.target.value.toUpperCase() })}
                   maxLength={15}
                   placeholder="24AAACT1234F1Z5"
-                  className="w-full h-11 px-4 text-xs font-mono font-bold bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-10 px-4 text-xs font-mono font-medium bg-white/70 rounded-full border border-white/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-light text-neutral-700 mb-1.5">
                   State Code (as per GST law)
                 </label>
                 <input
                   type="text"
                   value={profile.state_code}
                   readOnly
-                  className="w-full h-11 px-4 text-xs font-mono bg-gray-100 rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-10 px-4 text-xs font-mono bg-white/50 rounded-full border border-white/60 text-neutral-600"
                 />
               </div>
             </div>
 
-            <label htmlFor="gst-confirm" className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-center gap-3 min-h-[44px] cursor-pointer">
+            <label htmlFor="gst-confirm" className="p-4 rounded-2xl bg-white/50 border border-white/70 flex items-center gap-3 min-h-[44px] cursor-pointer">
               <input
                 type="checkbox"
                 id="gst-confirm"
@@ -203,59 +203,59 @@ export default function SettingsPage() {
                 onChange={(e) => setProfile({ ...profile, gst_confirmed: e.target.checked })}
                 className="w-5 h-5 rounded text-neutral-900 focus:ring-neutral-900 cursor-pointer shrink-0"
               />
-              <span className="text-xs text-neutral-900 font-medium">
-                <strong>I confirm TAZQOR is officially registered under GST.</strong> Enable generation of GST Tax Invoices.
+              <span className="text-xs text-neutral-900 font-light">
+                <strong className="font-medium">I confirm TAZQOR is officially registered under GST.</strong> Enable generation of GST Tax Invoices.
                 (Unchecking this disables the GST mode and restricts billing to Non-GST Bills of Supply).
               </span>
             </label>
           </div>
 
           {/* Numbering & Financial Year */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E5E4EE] shadow-sm space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-              <FileText className="w-5 h-5 text-gray-700" />
+          <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 shadow-none space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-white/50">
+              <FileText className="w-5 h-5 text-neutral-700" />
               <div>
-                <h2 className="text-base font-bold text-gray-900">Invoice Numbering & Round Off</h2>
-                <p className="text-xs text-gray-500">Configure financial year cycle and gap-free numbering series</p>
+                <h2 className="text-base font-normal text-neutral-900">Invoice Numbering & Round Off</h2>
+                <p className="text-xs font-light text-neutral-500">Configure financial year cycle and gap-free numbering series</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-light text-neutral-700 mb-1.5">
                   GST Invoice Prefix
                 </label>
                 <input
                   type="text"
                   value={invoiceSettings.invoice_prefix}
                   onChange={(e) => setInvoiceSettings({ ...invoiceSettings, invoice_prefix: e.target.value })}
-                  className="w-full h-11 px-4 text-xs font-mono bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-10 px-4 text-xs font-mono bg-white/70 rounded-full border border-white/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
                 />
-                <span className="text-[10px] text-neutral-600 mt-1 block">e.g. INV/2026-27/0001</span>
+                <span className="text-[10px] text-neutral-500 mt-1 block font-light">e.g. INV/2026-27/0001</span>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-light text-neutral-700 mb-1.5">
                   Non-GST Bill Prefix
                 </label>
                 <input
                   type="text"
                   value={invoiceSettings.bill_prefix}
                   onChange={(e) => setInvoiceSettings({ ...invoiceSettings, bill_prefix: e.target.value })}
-                  className="w-full h-11 px-4 text-xs font-mono bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-10 px-4 text-xs font-mono bg-white/70 rounded-full border border-white/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
                 />
-                <span className="text-[10px] text-neutral-600 mt-1 block">e.g. BILL/2026-27/0001</span>
+                <span className="text-[10px] text-neutral-500 mt-1 block font-light">e.g. BILL/2026-27/0001</span>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-light text-neutral-700 mb-1.5">
                   Financial Year Cycle
                 </label>
                 <select
                   aria-label="Financial Year Cycle"
                   value={invoiceSettings.fy_start_month}
                   onChange={(e) => setInvoiceSettings({ ...invoiceSettings, fy_start_month: Number(e.target.value) })}
-                  className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-10 px-3 text-xs bg-white/70 rounded-full border border-white/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
                 >
                   <option value={4}>April 1 – March 31 (Indian Standard)</option>
                   <option value={1}>January 1 – December 31</option>
@@ -268,25 +268,25 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={saving}
-              className="px-8 h-12 rounded-full bg-[#0A0A0A] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:bg-black/90 active:scale-95 transition-all shadow-md disabled:opacity-50 inline-flex"
+              className="px-8 h-11 rounded-full bg-black text-white text-xs sm:text-sm font-normal flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-50 inline-flex"
             >
-              <Save className="w-4 h-4 text-[#D4F732]" />
+              <Save className="w-4 h-4 text-[#E0FE52]" />
               <span>{saving ? "Saving..." : "Save Settings"}</span>
             </button>
           </div>
         </form>
 
         {/* Data Export & Backup Section */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E5E4EE] shadow-sm space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-            <Database className="w-5 h-5 text-gray-700" />
+        <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 shadow-none space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-white/50">
+            <Database className="w-5 h-5 text-neutral-700" />
             <div>
-              <h2 className="text-base font-bold text-gray-900">Data Portability & Full Backup</h2>
-              <p className="text-xs text-gray-500">Download complete accounting, customer and inventory records</p>
+              <h2 className="text-base font-normal text-neutral-900">Data Portability & Full Backup</h2>
+              <p className="text-xs font-light text-neutral-500">Download complete accounting, customer and inventory records</p>
             </div>
           </div>
 
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-neutral-600 font-light">
             Export a full encrypted JSON backup containing your business configuration, customer profiles, product catalog,
             and billing ledger.
           </p>
@@ -294,7 +294,7 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={handleExportAllJSON}
-            className="flex items-center gap-2 px-6 h-11 rounded-full bg-gray-100 text-gray-900 text-xs font-bold hover:bg-black hover:text-white transition-all shadow-sm"
+            className="flex items-center gap-2 px-6 h-10 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm"
           >
             <Download className="w-4 h-4" />
             <span>Download Complete System Backup (JSON)</span>

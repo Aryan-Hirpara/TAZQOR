@@ -145,7 +145,7 @@ export default function PaymentsPage() {
               aria-label="Filter payment method"
               value={selectedMethod}
               onChange={(e) => setSelectedMethod(e.target.value)}
-              className="h-11 px-3 text-xs bg-white rounded-full border border-[#E5E4EE] text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#D4F732] shadow-sm"
+              className="h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm"
             >
               <option value="all">All Methods</option>
               <option value="upi">UPI</option>
@@ -157,9 +157,9 @@ export default function PaymentsPage() {
 
           <Link
             href="/payments/new"
-            className="flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-[#0A0A0A] text-white text-xs sm:text-sm font-bold shadow-md hover:bg-black/90 active:scale-95 transition-all"
+            className="flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-black text-white text-xs sm:text-sm font-normal shadow-sm hover:scale-105 active:scale-95 transition-all"
           >
-            <Plus className="w-4 h-4 text-[#D4F732]" />
+            <Plus className="w-4 h-4 text-[#E0FE52]" />
             <span>Record Payment</span>
           </Link>
         </div>

@@ -124,30 +124,30 @@ export default function ProductsPage() {
               className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 border border-white/65 shadow-sm space-y-4"
             >
               {/* Product Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-white/50">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-semibold">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/70 text-neutral-700 font-normal border border-white/80">
                       {product.sku}
                     </span>
-                    <span className="text-[11px] font-semibold text-blue-800 bg-blue-50 px-2.5 py-0.5 rounded-full">
+                    <span className="text-[11px] font-light text-neutral-700 bg-white/70 px-2.5 py-0.5 rounded-full border border-white/80">
                       {product.category_name}
                     </span>
-                    <span className="text-[10px] font-mono text-neutral-600">
+                    <span className="text-[10px] font-mono text-neutral-500">
                       HSN: {product.hsn}
                     </span>
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mt-1">
+                  <h3 className="text-base font-normal text-neutral-900 mt-1">
                     {product.name}
                   </h3>
-                  <p className="text-xs text-gray-500 mt-0.5">{product.description}</p>
+                  <p className="text-xs font-light text-neutral-500 mt-0.5">{product.description}</p>
                 </div>
               </div>
 
               {/* Variants & Pack Sizes Table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-[#F9F8FD] text-gray-500 font-bold uppercase tracking-wider rounded-xl">
+                  <thead className="bg-white/40 text-neutral-500 font-normal rounded-xl border-b border-white/50">
                     <tr>
                       <th className="py-2.5 px-4 rounded-l-xl">Pack Size</th>
                       <th className="py-2.5 px-4">Variant SKU</th>
@@ -158,39 +158,39 @@ export default function ProductsPage() {
                       <th className="py-2.5 px-4 rounded-r-xl text-center">Tax Rate</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-white/40">
                     {product.variants.map((v) => {
                       const marginAmount = v.selling_price - v.cost_price;
                       const marginPct = Math.round((marginAmount / v.selling_price) * 100);
 
                       return (
-                        <tr key={v.id} className="hover:bg-gray-50/60">
-                          <td className="py-3 px-4 font-bold text-gray-900 flex items-center gap-2">
-                            <Tag className="w-3.5 h-3.5 text-neutral-600" />
+                        <tr key={v.id} className="hover:bg-white/40 transition-colors">
+                          <td className="py-3 px-4 font-normal text-neutral-900 flex items-center gap-2">
+                            <Tag className="w-3.5 h-3.5 text-neutral-400" />
                             <span>{v.pack_size}</span>
-                            <span className="text-[11px] text-gray-500 font-normal">({v.name})</span>
+                            <span className="text-[11px] text-neutral-500 font-light">({v.name})</span>
                           </td>
-                          <td className="py-3 px-4 font-mono text-gray-600 text-[11px]">{v.sku}</td>
-                          <td className="py-3 px-4 text-right text-gray-600">{formatINR(v.cost_price)}</td>
-                          <td className="py-3 px-4 text-right font-bold text-gray-900">{formatINR(v.selling_price)}</td>
+                          <td className="py-3 px-4 font-mono text-neutral-500 text-[11px]">{v.sku}</td>
+                          <td className="py-3 px-4 text-right text-neutral-600 font-light">{formatINR(v.cost_price)}</td>
+                          <td className="py-3 px-4 text-right font-medium text-neutral-900">{formatINR(v.selling_price)}</td>
                           <td className="py-3 px-4 text-right">
-                            <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700">
+                            <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-normal bg-white/70 text-neutral-800 border border-white/80">
                               +{marginPct}% ({formatINR(marginAmount)})
                             </span>
                           </td>
                           <td className="py-3 px-4 text-right">
                             <span
-                              className={`font-extrabold px-2 py-0.5 rounded-full text-xs ${
+                              className={`font-medium px-2.5 py-0.5 rounded-full text-xs ${
                                 v.current_stock <= v.reorder_level
                                   ? "bg-rose-100 text-rose-800"
-                                  : "bg-gray-100 text-gray-800"
+                                  : "bg-white/80 text-neutral-800 border border-white/90"
                               }`}
                             >
                               {v.current_stock} Units
                             </span>
                           </td>
                           <td className="py-3 px-4 text-center">
-                            <span className="text-[11px] font-semibold text-gray-600">
+                            <span className="text-[11px] font-light text-neutral-600">
                               {v.tax_rate}% GST
                             </span>
                           </td>

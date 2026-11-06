@@ -68,15 +68,15 @@ export default function CategoriesPage() {
         </div>
 
         {/* Add Category Card */}
-        <form onSubmit={handleAddCategory} className="bg-white rounded-3xl p-6 border border-[#E5E4EE] shadow-sm space-y-4">
+        <form onSubmit={handleAddCategory} className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 border border-white/65 shadow-none space-y-4">
           <div className="flex items-center gap-2">
-            <FolderTree className="w-5 h-5 text-gray-700" />
-            <h2 className="text-base font-bold text-gray-900">Add New Category</h2>
+            <FolderTree className="w-5 h-5 text-neutral-700" />
+            <h2 className="text-base font-normal text-neutral-900">Add New Category</h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              <label className="block text-xs font-light text-neutral-600 mb-1.5">
                 Category Name *
               </label>
               <input
@@ -85,12 +85,12 @@ export default function CategoriesPage() {
                 onChange={(e) => setNewCatName(e.target.value)}
                 placeholder="e.g. Bathroom Cleaner"
                 required
-                className="w-full h-11 px-4 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
+                className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              <label className="block text-xs font-light text-neutral-600 mb-1.5">
                 Description
               </label>
               <input
@@ -98,7 +98,7 @@ export default function CategoriesPage() {
                 value={newCatDesc}
                 onChange={(e) => setNewCatDesc(e.target.value)}
                 placeholder="Short purpose of this product range"
-                className="w-full h-11 px-4 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
+                className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
               />
             </div>
           </div>
@@ -106,35 +106,35 @@ export default function CategoriesPage() {
           <div className="text-right pt-2">
             <button
               type="submit"
-              className="px-5 h-10 rounded-full bg-[#0A0A0A] text-white text-xs font-bold shadow-sm hover:bg-black/90 active:scale-95 transition-all inline-flex items-center gap-1.5"
+              className="px-5 h-10 rounded-full bg-black text-white text-xs font-normal shadow-md hover:scale-105 active:scale-95 transition-all inline-flex items-center gap-1.5"
             >
-              <Plus className="w-3.5 h-3.5 text-[#D4F732]" />
+              <Plus className="w-3.5 h-3.5 text-[#E0FE52]" />
               <span>Add Category</span>
             </button>
           </div>
         </form>
 
         {/* Categories List */}
-        <div className="bg-white rounded-3xl p-6 border border-[#E5E4EE] shadow-sm space-y-3">
-          <h3 className="text-sm font-bold text-gray-900 pb-3 border-b border-gray-100">
+        <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 border border-white/65 shadow-none space-y-3">
+          <h3 className="text-sm font-normal text-neutral-900 pb-3 border-b border-white/50">
             Configured Categories ({categories.length})
           </h3>
 
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-white/40">
             {categories.map((cat) => (
               <div key={cat.id} className="py-3.5 flex items-center justify-between gap-4">
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-gray-900">{cat.name}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold">
+                    <span className="text-xs font-normal text-neutral-900">{cat.name}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/70 text-neutral-700 font-light border border-white/80">
                       {cat.productCount} Products
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500">{cat.description}</p>
+                  <p className="text-xs text-neutral-500 font-light">{cat.description}</p>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-mono text-neutral-600">Order: #{cat.sortOrder}</span>
+                  <span className="text-[11px] font-mono text-neutral-500">Order: #{cat.sortOrder}</span>
                 </div>
               </div>
             ))}

@@ -124,20 +124,20 @@ export default function StoreMapPage() {
                       style={{ top: `${topPos}%`, left: `${leftPos}%` }}
                       className={`absolute -translate-x-1/2 -translate-y-1/2 p-2 rounded-2xl flex items-center gap-2 shadow-xl transition-all duration-300 ${
                         isSelected
-                          ? "bg-[#0A0A0A] text-[#D4F732] scale-110 z-20 ring-4 ring-[#D4F732]/40"
-                          : "bg-white text-gray-900 hover:scale-105 z-10"
+                          ? "bg-black text-[#D4F732] scale-110 z-20 ring-4 ring-[#D4F732]/40"
+                          : "bg-white/90 backdrop-blur-md text-neutral-900 hover:scale-105 z-10"
                       }`}
                     >
                       <MapPin className="w-4 h-4 fill-current" />
                       <div className="text-left pr-1">
-                        <div className="text-xs font-black leading-tight">{c.name}</div>
-                        <div className={`text-[10px] leading-tight ${isSelected ? "text-neutral-300" : "text-neutral-600"}`}>{c.city}</div>
+                        <div className="text-xs font-normal leading-tight">{c.name}</div>
+                        <div className={`text-[10px] leading-tight ${isSelected ? "text-neutral-300" : "text-neutral-500 font-light"}`}>{c.city}</div>
                       </div>
                     </button>
                   );
                 })}
 
-                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-[10px] text-gray-500 font-mono shadow-sm">
+                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-[10px] text-neutral-500 font-mono shadow-sm">
                   OpenStreetMap • 4 Stores Positioned in Gujarat
                 </div>
               </div>
@@ -146,35 +146,35 @@ export default function StoreMapPage() {
             {/* Selected Store Detail Card */}
             <div className="lg:col-span-4 space-y-4">
               {selectedCustomer ? (
-                <div className="bg-white rounded-3xl p-6 border border-[#E5E4EE] shadow-sm space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-gray-100 text-gray-700">
+                <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 border border-white/65 shadow-none space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-white/60">
+                    <span className="text-xs font-mono font-normal px-2.5 py-0.5 rounded-full bg-white/70 border border-white/80 text-neutral-700">
                       {selectedCustomer.customer_code}
                     </span>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 capitalize">
+                    <span className="text-xs font-normal px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-800 capitalize">
                       {selectedCustomer.type}
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">{selectedCustomer.name}</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">{selectedCustomer.shop_name}</p>
-                    <p className="text-xs text-gray-700 mt-2 font-medium">
+                    <h3 className="text-base font-normal text-neutral-900">{selectedCustomer.name}</h3>
+                    <p className="text-xs text-neutral-500 font-light mt-0.5">{selectedCustomer.shop_name}</p>
+                    <p className="text-xs text-neutral-700 mt-2 font-light">
                       Contact: {selectedCustomer.contact_person}
                     </p>
                   </div>
 
-                  <div className="p-3.5 rounded-2xl bg-[#F9F8FD] border border-[#E5E4EE] space-y-1 text-xs">
-                    <span className="font-bold text-gray-700 block">Location Coordinates:</span>
-                    <p className="text-gray-500">{selectedCustomer.delivery_address || selectedCustomer.city}</p>
-                    <p className="font-mono text-[11px] text-gray-600">
+                  <div className="p-3.5 rounded-2xl bg-white/60 border border-white/70 space-y-1 text-xs">
+                    <span className="font-normal text-neutral-800 block">Location Coordinates:</span>
+                    <p className="text-neutral-500 font-light">{selectedCustomer.delivery_address || selectedCustomer.city}</p>
+                    <p className="font-mono text-[11px] text-neutral-600">
                       Lat: {selectedCustomer.lat} • Lng: {selectedCustomer.lng}
                     </p>
                   </div>
 
                   <div className="flex items-center justify-between text-xs pt-2">
-                    <span className="text-gray-500">Outstanding Balance:</span>
-                    <span className="font-black text-rose-600 text-sm">
+                    <span className="text-neutral-500 font-light">Outstanding Balance:</span>
+                    <span className="font-semibold text-rose-600 text-sm">
                       {formatINR(selectedCustomer.outstanding)}
                     </span>
                   </div>
@@ -183,7 +183,7 @@ export default function StoreMapPage() {
                   <div className="grid grid-cols-2 gap-2 pt-2">
                     <a
                       href={`tel:${selectedCustomer.phone.replace(/\s+/g, "")}`}
-                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gray-100 text-gray-800 text-xs font-bold hover:bg-gray-200 transition-all"
+                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-full bg-white/70 border border-white/80 text-neutral-800 text-xs font-normal hover:bg-white transition-all"
                     >
                       <Phone className="w-3.5 h-3.5 text-blue-600" />
                       <span>Call</span>
@@ -194,7 +194,7 @@ export default function StoreMapPage() {
                         href={`https://www.google.com/maps/dir/?api=1&destination=${selectedCustomer.lat},${selectedCustomer.lng}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-all"
+                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-full bg-black text-white text-xs font-normal hover:bg-neutral-800 transition-all"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                         <span>Directions</span>
@@ -204,13 +204,13 @@ export default function StoreMapPage() {
 
                   <Link
                     href={`/customers/${selectedCustomer.id}`}
-                    className="block w-full py-2.5 rounded-xl bg-[#0A0A0A] text-white text-xs font-bold text-center hover:bg-black/80 transition-all"
+                    className="block w-full py-2.5 rounded-full bg-black text-white text-xs font-normal text-center hover:bg-neutral-800 transition-all"
                   >
                     View Full Account Profile
                   </Link>
                 </div>
               ) : (
-                <div className="bg-white rounded-3xl p-8 text-center text-xs text-gray-500 border border-[#E5E4EE]">
+                <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-8 text-center text-xs text-neutral-500 font-light border border-white/65 shadow-none">
                   Select a store pin to view details
                 </div>
               )}
@@ -218,14 +218,14 @@ export default function StoreMapPage() {
           </div>
         ) : (
           /* List Fallback Mode */
-          <div className="bg-white rounded-3xl border border-[#E5E4EE] overflow-hidden shadow-sm">
-            <div className="divide-y divide-gray-100">
+          <div className="bg-white/55 backdrop-blur-xl rounded-[28px] border border-white/65 overflow-hidden shadow-none">
+            <div className="divide-y divide-white/40">
               {customers.map((c) => (
-                <div key={c.id} className="p-5 flex items-center justify-between gap-4 hover:bg-gray-50/60">
+                <div key={c.id} className="p-5 flex items-center justify-between gap-4 hover:bg-white/40 transition-colors">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-gray-900">{c.name}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 font-semibold capitalize">
+                      <span className="text-sm font-normal text-neutral-900">{c.name}</span>
+                      <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-white/80 border border-white/80 font-normal text-neutral-700 capitalize">
                         {c.type}
                       </span>
                     </div>

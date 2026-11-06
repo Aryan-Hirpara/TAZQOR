@@ -367,40 +367,40 @@ export default function InventoryPage() {
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-[#F9F8FD] border-b border-[#E5E4EE] text-gray-500 font-bold uppercase tracking-wider">
+                <thead className="bg-white/40 border-b border-white/60 text-neutral-500 font-normal">
                   <tr>
-                    <th className="py-4 px-6">Batch #</th>
-                    <th className="py-4 px-4">Product Variant</th>
-                    <th className="py-4 px-4">Mfg Date</th>
-                    <th className="py-4 px-4">Expiry Date</th>
-                    <th className="py-4 px-4 text-right">Received</th>
-                    <th className="py-4 px-4 text-right">On Hand</th>
-                    <th className="py-4 px-4 text-right">Cost / Unit</th>
-                    <th className="py-4 px-6 text-right">Total Value</th>
+                    <th className="py-4 px-6 font-normal">Batch #</th>
+                    <th className="py-4 px-4 font-normal">Product Variant</th>
+                    <th className="py-4 px-4 font-normal">Mfg Date</th>
+                    <th className="py-4 px-4 font-normal">Expiry Date</th>
+                    <th className="py-4 px-4 text-right font-normal">Received</th>
+                    <th className="py-4 px-4 text-right font-normal">On Hand</th>
+                    <th className="py-4 px-4 text-right font-normal">Cost / Unit</th>
+                    <th className="py-4 px-6 text-right font-normal">Total Value</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E5E4EE]">
+                <tbody className="divide-y divide-white/50">
                   {batches.map((b) => (
-                    <tr key={b.id} className="hover:bg-[#F9F8FD]/60">
+                    <tr key={b.id} className="hover:bg-white/40 transition-colors">
                       <td className="py-4 px-6">
-                        <span className="font-mono font-bold text-gray-900 bg-gray-100 px-2.5 py-1 rounded-lg">
+                        <span className="font-mono font-normal text-neutral-800 bg-white/70 px-2.5 py-1 rounded-lg border border-white/80">
                           {b.batch_number}
                         </span>
                       </td>
                       <td className="py-4 px-4">
-                        <div className="font-bold text-gray-900">{b.product_name}</div>
-                        <div className="text-[11px] text-gray-500">{b.variant_name} ({b.sku})</div>
+                        <div className="font-normal text-neutral-900">{b.product_name}</div>
+                        <div className="text-[11px] text-neutral-500 font-light">{b.variant_name} ({b.sku})</div>
                       </td>
-                      <td className="py-4 px-4 text-gray-600 font-medium">{b.mfg_date}</td>
-                      <td className="py-4 px-4 font-bold text-emerald-700">{b.expiry_date}</td>
-                      <td className="py-4 px-4 text-right text-gray-500">{b.qty_received}</td>
+                      <td className="py-4 px-4 text-neutral-600 font-light">{b.mfg_date}</td>
+                      <td className="py-4 px-4 font-medium text-emerald-700">{b.expiry_date}</td>
+                      <td className="py-4 px-4 text-right text-neutral-500 font-light">{b.qty_received}</td>
                       <td className="py-4 px-4 text-right">
-                        <span className="font-extrabold text-sm text-[#0A0A0A] bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-lg border border-emerald-100">
+                        <span className="font-medium text-sm text-neutral-900 bg-emerald-50/80 text-emerald-800 px-2 py-0.5 rounded-lg border border-emerald-100">
                           {b.qty_remaining}
                         </span>
                       </td>
-                      <td className="py-4 px-4 text-right font-medium text-gray-700">{formatINR(b.cost_per_unit)}</td>
-                      <td className="py-4 px-6 text-right font-bold text-gray-900">{formatINR(b.qty_remaining * b.cost_per_unit)}</td>
+                      <td className="py-4 px-4 text-right font-light text-neutral-700">{formatINR(b.cost_per_unit)}</td>
+                      <td className="py-4 px-6 text-right font-medium text-neutral-900">{formatINR(b.qty_remaining * b.cost_per_unit)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -411,17 +411,17 @@ export default function InventoryPage() {
 
         {/* Tab 2: Stock Movements Ledger */}
         {activeTab === "movements" && (
-          <div className="bg-white rounded-3xl border border-[#E5E4EE] overflow-hidden shadow-sm">
-            <div className="p-5 border-b border-[#E5E4EE] flex items-center justify-between">
+          <div className="bg-white/55 backdrop-blur-xl rounded-[28px] border border-white/65 overflow-hidden shadow-none">
+            <div className="p-5 border-b border-white/50 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-gray-900">Immutable Stock Ledger</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Every quantity change is recorded as an audited ledger entry</p>
+                <h3 className="text-sm font-normal text-neutral-900">Immutable Stock Ledger</h3>
+                <p className="text-xs text-neutral-500 font-light mt-0.5">Every quantity change is recorded as an audited ledger entry</p>
               </div>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-[#F9F8FD] border-b border-[#E5E4EE] text-gray-500 font-bold uppercase tracking-wider">
+                <thead className="bg-white/40 border-b border-white/60 text-neutral-500 font-normal">
                   <tr>
                     <th className="py-4 px-6">Timestamp</th>
                     <th className="py-4 px-4">Product</th>
@@ -432,28 +432,28 @@ export default function InventoryPage() {
                     <th className="py-4 px-6">Reason / Note</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E5E4EE]">
+                <tbody className="divide-y divide-white/50">
                   {movements.map((m) => (
-                    <tr key={m.id} className="hover:bg-[#F9F8FD]/60">
-                      <td className="py-4 px-6 font-mono text-gray-500">{m.date}</td>
-                      <td className="py-4 px-4 font-bold text-gray-900">{m.product}</td>
+                    <tr key={m.id} className="hover:bg-white/40 transition-colors">
+                      <td className="py-4 px-6 font-mono text-neutral-500">{m.date}</td>
+                      <td className="py-4 px-4 font-normal text-neutral-900">{m.product}</td>
                       <td className="py-4 px-4">
                         <span
-                          className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-light border capitalize ${
                             m.type.includes('in')
-                              ? "bg-emerald-50 text-emerald-800"
-                              : "bg-rose-50 text-rose-800"
+                              ? "bg-emerald-50 text-emerald-800 border-emerald-100"
+                              : "bg-rose-50 text-rose-800 border-rose-100"
                           }`}
                         >
                           {m.type}
                         </span>
                       </td>
-                      <td className="py-4 px-4 font-mono text-gray-600">{m.batch_number}</td>
-                      <td className="py-4 px-4 text-right font-black text-sm">
+                      <td className="py-4 px-4 font-mono text-neutral-600">{m.batch_number}</td>
+                      <td className="py-4 px-4 text-right font-medium text-sm text-neutral-900">
                         {m.type.includes('in') ? `+${m.quantity}` : `-${m.quantity}`}
                       </td>
-                      <td className="py-4 px-4 font-mono text-xs text-gray-600">{m.ref_doc}</td>
-                      <td className="py-4 px-6 text-gray-600">{m.reason}</td>
+                      <td className="py-4 px-4 font-mono text-xs text-neutral-600">{m.ref_doc}</td>
+                      <td className="py-4 px-6 text-neutral-600 font-light">{m.reason}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -465,16 +465,16 @@ export default function InventoryPage() {
 
       {/* Receive Stock Modal */}
       <Dialog open={receiveStockOpen} onOpenChange={setReceiveStockOpen}>
-        <DialogContent className="sm:max-w-lg p-6 rounded-3xl bg-white border border-[#E5E4EE] shadow-2xl">
-          <DialogHeader className="pb-3 border-b border-gray-100">
-            <DialogTitle className="text-lg font-bold text-[#0A0A0A]">
+        <DialogContent className="sm:max-w-lg p-6 rounded-[28px] bg-white/95 backdrop-blur-2xl border border-white/80 shadow-2xl">
+          <DialogHeader className="pb-3 border-b border-neutral-100">
+            <DialogTitle className="text-base font-normal text-neutral-900">
               Receive Stock from Supplier / Factory
             </DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleReceiveStock} className="space-y-4 mt-3">
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">
+              <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                 Product Variant
               </label>
               <select
@@ -488,7 +488,7 @@ export default function InventoryPage() {
                     cost_per_unit: sel ? sel.cost : receiveForm.cost_per_unit,
                   });
                 }}
-                className="w-full h-10 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                className="w-full h-11 px-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
               >
                 {variantsList.map((v) => (
                   <option key={v.id} value={v.id}>
@@ -500,7 +500,7 @@ export default function InventoryPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Batch Number *
                 </label>
                 <input
@@ -509,12 +509,12 @@ export default function InventoryPage() {
                   onChange={(e) => setReceiveForm({ ...receiveForm, batch_number: e.target.value })}
                   placeholder="e.g. B-FLR-2026-03"
                   required
-                  className="w-full h-10 px-3 text-xs font-mono bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-11 px-4 text-xs font-mono bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Quantity (Units) *
                 </label>
                 <input
@@ -523,59 +523,59 @@ export default function InventoryPage() {
                   onChange={(e) => setReceiveForm({ ...receiveForm, quantity: Number(e.target.value) })}
                   required
                   min="1"
-                  className="w-full h-10 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-11 px-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Manufacturing Date
                 </label>
                 <input
                   type="date"
                   value={receiveForm.mfg_date}
                   onChange={(e) => setReceiveForm({ ...receiveForm, mfg_date: e.target.value })}
-                  className="w-full h-10 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-11 px-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Expiry Date
                 </label>
                 <input
                   type="date"
                   value={receiveForm.expiry_date}
                   onChange={(e) => setReceiveForm({ ...receiveForm, expiry_date: e.target.value })}
-                  className="w-full h-10 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-11 px-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Cost Per Unit (₹)
                 </label>
                 <input
                   type="number"
                   value={receiveForm.cost_per_unit}
                   onChange={(e) => setReceiveForm({ ...receiveForm, cost_per_unit: Number(e.target.value) })}
-                  className="w-full h-10 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-11 px-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Supplier / Source
                 </label>
                 <input
                   type="text"
                   value={receiveForm.supplier}
                   onChange={(e) => setReceiveForm({ ...receiveForm, supplier: e.target.value })}
-                  className="w-full h-10 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-11 px-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
                 />
               </div>
             </div>
@@ -583,7 +583,7 @@ export default function InventoryPage() {
             <div className="pt-3 text-right">
               <button
                 type="submit"
-                className="px-6 h-11 rounded-full bg-[#0A0A0A] text-white text-xs font-bold shadow-md hover:bg-black/90"
+                className="px-6 h-11 rounded-full bg-black text-white text-xs font-normal shadow-sm hover:scale-105 active:scale-95 transition-all"
               >
                 Post Stock Receipt to Ledger
               </button>
@@ -594,23 +594,23 @@ export default function InventoryPage() {
 
       {/* Adjust Stock Modal */}
       <Dialog open={adjustStockOpen} onOpenChange={setAdjustStockOpen}>
-        <DialogContent className="sm:max-w-md p-6 rounded-3xl bg-white border border-[#E5E4EE] shadow-2xl">
-          <DialogHeader className="pb-3 border-b border-gray-100">
-            <DialogTitle className="text-lg font-bold text-[#0A0A0A]">
+        <DialogContent className="sm:max-w-md p-6 rounded-[28px] bg-white/95 backdrop-blur-2xl border border-white/80 shadow-2xl">
+          <DialogHeader className="pb-3 border-b border-neutral-100">
+            <DialogTitle className="text-base font-normal text-neutral-900">
               Record Stock Adjustment
             </DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleAdjustStock} className="space-y-4 mt-3">
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">
+              <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                 Select Batch
               </label>
               <select
                 aria-label="Select Batch"
                 value={adjustForm.batch_id}
                 onChange={(e) => setAdjustForm({ ...adjustForm, batch_id: e.target.value })}
-                className="w-full h-10 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                className="w-full h-11 px-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
               >
                 {batches.map((b) => (
                   <option key={b.id} value={b.id}>
@@ -622,14 +622,14 @@ export default function InventoryPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Adjustment Type
                 </label>
                 <select
                   aria-label="Adjustment Type"
                   value={adjustForm.type}
                   onChange={(e) => setAdjustForm({ ...adjustForm, type: e.target.value })}
-                  className="w-full h-10 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-11 px-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
                 >
                   <option value="damage_out">Damaged / Leaked (-)</option>
                   <option value="expiry_out">Expired (-)</option>
@@ -639,7 +639,7 @@ export default function InventoryPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Quantity
                 </label>
                 <input
@@ -648,13 +648,13 @@ export default function InventoryPage() {
                   onChange={(e) => setAdjustForm({ ...adjustForm, quantity: Number(e.target.value) })}
                   min="1"
                   required
-                  className="w-full h-10 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-11 px-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">
+              <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                 Reason / Investigation Note
               </label>
               <textarea
@@ -662,14 +662,14 @@ export default function InventoryPage() {
                 onChange={(e) => setAdjustForm({ ...adjustForm, reason: e.target.value })}
                 rows={2}
                 placeholder="e.g. Broken seal during van transit"
-                className="w-full p-2.5 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                className="w-full p-3.5 text-xs bg-white/60 backdrop-blur-md rounded-2xl border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
               />
             </div>
 
             <div className="pt-2 text-right">
               <button
                 type="submit"
-                className="px-6 h-11 rounded-full bg-[#0A0A0A] text-white text-xs font-bold shadow-md hover:bg-black/90"
+                className="px-6 h-11 rounded-full bg-black text-white text-xs font-normal shadow-sm hover:scale-105 active:scale-95 transition-all"
               >
                 Record Adjustment
               </button>

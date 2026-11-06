@@ -140,7 +140,7 @@ export default function ExpensesPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search vendor or description..."
-                className="w-full h-11 pl-10 pr-4 text-xs bg-white rounded-full border border-[#E5E4EE] text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#D4F732] shadow-sm transition-all"
+                className="w-full h-11 pl-10 pr-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#D4F732] shadow-sm transition-all"
               />
             </div>
 
@@ -148,7 +148,7 @@ export default function ExpensesPage() {
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               aria-label="Filter expenses by category"
-              className="h-11 px-3 text-xs bg-white rounded-full border border-[#E5E4EE] text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#D4F732] shadow-sm"
+              className="h-11 px-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#D4F732] shadow-sm"
             >
               <option value="all">All Categories</option>
               <option value="Raw Materials">Raw Materials</option>
@@ -160,40 +160,40 @@ export default function ExpensesPage() {
 
           <Link
             href="/expenses/new"
-            className="flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-[#0A0A0A] text-white text-xs sm:text-sm font-bold shadow-md hover:bg-black/90 active:scale-95 transition-all"
+            className="flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-black text-white text-xs sm:text-sm font-normal shadow-sm hover:scale-105 active:scale-95 transition-all"
           >
-            <Plus className="w-4 h-4 text-[#D4F732]" />
+            <Plus className="w-4 h-4 text-[#E0FE52]" />
             <span>Add Expense</span>
           </Link>
         </div>
 
         {/* Expenses Table */}
-        <div className="bg-white rounded-3xl border border-[#E5E4EE] overflow-hidden shadow-sm">
+        <div className="bg-white/55 backdrop-blur-xl rounded-[28px] border border-white/65 overflow-hidden shadow-none">
           <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Expenses table container">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#F9F8FD] border-b border-[#E5E4EE] text-gray-500 font-bold uppercase tracking-wider">
+              <thead className="bg-white/40 border-b border-white/60 text-neutral-500 font-normal">
                 <tr>
-                  <th className="py-4 px-6">Date</th>
-                  <th className="py-4 px-4">Category</th>
-                  <th className="py-4 px-4">Vendor</th>
-                  <th className="py-4 px-4">Description</th>
-                  <th className="py-4 px-4">Payment Method</th>
-                  <th className="py-4 px-6 text-right">Amount</th>
+                  <th className="py-4 px-6 font-normal">Date</th>
+                  <th className="py-4 px-4 font-normal">Category</th>
+                  <th className="py-4 px-4 font-normal">Vendor</th>
+                  <th className="py-4 px-4 font-normal">Description</th>
+                  <th className="py-4 px-4 font-normal">Payment Method</th>
+                  <th className="py-4 px-6 text-right font-normal">Amount</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E5E4EE]">
+              <tbody className="divide-y divide-white/40">
                 {filteredExpenses.map((exp) => (
-                  <tr key={exp.id} className="hover:bg-[#F9F8FD]/60">
-                    <td className="py-4 px-6 font-mono text-gray-500">{exp.date}</td>
+                  <tr key={exp.id} className="hover:bg-white/40 transition-colors">
+                    <td className="py-4 px-6 font-normal text-neutral-600">{exp.date}</td>
                     <td className="py-4 px-4">
-                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-800">
+                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-normal bg-white/80 border border-white/80 text-neutral-800">
                         {exp.category}
                       </span>
                     </td>
-                    <td className="py-4 px-4 font-bold text-gray-900">{exp.vendor}</td>
-                    <td className="py-4 px-4 text-gray-600 max-w-sm">{exp.description}</td>
-                    <td className="py-4 px-4 text-gray-600 font-medium">{exp.payment_method}</td>
-                    <td className="py-4 px-6 text-right font-black text-rose-600 text-sm">
+                    <td className="py-4 px-4 font-normal text-neutral-900">{exp.vendor}</td>
+                    <td className="py-4 px-4 text-neutral-600 font-light max-w-sm">{exp.description}</td>
+                    <td className="py-4 px-4 text-neutral-600 font-light">{exp.payment_method}</td>
+                    <td className="py-4 px-6 text-right font-medium text-rose-600 text-sm">
                       {formatINR(exp.amount)}
                     </td>
                   </tr>

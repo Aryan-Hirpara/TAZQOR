@@ -49,7 +49,7 @@ export function TopHeader({
         - Mobile Home: Avatar left + round action buttons right (Search, Notifications with red dot).
         - Mobile Sub-page: Round back button + page title + round 3x3 grid button (opening More launcher).
       */}
-      <header className="w-full h-[64px] sm:h-[73px] flex items-center justify-between px-0 md:pl-[27px] md:pr-6 bg-transparent select-none z-20 shrink-0">
+      <header className="w-full h-[64px] sm:h-[73px] flex items-center justify-between px-0 md:pl-0 md:pr-0 bg-transparent select-none z-20 shrink-0">
         
         {/* ==================== DESKTOP HEADER VIEW (md:flex) ==================== */}
         <div className="hidden md:flex items-center justify-between w-full">

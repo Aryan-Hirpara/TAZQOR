@@ -120,15 +120,15 @@ export default function NewProductPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* General Information */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E5E4EE] shadow-sm space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-              <Layers className="w-5 h-5 text-gray-700" />
-              <h2 className="text-base font-bold text-gray-900">Product Line Details</h2>
+          <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 shadow-none space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-white/40">
+              <Layers className="w-5 h-5 text-neutral-700" />
+              <h2 className="text-base font-normal text-neutral-900">Product Line Details</h2>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Product Name *
                 </label>
                 <input
@@ -137,19 +137,19 @@ export default function NewProductPage() {
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="e.g. TAZQOR Citrus Floor Cleaner"
                   required
-                  className="w-full h-11 px-4 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
+                  className="w-full h-11 px-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Category *
                 </label>
                 <select
                   aria-label="Product Category"
                   value={form.category_id}
                   onChange={(e) => setForm({ ...form, category_id: e.target.value })}
-                  className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
+                  className="w-full h-11 px-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
                 >
                   <option value="cat-floor">Floor Cleaner</option>
                   <option value="cat-dish">Dish Wash</option>
@@ -161,7 +161,7 @@ export default function NewProductPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Base SKU Code *
                 </label>
                 <input
@@ -170,12 +170,12 @@ export default function NewProductPage() {
                   onChange={(e) => setForm({ ...form, sku: e.target.value })}
                   placeholder="e.g. TC-FLR-01"
                   required
-                  className="w-full h-11 px-4 text-xs font-mono bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
+                  className="w-full h-11 px-4 text-xs font-mono bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   HSN / SAC Code
                 </label>
                 <input
@@ -183,12 +183,12 @@ export default function NewProductPage() {
                   value={form.hsn}
                   onChange={(e) => setForm({ ...form, hsn: e.target.value })}
                   placeholder="e.g. 3402"
-                  className="w-full h-11 px-4 text-xs font-mono bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
+                  className="w-full h-11 px-4 text-xs font-mono bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Product Description
                 </label>
                 <textarea
@@ -196,23 +196,23 @@ export default function NewProductPage() {
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={2}
                   placeholder="Application areas, concentration ratio, surface safety..."
-                  className="w-full p-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
+                  className="w-full p-3.5 text-xs bg-white/60 backdrop-blur-md rounded-2xl border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
                 />
               </div>
             </div>
           </div>
 
           {/* Variants and Pack Sizes */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E5E4EE] shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+          <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 shadow-none space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-white/40">
               <div>
-                <h2 className="text-base font-bold text-gray-900">Pack Sizes & Pricing Variants</h2>
-                <p className="text-xs text-gray-500">Each pack size operates with its own pricing, batch tracking and barcode</p>
+                <h2 className="text-base font-normal text-neutral-900">Pack Sizes & Pricing Variants</h2>
+                <p className="text-xs text-neutral-500 font-light">Each pack size operates with its own pricing, batch tracking and barcode</p>
               </div>
               <button
                 type="button"
                 onClick={addVariantRow}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-100 text-gray-800 text-xs font-bold hover:bg-[#0A0A0A] hover:text-white transition-all"
+                className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-white/70 text-neutral-800 text-xs font-normal border border-white/80 hover:bg-white transition-all"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Pack Size</span>
@@ -223,10 +223,10 @@ export default function NewProductPage() {
               {variants.map((v, idx) => (
                 <div
                   key={idx}
-                  className="p-4 rounded-2xl bg-[#F9F8FD] border border-[#E5E4EE] grid grid-cols-2 sm:grid-cols-6 gap-3 items-end"
+                  className="p-4 rounded-2xl bg-white/60 border border-white/70 grid grid-cols-2 sm:grid-cols-6 gap-3 items-end"
                 >
                   <div>
-                    <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                    <label className="block text-[11px] font-normal text-neutral-700 mb-1">
                       Pack Size
                     </label>
                     <input
@@ -238,12 +238,12 @@ export default function NewProductPage() {
                         setVariants(copy);
                       }}
                       placeholder="5 L"
-                      className="w-full h-9 px-2.5 text-xs bg-white rounded-lg border border-gray-200"
+                      className="w-full h-10 px-3 text-xs bg-white/80 rounded-xl border border-neutral-200/70"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                    <label className="block text-[11px] font-normal text-neutral-700 mb-1">
                       SKU Suffix
                     </label>
                     <input
@@ -255,12 +255,12 @@ export default function NewProductPage() {
                         setVariants(copy);
                       }}
                       placeholder="-5L"
-                      className="w-full h-9 px-2.5 text-xs font-mono bg-white rounded-lg border border-gray-200"
+                      className="w-full h-10 px-3 text-xs font-mono bg-white/80 rounded-xl border border-neutral-200/70"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                    <label className="block text-[11px] font-normal text-neutral-700 mb-1">
                       Cost (₹)
                     </label>
                     <input
@@ -272,12 +272,12 @@ export default function NewProductPage() {
                         copy[idx].cost_price = Number(e.target.value);
                         setVariants(copy);
                       }}
-                      className="w-full h-9 px-2.5 text-xs bg-white rounded-lg border border-gray-200"
+                      className="w-full h-10 px-3 text-xs bg-white/80 rounded-xl border border-neutral-200/70"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                    <label className="block text-[11px] font-normal text-neutral-700 mb-1">
                       Selling (₹)
                     </label>
                     <input
@@ -289,12 +289,12 @@ export default function NewProductPage() {
                         copy[idx].selling_price = Number(e.target.value);
                         setVariants(copy);
                       }}
-                      className="w-full h-9 px-2.5 text-xs bg-white rounded-lg border border-gray-200"
+                      className="w-full h-10 px-3 text-xs bg-white/80 rounded-xl border border-neutral-200/70"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                    <label className="block text-[11px] font-normal text-neutral-700 mb-1">
                       Reorder Threshold
                     </label>
                     <input
@@ -305,7 +305,7 @@ export default function NewProductPage() {
                         copy[idx].reorder_level = Number(e.target.value);
                         setVariants(copy);
                       }}
-                      className="w-full h-9 px-2.5 text-xs bg-white rounded-lg border border-gray-200"
+                      className="w-full h-10 px-3 text-xs bg-white/80 rounded-xl border border-neutral-200/70"
                     />
                   </div>
 
@@ -328,7 +328,7 @@ export default function NewProductPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="px-8 h-12 rounded-full bg-[#0A0A0A] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:bg-black/90 active:scale-95 transition-all shadow-md disabled:opacity-50"
+              className="px-8 h-11 rounded-full bg-black text-white text-xs sm:text-sm font-normal flex items-center justify-center gap-2 hover:bg-neutral-800 active:scale-95 transition-all shadow-sm disabled:opacity-50"
             >
               <Save className="w-4 h-4 text-[#D4F732]" />
               <span>{submitting ? "Saving..." : "Save Product & Variants"}</span>

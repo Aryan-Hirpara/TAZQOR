@@ -232,7 +232,6 @@ body.dark {
     grid-template-columns: repeat(20, minmax(0, 1fr)) !important;
     grid-template-rows: repeat(5, minmax(120px, 1fr)) !important;
     gap: clamp(6px, 0.5vw, 8px) !important;
-    margin-right: 22px !important;
     margin-bottom: 23px !important;
     height: calc(100dvh - 73px - 23px) !important;
     min-height: calc(120px * 5 + 4 * 7px) !important; /* Minimum row height 120px ensures zero card overlap */

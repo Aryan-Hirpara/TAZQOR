@@ -154,21 +154,21 @@ export default function NewOrderPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Customer Selection */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E5E4EE] shadow-sm space-y-4">
-            <h2 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">
+          <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 shadow-none space-y-4">
+            <h2 className="text-base font-normal text-neutral-900 border-b border-white/40 pb-3">
               Customer Account
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-light text-neutral-600 mb-1.5">
                   Select Customer Shop *
                 </label>
                 <select
                   aria-label="Select Customer Shop"
                   value={customer}
                   onChange={(e) => setCustomer(e.target.value)}
-                  className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
                 >
                   {customerList.length > 0 ? (
                     customerList.map((c) => (
@@ -188,7 +188,7 @@ export default function NewOrderPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label className="block text-xs font-light text-neutral-600 mb-1.5">
                   Order Delivery Instructions
                 </label>
                 <input
@@ -196,25 +196,25 @@ export default function NewOrderPage() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="e.g. Deliver before 2:00 PM on Tuesday"
-                  className="w-full h-11 px-4 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                  className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
                 />
               </div>
             </div>
           </div>
 
           {/* Line Items */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E5E4EE] shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+          <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 shadow-none space-y-4">
+            <div className="flex items-center justify-between border-b border-white/40 pb-3">
               <div>
-                <h2 className="text-base font-bold text-gray-900">Order Items</h2>
-                <p className="text-xs text-gray-500">Live stock check shown for each variant</p>
+                <h2 className="text-base font-normal text-neutral-900">Order Items</h2>
+                <p className="text-xs font-light text-neutral-500">Live stock check shown for each variant</p>
               </div>
               <button
                 type="button"
                 onClick={addLine}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-100 text-gray-800 text-xs font-bold hover:bg-[#0A0A0A] hover:text-white transition-all"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-3.5 h-3.5 text-[#E0FE52]" />
                 <span>Add Product</span>
               </button>
             </div>
@@ -226,22 +226,22 @@ export default function NewOrderPage() {
                 return (
                   <div
                     key={idx}
-                    className="p-4 rounded-2xl bg-[#F9F8FD] border border-[#E5E4EE] grid grid-cols-1 sm:grid-cols-12 gap-3 items-end"
+                    className="p-4 rounded-2xl bg-white/50 border border-white/70 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end"
                   >
                     <div className="sm:col-span-5">
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                      <label className="block text-[11px] font-light text-neutral-600 mb-1">
                         Product & Pack Size
                       </label>
                       <input
                         type="text"
                         value={`${line.product_name} (${line.pack_size})`}
                         readOnly
-                        className="w-full h-9 px-3 text-xs bg-white rounded-lg border border-gray-200 font-medium"
+                        className="w-full h-10 px-4 text-xs bg-white/60 rounded-full border border-white/70 font-normal text-neutral-900"
                       />
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                      <label className="block text-[11px] font-light text-neutral-600 mb-1">
                         Qty (Units)
                       </label>
                       <input
@@ -253,12 +253,12 @@ export default function NewOrderPage() {
                           copy[idx].quantity = Number(e.target.value);
                           setLines(copy);
                         }}
-                        className="w-full h-9 px-2.5 text-xs bg-white rounded-lg border border-gray-200"
+                        className="w-full h-10 px-3 text-xs bg-white/70 rounded-full border border-white/80 text-neutral-900 text-center font-normal"
                       />
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                      <label className="block text-[11px] font-light text-neutral-600 mb-1">
                         Price (₹)
                       </label>
                       <input
@@ -269,15 +269,15 @@ export default function NewOrderPage() {
                           copy[idx].unit_price = Number(e.target.value);
                           setLines(copy);
                         }}
-                        className="w-full h-9 px-2.5 text-xs bg-white rounded-lg border border-gray-200"
+                        className="w-full h-10 px-3 text-xs bg-white/70 rounded-full border border-white/80 text-neutral-900 text-right font-normal"
                       />
                     </div>
 
                     <div className="sm:col-span-2 text-right">
-                      <span className="block text-[11px] font-bold text-gray-500 mb-1">
+                      <span className="block text-[11px] font-light text-neutral-500 mb-1">
                         Line Total
                       </span>
-                      <span className="font-bold text-sm text-gray-900">
+                      <span className="font-semibold text-sm text-neutral-900">
                         {formatINR(line.quantity * line.unit_price)}
                       </span>
                     </div>
@@ -286,7 +286,7 @@ export default function NewOrderPage() {
                       <button
                         type="button"
                         onClick={() => removeLine(idx)}
-                        className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
+                        className="p-2 text-neutral-400 hover:text-rose-600 hover:bg-white/80 rounded-full transition-colors cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -295,13 +295,13 @@ export default function NewOrderPage() {
                     {/* Stock availability indicator */}
                     <div className="sm:col-span-12 text-xs flex items-center gap-1.5 pt-1">
                       {isOverStock ? (
-                        <span className="text-amber-700 font-semibold flex items-center gap-1">
-                          <AlertTriangle className="w-3.5 h-3.5" />
-                          <span>Stock warning: Order qty ({line.quantity}) exceeds on-hand ({line.stock_available}). Need to produce or replenish before final delivery.</span>
+                        <span className="text-amber-800 text-[11px] font-light flex items-center gap-1">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Stock warning: Order qty ({line.quantity}) exceeds on-hand ({line.stock_available}). Need to produce or replenish before delivery.</span>
                         </span>
                       ) : (
-                        <span className="text-emerald-700 font-medium flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span className="text-neutral-600 text-[11px] font-light flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                           <span>{line.stock_available} units available in FEFO batches</span>
                         </span>
                       )}
@@ -312,18 +312,18 @@ export default function NewOrderPage() {
             </div>
 
             {/* Total and Submit */}
-            <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="pt-4 border-t border-white/40 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
-                <span className="text-xs text-gray-500">Estimated Order Total:</span>
-                <div className="text-2xl font-black text-[#0A0A0A]">{formatINR(orderSubtotal)}</div>
+                <span className="text-xs font-light text-neutral-500">Estimated Order Total:</span>
+                <div className="text-2xl sm:text-3xl font-semibold text-neutral-900 tracking-tight">{formatINR(orderSubtotal)}</div>
               </div>
 
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full sm:w-auto px-8 h-12 rounded-full bg-[#0A0A0A] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:bg-black/90 active:scale-95 transition-all shadow-md disabled:opacity-50"
+                className="w-full sm:w-auto px-8 h-11 rounded-full bg-black text-white text-xs sm:text-sm font-normal flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-50 cursor-pointer"
               >
-                <ShoppingCart className="w-4 h-4 text-[#D4F732]" />
+                <ShoppingCart className="w-4 h-4 text-[#E0FE52]" />
                 <span>{submitting ? "Booking Order..." : "Confirm & Book Order"}</span>
               </button>
             </div>

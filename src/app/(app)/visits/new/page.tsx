@@ -91,22 +91,22 @@ export default function NewVisitPage() {
           </Link>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E5E4EE] shadow-sm space-y-6">
-          <div className="border-b border-gray-100 pb-3">
-            <h2 className="text-base font-bold text-gray-900">Visit & Conversation Log</h2>
-            <p className="text-xs text-gray-500">Record customer feedback, stock inquiries or collection discussions</p>
+        <form onSubmit={handleSubmit} className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 shadow-none space-y-6">
+          <div className="border-b border-white/40 pb-3">
+            <h2 className="text-base font-normal text-neutral-900">Visit & Conversation Log</h2>
+            <p className="text-xs font-light text-neutral-500">Record customer feedback, stock inquiries or collection discussions</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              <label className="block text-xs font-light text-neutral-600 mb-1.5">
                 Customer Store *
               </label>
               <select
                 aria-label="Customer Store"
                 value={customer}
                 onChange={(e) => setCustomer(e.target.value)}
-                className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] font-medium"
+                className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
               >
                 <option value="c1-shreeji">Shreeji Supermarket (Haresh Patel)</option>
                 <option value="c2-pride-hotel">Hotel Pride Plaza (Housekeeping)</option>
@@ -116,19 +116,19 @@ export default function NewVisitPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              <label className="block text-xs font-light text-neutral-600 mb-1.5">
                 Visit Date *
               </label>
               <input
                 type="date"
                 value={visitDate}
                 onChange={(e) => setVisitDate(e.target.value)}
-                className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
               />
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              <label className="block text-xs font-light text-neutral-600 mb-1.5">
                 Visit Discussion & Outcome *
               </label>
               <textarea
@@ -137,19 +137,19 @@ export default function NewVisitPage() {
                 rows={3}
                 placeholder="What was discussed? Did the store owner request samples or place an order?"
                 required
-                className="w-full p-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
+                className="w-full p-3.5 text-xs bg-white/65 backdrop-blur-md rounded-2xl border border-white/70 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              <label className="block text-xs font-light text-neutral-600 mb-1.5">
                 Next Follow-up Date
               </label>
               <input
                 type="date"
                 value={nextFollowUp}
                 onChange={(e) => setNextFollowUp(e.target.value)}
-                className="w-full h-11 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
+                className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
               />
             </div>
 
@@ -158,10 +158,10 @@ export default function NewVisitPage() {
               <button
                 type="button"
                 onClick={handleCaptureGps}
-                className={`w-full h-11 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border transition-all ${
+                className={`w-full h-10 rounded-full text-xs font-light flex items-center justify-center gap-2 border transition-all cursor-pointer ${
                   gpsCaptured
                     ? "bg-emerald-50 text-emerald-800 border-emerald-300"
-                    : "bg-[#F9F8FD] text-gray-800 border-[#E5E4EE] hover:bg-gray-100"
+                    : "bg-white/70 text-neutral-800 border-white/80 hover:bg-black hover:text-white"
                 }`}
               >
                 <MapPin className="w-4 h-4 text-blue-600" />
@@ -174,9 +174,9 @@ export default function NewVisitPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full sm:w-auto px-8 h-12 rounded-full bg-[#0A0A0A] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:bg-black/90 active:scale-95 transition-all shadow-md disabled:opacity-50"
+              className="w-full sm:w-auto px-8 h-11 rounded-full bg-black text-white text-xs sm:text-sm font-normal flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-50 cursor-pointer"
             >
-              <Save className="w-4 h-4 text-[#D4F732]" />
+              <Save className="w-4 h-4 text-[#E0FE52]" />
               <span>{submitting ? "Logging Visit..." : "Save Visit & Schedule Follow-up"}</span>
             </button>
           </div>
