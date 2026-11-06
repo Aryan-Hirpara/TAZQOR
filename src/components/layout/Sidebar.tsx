@@ -18,6 +18,8 @@ import {
   Settings,
 } from "lucide-react";
 import { RoundIconButton } from "@/components/ui/RoundIconButton";
+import { NotificationsPopover } from "@/components/layout/NotificationsPopover";
+import { MessagesPopover } from "@/components/layout/MessagesPopover";
 
 // Exactly 8 primary navigation items matching reference
 const PRIMARY_NAV = [
@@ -35,6 +37,28 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [messagesOpen, setMessagesOpen] = useState(false);
+  const [unreadNotifsCount, setUnreadNotifsCount] = useState(2);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(2);
+
+  const toggleNotifications = () => {
+    setNotificationsOpen((prev) => !prev);
+    setMessagesOpen(false);
+    setUserMenuOpen(false);
+  };
+
+  const toggleMessages = () => {
+    setMessagesOpen((prev) => !prev);
+    setNotificationsOpen(false);
+    setUserMenuOpen(false);
+  };
+
+  const toggleUserMenu = () => {
+    setUserMenuOpen((prev) => !prev);
+    setNotificationsOpen(false);
+    setMessagesOpen(false);
+  };
 
   const handleSignOut = async () => {
     try {
@@ -48,7 +72,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className="hidden md:flex flex-col items-center justify-between w-[72px] py-4 select-none bg-transparent shrink-0 z-30"
+      className="hidden md:flex flex-col items-center justify-between w-[72px] py-4 select-none bg-transparent shrink-0 z-50"
       style={{
         position: "sticky",
         top: 0,
@@ -79,28 +103,53 @@ export function Sidebar() {
       </nav>
 
       {/* Bottom Group: Pinned Mail (red dot), Bell (red dot), User Avatar */}
-      <div className="flex flex-col items-center gap-[3px] pb-2 relative">
+      <div className="flex flex-col items-center gap-[3px] pb-2 relative z-50">
+        {/* Messages / Mail Icon */}
         <RoundIconButton
           icon={<Mail className="w-4 h-4 text-neutral-800" />}
           label="Messages"
-          hasBadge
+          title="Store Communications & Messages"
+          hasBadge={unreadMessagesCount > 0}
+          isActive={messagesOpen}
+          onClick={toggleMessages}
         />
+
+        {/* Notifications / Bell Icon */}
         <RoundIconButton
           icon={<Bell className="w-4 h-4 text-neutral-800" />}
           label="Notifications"
-          hasBadge
+          title="Live Store Alerts & Operational Notifications"
+          hasBadge={unreadNotifsCount > 0}
+          isActive={notificationsOpen}
+          onClick={toggleNotifications}
         />
 
         {/* 42px User Avatar with Popover */}
         <button
           type="button"
-          onClick={() => setUserMenuOpen(!userMenuOpen)}
+          onClick={toggleUserMenu}
           className="w-[42px] h-[42px] rounded-full bg-black text-[#D7FF00] border border-white/80 flex items-center justify-center text-xs font-semibold cursor-pointer hover:scale-105 active:scale-95 transition-transform select-none outline-none focus-visible:ring-2 focus-visible:ring-[#D7FF00]"
           title="Account Menu"
           aria-expanded={userMenuOpen}
         >
           TQ
         </button>
+
+        {/* Notifications Popover */}
+        <NotificationsPopover
+          isOpen={notificationsOpen}
+          onClose={() => setNotificationsOpen(false)}
+          onUnreadCountChange={(count) => setUnreadNotifsCount(count)}
+          anchorPosition="sidebar"
+        />
+
+        {/* Messages Popover */}
+        <MessagesPopover
+          isOpen={messagesOpen}
+          onClose={() => setMessagesOpen(false)}
+          onUnreadCountChange={(count) => setUnreadMessagesCount(count)}
+          anchorPosition="sidebar"
+        />
 
         {/* User Account Popover */}
         {userMenuOpen && (

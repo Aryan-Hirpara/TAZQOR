@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MoreLauncherSheet } from "./MoreLauncherSheet";
+import { NotificationsPopover } from "./NotificationsPopover";
 import { TazqorLogo } from "@/components/brand/TazqorLogo";
 
 interface TopHeaderProps {
@@ -33,6 +34,8 @@ export function TopHeader({
   const router = useRouter();
   const pathname = usePathname();
   const [launcherOpen, setLauncherOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [unreadNotifsCount, setUnreadNotifsCount] = useState(2);
   const [outletMenuOpen, setOutletMenuOpen] = useState(false);
   const [selectedOutlet, setSelectedOutlet] = useState("All Outlets");
 
@@ -189,12 +192,14 @@ export function TopHeader({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setLauncherOpen(true)}
+                  onClick={() => setNotificationsOpen(true)}
                   className="w-9 h-9 rounded-full bg-white/60 dark:bg-neutral-800 backdrop-blur-md border border-white/70 dark:border-white/10 flex items-center justify-center text-neutral-700 dark:text-neutral-200 relative cursor-pointer"
                   aria-label="Notifications"
                 >
                   <Bell className="w-4 h-4" />
-                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
+                  {unreadNotifsCount > 0 && (
+                    <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
+                  )}
                 </button>
               </div>
             </>
@@ -239,6 +244,14 @@ export function TopHeader({
       <MoreLauncherSheet
         isOpen={launcherOpen}
         onClose={() => setLauncherOpen(false)}
+      />
+
+      {/* Notifications Popover */}
+      <NotificationsPopover
+        isOpen={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+        onUnreadCountChange={(c) => setUnreadNotifsCount(c)}
+        anchorPosition="header"
       />
     </>
   );
