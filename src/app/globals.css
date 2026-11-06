@@ -74,7 +74,7 @@
   --color-tazqor-cyan: var(--tazqor-cyan);
   --color-tazqor-rose: var(--tazqor-rose);
 
-  --font-sans: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--font-plus-jakarta), "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 body {
@@ -82,7 +82,7 @@ body {
   background: linear-gradient(135deg, #DCD5E5 0%, #D3C7BD 50%, #D5D7CD 100%);
   background-attachment: fixed;
   color: var(--foreground);
-  font-family: var(--font-sans);
+  font-family: var(--font-plus-jakarta), "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   min-height: 100dvh;
   margin: 0;
   -webkit-tap-highlight-color: transparent;

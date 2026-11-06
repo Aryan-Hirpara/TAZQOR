@@ -90,32 +90,32 @@ export default function ExpensesPage() {
 
       <div className="space-y-6 pt-2">
         {/* KPI Strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
-            <span className="text-xs font-light text-neutral-500 block">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-5 shadow-none">
+            <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
               Total expenses (this month)
             </span>
-            <div className="text-3xl font-normal text-rose-600 mt-1 tracking-tight">
+            <div className="text-2xl sm:text-3xl font-semibold text-neutral-900 mt-1 tracking-tight">
               {formatINR(totalExpenseAmount)}
             </div>
-            <p className="text-[11px] font-light text-neutral-500 mt-0.5">Deducted from gross margin for net profit</p>
+            <p className="text-[10px] sm:text-[11px] font-light text-neutral-500 mt-0.5 truncate">Deducted from gross margin for net profit</p>
           </div>
 
-          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
-            <span className="text-xs font-light text-neutral-500 block">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-5 shadow-none">
+            <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
               Largest expense category
             </span>
-            <div className="text-3xl font-normal text-neutral-900 mt-1 tracking-tight">
+            <div className="text-2xl sm:text-3xl font-semibold text-neutral-900 mt-1 tracking-tight">
               {largestCat[0]}
             </div>
-            <p className="text-[11px] font-light text-neutral-500 mt-0.5">
+            <p className="text-[10px] sm:text-[11px] font-light text-neutral-500 mt-0.5 truncate">
               {formatINR(largestCat[1])} spent this month
             </p>
           </div>
 
-          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm flex items-center justify-between">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-5 shadow-none flex items-center justify-between">
             <div>
-              <span className="text-xs font-light text-neutral-500 block">
+              <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
                 Logged records
               </span>
               <p className="text-sm font-normal text-neutral-900 mt-0.5">{expenses.length} Expense Bills</p>

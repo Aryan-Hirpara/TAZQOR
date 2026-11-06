@@ -90,30 +90,30 @@ export default function PaymentsPage() {
 
       <div className="space-y-6 pt-2">
         {/* KPI Strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
-            <span className="text-xs font-light text-neutral-500 block">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-5 shadow-none">
+            <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
               Total collections (this month)
             </span>
-            <div className="text-3xl font-normal text-emerald-800 mt-1 tracking-tight">
+            <div className="text-2xl sm:text-3xl font-semibold text-neutral-900 mt-1 tracking-tight">
               {formatINR(totalCollected)}
             </div>
-            <p className="text-[11px] font-light text-neutral-500 mt-0.5">Across UPI, Bank Transfer & Cash</p>
+            <p className="text-[10px] sm:text-[11px] font-light text-neutral-500 mt-0.5 truncate">Across UPI, Bank Transfer & Cash</p>
           </div>
 
-          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
-            <span className="text-xs font-light text-neutral-500 block">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-5 shadow-none">
+            <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
               Total customer advances
             </span>
-            <div className="text-3xl font-normal text-neutral-900 mt-1 tracking-tight">
+            <div className="text-2xl sm:text-3xl font-semibold text-neutral-900 mt-1 tracking-tight">
               ₹1,500.00
             </div>
-            <p className="text-[11px] font-light text-neutral-500 mt-0.5">Unallocated payments held on account</p>
+            <p className="text-[10px] sm:text-[11px] font-light text-neutral-500 mt-0.5 truncate">Unallocated payments held on account</p>
           </div>
 
-          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm flex items-center justify-between">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-5 shadow-none flex items-center justify-between">
             <div>
-              <span className="text-xs font-light text-neutral-500 block">
+              <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
                 Customer ledger
               </span>
               <p className="text-sm font-normal text-neutral-900 mt-0.5">View full account statements</p>

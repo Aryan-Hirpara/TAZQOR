@@ -9,7 +9,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   style: ["normal", "italic"],
-  variable: "--font-sans",
+  variable: "--font-plus-jakarta",
   display: "swap",
 });
 

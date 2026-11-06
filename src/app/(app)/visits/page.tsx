@@ -77,42 +77,66 @@ export default function VisitsPage() {
 
       <div className="space-y-6 pt-2">
         {/* KPI Strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
-            <span className="text-xs font-light text-neutral-500 block">
-              Today&apos;s store visits
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          {/* Card 1: Total Visits */}
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-5 shadow-none">
+            <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
+              Total visits
             </span>
-            <div className="text-3xl font-normal text-neutral-900 mt-1 tracking-tight">
-              {visits.length} Logged
+            <div className="text-2xl sm:text-3xl font-semibold text-neutral-900 mt-1 tracking-tight">
+              {visits.length}
             </div>
-            <p className="text-[11px] font-light text-neutral-500 mt-0.5">
-              {visits.filter((v) => v.status === "completed").length} Completed,{" "}
-              {visits.filter((v) => v.status === "upcoming").length} Upcoming
+            <p className="text-[10px] sm:text-[11px] font-light text-neutral-500 mt-0.5 truncate">
+              Logged this month
             </p>
           </div>
 
-          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
-            <span className="text-xs font-light text-neutral-500 block">
-              Total logged this month
+          {/* Card 2: Completed Visits */}
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-5 shadow-none">
+            <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
+              Completed
             </span>
-            <div className="text-3xl font-normal text-emerald-800 mt-1 tracking-tight">
-              {visits.length} Visits
-            </div>
-            <p className="text-[11px] font-light text-neutral-500 mt-0.5">
-              Field representative check-ins
-            </p>
-          </div>
-
-          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm flex items-center justify-between">
-            <div>
-              <span className="text-xs font-light text-neutral-500 block">
-                GPS verified check-in
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="w-2 h-2 rounded-full bg-[#D7FF00]" />
+              <span className="text-2xl sm:text-3xl font-semibold text-neutral-900 tracking-tight">
+                {visits.filter((v) => v.status === "completed").length}
               </span>
-              <p className="text-sm font-normal text-neutral-900 mt-0.5">Browser geolocation check-in</p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-[#E0FE52] text-black flex items-center justify-center shadow-sm">
-              <MapPin className="w-4 h-4" />
+            <p className="text-[10px] sm:text-[11px] font-light text-neutral-500 mt-0.5 truncate">
+              Verified store check-ins
+            </p>
+          </div>
+
+          {/* Card 3: Upcoming Visits */}
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-5 shadow-none">
+            <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
+              Upcoming
+            </span>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="w-2 h-2 rounded-full bg-[#23D7FF]" />
+              <span className="text-2xl sm:text-3xl font-semibold text-neutral-900 tracking-tight">
+                {visits.filter((v) => v.status === "upcoming").length}
+              </span>
             </div>
+            <p className="text-[10px] sm:text-[11px] font-light text-neutral-500 mt-0.5 truncate">
+              Scheduled field routes
+            </p>
+          </div>
+
+          {/* Card 4: GPS Check-in */}
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-5 shadow-none">
+            <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
+              GPS verified
+            </span>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-2xl sm:text-3xl font-semibold text-neutral-900 tracking-tight">
+                {visits.filter((v) => v.gps_verified).length || visits.length}
+              </span>
+            </div>
+            <p className="text-[10px] sm:text-[11px] font-light text-neutral-500 mt-0.5 truncate">
+              Geolocation tracked
+            </p>
           </div>
         </div>
 

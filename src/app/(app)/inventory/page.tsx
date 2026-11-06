@@ -272,34 +272,34 @@ export default function InventoryPage() {
 
       <div className="space-y-6 pt-2">
         {/* Valuation & Summary KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
-            <span className="text-xs font-light text-neutral-500 block">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-5 shadow-none">
+            <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
               Total stock valuation (at cost)
             </span>
-            <div className="text-3xl font-normal text-neutral-900 mt-1 tracking-tight">
+            <div className="text-2xl sm:text-3xl font-semibold text-neutral-900 mt-1 tracking-tight">
               {formatINR(totalStockValuation)}
             </div>
-            <p className="text-[11px] font-light text-neutral-500 mt-0.5">Calculated from batch costs</p>
+            <p className="text-[10px] sm:text-[11px] font-light text-neutral-500 mt-0.5 truncate">Calculated from batch costs</p>
           </div>
 
-          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
-            <span className="text-xs font-light text-neutral-500 block">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-5 shadow-none">
+            <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
               Total units on hand
             </span>
-            <div className="text-3xl font-normal text-emerald-800 mt-1 tracking-tight">
+            <div className="text-2xl sm:text-3xl font-semibold text-neutral-900 mt-1 tracking-tight">
               {totalStockUnits} Units
             </div>
-            <p className="text-[11px] font-light text-neutral-500 mt-0.5">Across active FEFO batches</p>
+            <p className="text-[10px] sm:text-[11px] font-light text-neutral-500 mt-0.5 truncate">Across active FEFO batches</p>
           </div>
 
-          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm flex items-center justify-between">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-5 shadow-none flex items-center justify-between">
             <div>
-              <span className="text-xs font-light text-neutral-500 block">
+              <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
                 FEFO policy
               </span>
               <p className="text-sm text-neutral-900 font-normal mt-0.5">First-Expiry-First-Out</p>
-              <p className="text-[11px] text-emerald-800 font-light">Automatic allocation on billing</p>
+              <p className="text-[10px] sm:text-[11px] text-emerald-800 font-light truncate">Automatic allocation on billing</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-[#E0FE52] text-black flex items-center justify-center font-normal shadow-sm">
               ✓
