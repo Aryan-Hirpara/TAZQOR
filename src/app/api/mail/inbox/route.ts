@@ -87,3 +87,4 @@ export async function GET() {
     unreadCount: result.unreadCount,
   });
 }
+
