@@ -88,9 +88,7 @@ export function MessagesPopover({
   };
 
   useEffect(() => {
-    if (isOpen) {
-      fetchInbox();
-    }
+    fetchInbox();
   }, [isOpen]);
 
   const unreadCount = messages.filter((m) => m.unread).length;

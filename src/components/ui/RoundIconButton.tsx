@@ -52,7 +52,7 @@ export function RoundIconButton({
 
   if (href) {
     return (
-      <Link href={href} title={title || label} className={baseClass}>
+      <Link href={href} title={title || label} aria-label={label || title} className={baseClass}>
         {content}
       </Link>
     );
@@ -63,6 +63,7 @@ export function RoundIconButton({
       type="button"
       onClick={onClick}
       title={title || label}
+      aria-label={label || title}
       className={baseClass}
     >
       {content}

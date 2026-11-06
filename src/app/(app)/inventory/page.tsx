@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Boxes,
@@ -25,6 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { createClient } from "@/lib/supabase/client";
 
 interface BatchItem {
   id: string;
@@ -51,79 +52,22 @@ interface StockMovement {
   ref_doc: string;
 }
 
-const DEMO_BATCHES: BatchItem[] = [
-  {
-    id: "b1",
-    batch_number: "B-FLR-2026-01",
-    product_name: "TAZQOR Citrus Floor Cleaner",
-    variant_name: "5 Litre Can",
-    sku: "TC-FLR-01-5L",
-    mfg_date: "2026-01-15",
-    expiry_date: "2028-01-14",
-    qty_received: 100,
-    qty_remaining: 45,
-    cost_per_unit: 280,
-  },
-  {
-    id: "b2",
-    batch_number: "B-FLR-2026-02",
-    product_name: "TAZQOR Citrus Floor Cleaner",
-    variant_name: "1 Litre Bottle",
-    sku: "TC-FLR-01-1L",
-    mfg_date: "2026-01-20",
-    expiry_date: "2028-01-19",
-    qty_received: 200,
-    qty_remaining: 120,
-    cost_per_unit: 65,
-  },
-  {
-    id: "b3",
-    batch_number: "B-DSH-2026-01",
-    product_name: "TAZQOR Sparkle Dish Wash Gel",
-    variant_name: "5 Litre Can",
-    sku: "TC-DSH-01-5L",
-    mfg_date: "2026-02-01",
-    expiry_date: "2028-01-31",
-    qty_received: 80,
-    qty_remaining: 35,
-    cost_per_unit: 310,
-  },
-  {
-    id: "b4",
-    batch_number: "B-HND-2026-01",
-    product_name: "TAZQOR Anti-Bacterial Hand Wash",
-    variant_name: "500 mL Dispenser",
-    sku: "TC-HND-01-500M",
-    mfg_date: "2026-01-10",
-    expiry_date: "2027-01-09",
-    qty_received: 250,
-    qty_remaining: 140,
-    cost_per_unit: 48,
-  },
-];
-
-const DEMO_MOVEMENTS: StockMovement[] = [
-  { id: "sm-01", date: "2026-02-15 14:30", product: "Floor Cleaner 5L", type: "sale_out", quantity: 12, batch_number: "B-FLR-2026-01", reason: "Invoice Finalization", ref_doc: "INV/2025-26/0001" },
-  { id: "sm-02", date: "2026-02-14 11:20", product: "Dish Wash 5L", type: "sale_out", quantity: 5, batch_number: "B-DSH-2026-01", reason: "Invoice Finalization", ref_doc: "INV/2025-26/0002" },
-  { id: "sm-03", date: "2026-02-10 09:45", product: "Floor Cleaner 1L", type: "damage_out", quantity: 2, batch_number: "B-FLR-2026-02", reason: "Transport bottle puncture", ref_doc: "ADJ-001" },
-  { id: "sm-04", date: "2026-02-01 10:00", product: "Dish Wash 5L", type: "purchase_in", quantity: 80, batch_number: "B-DSH-2026-01", reason: "Batch production receipt", ref_doc: "GRN-2026-02" },
-  { id: "sm-05", date: "2026-01-15 09:00", product: "Floor Cleaner 5L", type: "opening_stock", quantity: 100, batch_number: "B-FLR-2026-01", reason: "Initial opening stock", ref_doc: "INIT" },
-];
-
 export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState<"batches" | "movements">("batches");
-  const [batches, setBatches] = useState<BatchItem[]>(DEMO_BATCHES);
-  const [movements, setMovements] = useState<StockMovement[]>(DEMO_MOVEMENTS);
+  const [batches, setBatches] = useState<BatchItem[]>([]);
+  const [movements, setMovements] = useState<StockMovement[]>([]);
+  const [variantsList, setVariantsList] = useState<{ id: string; name: string; prodName: string; cost: number; sku: string }[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [receiveStockOpen, setReceiveStockOpen] = useState(false);
   const [adjustStockOpen, setAdjustStockOpen] = useState(false);
 
   // New stock receipt form
   const [receiveForm, setReceiveForm] = useState({
-    product_variant: "Floor Cleaner 5L",
+    variant_id: "",
     batch_number: "",
-    mfg_date: "2026-02-15",
-    expiry_date: "2028-02-14",
+    mfg_date: new Date().toISOString().split("T")[0],
+    expiry_date: new Date(Date.now() + 730 * 86400000).toISOString().split("T")[0],
     quantity: 50,
     cost_per_unit: 280,
     supplier: "TAZQOR Factory Plant 1",
@@ -131,53 +75,162 @@ export default function InventoryPage() {
 
   // Adjust stock form
   const [adjustForm, setAdjustForm] = useState({
-    batch_id: "b1",
+    batch_id: "",
     type: "damage_out",
     quantity: 1,
     reason: "",
   });
 
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const supabase = createClient();
+
+      // 1. Fetch live batches
+      const { data: bData, error: bErr } = await supabase
+        .from("batches")
+        .select("id, batch_number, manufacturing_date, expiry_date, quantity_received, cost_per_unit, product_variant_id, product_variants(name, sku, cost_price, products(name))")
+        .order("created_at", { ascending: false });
+
+      if (!bErr && bData) {
+        const mapped: BatchItem[] = bData.map((b: any) => {
+          const pv = b.product_variants;
+          const prod = pv?.products?.name || "TAZQOR Cleaning Product";
+          const varN = pv?.name || "Standard";
+          return {
+            id: b.id,
+            batch_number: b.batch_number,
+            product_name: prod,
+            variant_name: varN,
+            sku: pv?.sku || "TC-01",
+            mfg_date: b.manufacturing_date || "2026-01-01",
+            expiry_date: b.expiry_date || "2028-01-01",
+            qty_received: Number(b.quantity_received) || 0,
+            qty_remaining: Number(b.quantity_received) || 0,
+            cost_per_unit: Number(b.cost_per_unit) || Number(pv?.cost_price) || 0,
+          };
+        });
+        setBatches(mapped);
+        if (mapped.length > 0) {
+          setAdjustForm((prev) => ({ ...prev, batch_id: prev.batch_id || mapped[0].id }));
+        }
+      }
+
+      // 2. Fetch live stock movements
+      const { data: mData, error: mErr } = await supabase
+        .from("stock_movements")
+        .select("id, created_at, movement_type, quantity, notes, reference_number, batches(batch_number, product_variants(name, products(name)))")
+        .order("created_at", { ascending: false });
+
+      if (!mErr && mData) {
+        const mappedMovs: StockMovement[] = mData.map((m: any) => {
+          const b = m.batches;
+          const pv = b?.product_variants;
+          const prodDesc = pv?.products?.name ? `${pv.products.name} (${pv.name})` : "General Product";
+          return {
+            id: m.id,
+            date: m.created_at ? new Date(m.created_at).toISOString().replace("T", " ").substring(0, 16) : "Recent",
+            product: prodDesc,
+            type: m.movement_type || "purchase_in",
+            quantity: Number(m.quantity) || 0,
+            batch_number: b?.batch_number || "BATCH",
+            reason: m.notes || "Recorded movement",
+            ref_doc: m.reference_number || "REF",
+          };
+        });
+        setMovements(mappedMovs);
+      }
+
+      // 3. Fetch variants for stock receipt selection
+      const { data: vData } = await supabase
+        .from("product_variants")
+        .select("id, name, sku, cost_price, products(name)");
+
+      if (vData && vData.length > 0) {
+        const vList = vData.map((v: any) => ({
+          id: v.id,
+          name: v.name,
+          prodName: v.products?.name || "Product",
+          cost: Number(v.cost_price) || 280,
+          sku: v.sku || "",
+        }));
+        setVariantsList(vList);
+        if (vList[0]) {
+          setReceiveForm((prev) => ({
+            ...prev,
+            variant_id: vList[0].id,
+            cost_per_unit: vList[0].cost,
+          }));
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to load inventory from Supabase:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
   const totalStockUnits = batches.reduce((acc, b) => acc + b.qty_remaining, 0);
   const totalStockValuation = batches.reduce((acc, b) => acc + (b.qty_remaining * b.cost_per_unit), 0);
 
-  const handleReceiveStock = (e: React.FormEvent) => {
+  const handleReceiveStock = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!receiveForm.batch_number) {
       toast.error("Please enter batch number");
       return;
     }
 
-    const newBatch: BatchItem = {
-      id: "b-" + Date.now(),
-      batch_number: receiveForm.batch_number,
-      product_name: "TAZQOR Citrus Floor Cleaner",
-      variant_name: receiveForm.product_variant,
-      sku: "TC-FLR-01-5L",
-      mfg_date: receiveForm.mfg_date,
-      expiry_date: receiveForm.expiry_date,
-      qty_received: Number(receiveForm.quantity),
-      qty_remaining: Number(receiveForm.quantity),
-      cost_per_unit: Number(receiveForm.cost_per_unit),
-    };
+    try {
+      const supabase = createClient();
+      const variantId = receiveForm.variant_id || (variantsList[0]?.id ?? null);
+      if (!variantId) {
+        toast.error("Please select a product variant");
+        return;
+      }
 
-    const newMov: StockMovement = {
-      id: "sm-" + Date.now(),
-      date: new Date().toISOString().replace('T', ' ').substring(0, 16),
-      product: receiveForm.product_variant,
-      type: "purchase_in",
-      quantity: Number(receiveForm.quantity),
-      batch_number: receiveForm.batch_number,
-      reason: "Supplier receipt: " + receiveForm.supplier,
-      ref_doc: "GRN-" + Math.floor(1000 + Math.random() * 9000),
-    };
+      const { data: insertedBatch, error: insErr } = await supabase
+        .from("batches")
+        .insert({
+          business_id: "00000000-0000-0000-0000-000000000001",
+          product_variant_id: variantId,
+          batch_number: receiveForm.batch_number,
+          manufacturing_date: receiveForm.mfg_date,
+          expiry_date: receiveForm.expiry_date,
+          quantity_received: Number(receiveForm.quantity),
+          cost_per_unit: Number(receiveForm.cost_per_unit),
+        })
+        .select()
+        .single();
 
-    setBatches([newBatch, ...batches]);
-    setMovements([newMov, ...movements]);
-    setReceiveStockOpen(false);
-    toast.success(`Received ${receiveForm.quantity} units for Batch ${receiveForm.batch_number}`);
+      if (insErr) {
+        toast.error("Failed to save batch: " + insErr.message);
+        return;
+      }
+
+      if (insertedBatch) {
+        await supabase.from("stock_movements").insert({
+          business_id: "00000000-0000-0000-0000-000000000001",
+          batch_id: insertedBatch.id,
+          movement_type: "purchase_in",
+          quantity: Number(receiveForm.quantity),
+          notes: "Supplier receipt: " + receiveForm.supplier,
+          reference_number: "GRN-" + Math.floor(1000 + Math.random() * 9000),
+        });
+      }
+
+      await loadData();
+      setReceiveStockOpen(false);
+      toast.success(`Received ${receiveForm.quantity} units for Batch ${receiveForm.batch_number}`);
+    } catch (err: any) {
+      toast.error("Error receiving stock: " + err.message);
+    }
   };
 
-  const handleAdjustStock = (e: React.FormEvent) => {
+  const handleAdjustStock = async (e: React.FormEvent) => {
     e.preventDefault();
     const qty = Number(adjustForm.quantity);
     if (qty <= 0) {
@@ -193,31 +246,23 @@ export default function InventoryPage() {
       return;
     }
 
-    const updatedBatches = batches.map((b) => {
-      if (b.id === adjustForm.batch_id) {
-        return {
-          ...b,
-          qty_remaining: adjustForm.type === "adjustment_in" ? b.qty_remaining + qty : b.qty_remaining - qty,
-        };
-      }
-      return b;
-    });
+    try {
+      const supabase = createClient();
+      await supabase.from("stock_movements").insert({
+        business_id: "00000000-0000-0000-0000-000000000001",
+        batch_id: targetBatch.id,
+        movement_type: adjustForm.type,
+        quantity: qty,
+        notes: adjustForm.reason || "Manual Stock Adjustment",
+        reference_number: "ADJ-" + Math.floor(100 + Math.random() * 900),
+      });
 
-    const newMov: StockMovement = {
-      id: "sm-" + Date.now(),
-      date: new Date().toISOString().replace('T', ' ').substring(0, 16),
-      product: targetBatch.variant_name,
-      type: adjustForm.type as StockMovement['type'],
-      quantity: qty,
-      batch_number: targetBatch.batch_number,
-      reason: adjustForm.reason || "Manual Stock Adjustment",
-      ref_doc: "ADJ-" + Math.floor(100 + Math.random() * 900),
-    };
-
-    setBatches(updatedBatches);
-    setMovements([newMov, ...movements]);
-    setAdjustStockOpen(false);
-    toast.success("Stock adjustment logged in ledger");
+      await loadData();
+      setAdjustStockOpen(false);
+      toast.success("Stock adjustment logged in database");
+    } catch (err: any) {
+      toast.error("Error saving adjustment: " + err.message);
+    }
   };
 
   return (
@@ -433,14 +478,22 @@ export default function InventoryPage() {
               </label>
               <select
                 aria-label="Product Variant"
-                value={receiveForm.product_variant}
-                onChange={(e) => setReceiveForm({ ...receiveForm, product_variant: e.target.value })}
+                value={receiveForm.variant_id}
+                onChange={(e) => {
+                  const sel = variantsList.find((v) => v.id === e.target.value);
+                  setReceiveForm({
+                    ...receiveForm,
+                    variant_id: e.target.value,
+                    cost_per_unit: sel ? sel.cost : receiveForm.cost_per_unit,
+                  });
+                }}
                 className="w-full h-10 px-3 text-xs bg-[#F9F8FD] rounded-xl border border-[#E5E4EE]"
               >
-                <option value="Floor Cleaner 5L">TAZQOR Citrus Floor Cleaner (5 L Can)</option>
-                <option value="Floor Cleaner 1L">TAZQOR Citrus Floor Cleaner (1 L Bottle)</option>
-                <option value="Dish Wash 5L">TAZQOR Sparkle Dish Wash Gel (5 L Can)</option>
-                <option value="Hand Wash 500M">TAZQOR Anti-Bacterial Hand Wash (500 mL)</option>
+                {variantsList.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.prodName} - {v.name} ({v.sku})
+                  </option>
+                ))}
               </select>
             </div>
 

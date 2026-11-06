@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -20,6 +20,7 @@ import {
 import { RoundIconButton } from "@/components/ui/RoundIconButton";
 import { NotificationsPopover } from "@/components/layout/NotificationsPopover";
 import { MessagesPopover } from "@/components/layout/MessagesPopover";
+import { createClient } from "@/lib/supabase/client";
 
 // Exactly 8 primary navigation items matching reference
 const PRIMARY_NAV = [
@@ -39,8 +40,36 @@ export function Sidebar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
-  const [unreadNotifsCount, setUnreadNotifsCount] = useState(2);
-  const [unreadMessagesCount, setUnreadMessagesCount] = useState(2);
+  const [unreadNotifsCount, setUnreadNotifsCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [userEmail, setUserEmail] = useState("tazqor@gmail.com");
+  const [userName, setUserName] = useState("TAZQOR Admin");
+
+  useEffect(() => {
+    async function initUserAndCounts() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          if (user.email) setUserEmail(user.email);
+          const fullName = user.user_metadata?.full_name || user.email?.split("@")[0];
+          if (fullName) setUserName(fullName);
+        }
+
+        // Fetch mail unread count
+        fetch("/api/mail/inbox")
+          .then((res) => res.json())
+          .then((data) => {
+            if (data && Array.isArray(data.messages)) {
+              const unread = data.messages.filter((m: any) => m.unread).length;
+              setUnreadMessagesCount(unread);
+            }
+          })
+          .catch(() => {});
+      } catch {}
+    }
+    initUserAndCounts();
+  }, []);
 
   const toggleNotifications = () => {
     setNotificationsOpen((prev) => !prev);
@@ -164,10 +193,10 @@ export function Sidebar() {
                   Signed in as
                 </span>
                 <span className="text-xs font-semibold text-neutral-900 block truncate">
-                  TAZQOR Owner
+                  {userName}
                 </span>
                 <span className="text-[11px] font-light text-neutral-500 block truncate">
-                  owner@tazqor.com
+                  {userEmail}
                 </span>
               </div>
 

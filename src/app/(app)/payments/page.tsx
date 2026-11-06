@@ -31,54 +31,23 @@ interface PaymentRecord {
   advance: number;
 }
 
-const DEMO_PAYMENTS: PaymentRecord[] = [
-  {
-    id: "PAY-081",
-    customer_name: "Shreeji Supermarket",
-    amount: 12000.00,
-    payment_date: "2026-02-15",
-    method: "upi",
-    reference: "UPI/3489129034",
-    allocated_to: "INV/2025-26/0001 (₹12,000.00)",
-    advance: 0.00,
-  },
-  {
-    id: "PAY-080",
-    customer_name: "Hotel Pride Plaza",
-    amount: 42000.00,
-    payment_date: "2026-02-14",
-    method: "bank_transfer",
-    reference: "NEFT/ICICI/99812",
-    allocated_to: "INV/2025-26/0002 (₹42,000.00)",
-    advance: 0.00,
-  },
-  {
-    id: "PAY-079",
-    customer_name: "Radhe Krishna PG",
-    amount: 3700.00,
-    payment_date: "2026-02-12",
-    method: "cash",
-    reference: "Cash Receipt #412",
-    allocated_to: "BILL/2025-26/0001 (₹3,700.00)",
-    advance: 0.00,
-  },
-];
-
 export default function PaymentsPage() {
-  const [payments, setPayments] = useState<PaymentRecord[]>(DEMO_PAYMENTS);
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedMethod, setSelectedMethod] = useState("all");
 
   useEffect(() => {
     async function loadPayments() {
       try {
+        setLoading(true);
         const supabase = createClient();
         const { data, error } = await supabase
           .from("payments")
           .select("*, customers(name, shop_name)")
           .order("payment_date", { ascending: false });
 
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           const mapped: PaymentRecord[] = data.map((p: any) => {
             const custName = p.customers?.shop_name || p.customers?.name || "Customer";
             return {
@@ -93,11 +62,12 @@ export default function PaymentsPage() {
             };
           });
 
-          const merged = [...mapped, ...DEMO_PAYMENTS.filter(dp => !mapped.some(m => m.id === dp.id))];
-          setPayments(merged);
+          setPayments(mapped);
         }
       } catch (e) {
         console.warn("Could not load payments from Supabase", e);
+      } finally {
+        setLoading(false);
       }
     }
     loadPayments();

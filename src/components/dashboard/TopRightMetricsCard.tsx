@@ -7,11 +7,13 @@ import { DailyPillBarChart } from "@/components/charts/DailyPillBarChart";
 interface TopRightMetricsCardProps {
   averageItems?: number;
   averageSaleValue?: number;
+  particleData?: { month: string; value: number; dotsCount: number; highlight?: boolean }[];
 }
 
 export function TopRightMetricsCard({
-  averageItems = 8.3,
-  averageSaleValue = 1240.0,
+  averageItems = 0,
+  averageSaleValue = 0,
+  particleData,
 }: TopRightMetricsCardProps) {
   return (
     <GlassCard
@@ -21,7 +23,7 @@ export function TopRightMetricsCard({
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-6 h-full items-stretch min-w-0">
         {/* Left section: Average Items per Sale */}
         <div className="md:col-span-5 h-full min-w-0 flex flex-col">
-          <DottedParticleChart averageItems={averageItems} />
+          <DottedParticleChart averageItems={averageItems} data={particleData} />
         </div>
 
         {/* Vertical thin glass divider line */}

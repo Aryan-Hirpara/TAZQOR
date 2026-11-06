@@ -151,17 +151,25 @@ export async function getCustomers(query?: { search?: string; type?: string; sta
       dbQuery = dbQuery.eq("status", query.status);
     }
 
-    const { data, error } = await dbQuery;
+    const [{ data: customersData, error: custErr }, { data: invoicesData }, { data: paymentsData }] = await Promise.all([
+      dbQuery,
+      supabase.from("invoices").select("customer_id, grand_total, status"),
+      supabase.from("payments").select("customer_id, amount"),
+    ]);
 
-    if (!error && data && data.length > 0) {
-      let list: Customer[] = data.map((row: any) => {
-        // Deterministic realistic financial figures per customer based on row.id hash
-        const hash = (row.id || "c").split("").reduce((acc: number, ch: string) => (acc * 31 + ch.charCodeAt(0)) | 0, 0);
-        const positiveHash = Math.abs(hash);
-        const invoiced = ((positiveHash % 600) + 120) * 100; // ₹12,000 to ₹72,000
-        const isPaidFull = positiveHash % 3 === 0;
-        const outstanding = isPaidFull ? 0 : ((positiveHash % 150) + 15) * 100; // ₹0 or ₹1,500 to ₹16,500
-        const paid = invoiced - outstanding;
+    if (!custErr && customersData && customersData.length > 0) {
+      const invList = invoicesData || [];
+      const payList = paymentsData || [];
+
+      let list: Customer[] = customersData.map((row: any) => {
+        // Compute real financial totals from invoices & payments in the database
+        const custInvoices = invList.filter((i: any) => i.customer_id === row.id && i.status === "finalized");
+        const totalInvoiced = custInvoices.reduce((sum: number, i: any) => sum + (Number(i.grand_total) || 0), 0);
+
+        const custPayments = payList.filter((p: any) => p.customer_id === row.id);
+        const totalPaid = custPayments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+
+        const outstanding = Math.max(0, totalInvoiced - totalPaid);
 
         return {
           id: row.id,
@@ -184,8 +192,8 @@ export async function getCustomers(query?: { search?: string; type?: string; sta
           notes: row.notes || undefined,
           status: row.status === "archived" ? "archived" : "active",
           customer_code: row.customer_code || undefined,
-          total_invoiced: invoiced,
-          total_paid: paid,
+          total_invoiced: totalInvoiced,
+          total_paid: totalPaid,
           outstanding: outstanding,
           advance: 0.0,
           created_at: row.created_at,
@@ -205,33 +213,10 @@ export async function getCustomers(query?: { search?: string; type?: string; sta
       return list;
     }
   } catch (err) {
-    console.warn("Supabase customer fetch fallback:", err);
+    console.warn("Supabase customer fetch error:", err);
   }
 
-  // Graceful fallback to demo list
-  let list = [...DEMO_CUSTOMERS];
-
-  if (query?.search) {
-    const q = query.search.toLowerCase();
-    list = list.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.shop_name.toLowerCase().includes(q) ||
-        c.phone.includes(q) ||
-        c.city.toLowerCase().includes(q) ||
-        (c.customer_code && c.customer_code.toLowerCase().includes(q))
-    );
-  }
-
-  if (query?.type && query.type !== "all") {
-    list = list.filter((c) => c.type === query.type);
-  }
-
-  if (query?.status && query.status !== "all") {
-    list = list.filter((c) => c.status === query.status);
-  }
-
-  return list;
+  return [];
 }
 
 export async function getCustomerById(id: string): Promise<Customer | null> {
@@ -240,8 +225,17 @@ export async function getCustomerById(id: string): Promise<Customer | null> {
   if (isUUID) {
     try {
       const supabase = createClient();
-      const { data, error } = await supabase.from("customers").select("*").eq("id", id).maybeSingle();
+      const [{ data, error }, { data: invoicesData }, { data: paymentsData }] = await Promise.all([
+        supabase.from("customers").select("*").eq("id", id).maybeSingle(),
+        supabase.from("invoices").select("grand_total, status").eq("customer_id", id).eq("status", "finalized"),
+        supabase.from("payments").select("amount").eq("customer_id", id),
+      ]);
+
       if (!error && data) {
+        const totalInvoiced = (invoicesData || []).reduce((sum: number, i: any) => sum + (Number(i.grand_total) || 0), 0);
+        const totalPaid = (paymentsData || []).reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+        const outstanding = Math.max(0, totalInvoiced - totalPaid);
+
         return {
           id: data.id,
           business_id: data.business_id,
@@ -263,9 +257,9 @@ export async function getCustomerById(id: string): Promise<Customer | null> {
           notes: data.notes || undefined,
           status: data.status === "archived" ? "archived" : "active",
           customer_code: data.customer_code || undefined,
-          total_invoiced: 48500.0,
-          total_paid: 42000.0,
-          outstanding: 6500.0,
+          total_invoiced: totalInvoiced,
+          total_paid: totalPaid,
+          outstanding: outstanding,
           advance: 0.0,
           created_at: data.created_at,
         };
@@ -275,8 +269,7 @@ export async function getCustomerById(id: string): Promise<Customer | null> {
     }
   }
 
-  const customer = DEMO_CUSTOMERS.find((c) => c.id === id);
-  return customer || null;
+  return null;
 }
 
 export async function createCustomer(data: Partial<Customer>): Promise<Customer> {

@@ -15,48 +15,57 @@ import {
 import { TopHeader } from "@/components/layout/TopHeader";
 import { formatINR } from "@/lib/formatting/currency";
 import { formatDate } from "@/lib/formatting/dates";
-import { RECONCILED_INVOICES, InvoiceRecord } from "@/lib/services/businessData";
+import { InvoiceRecord } from "@/lib/services/businessData";
 import { FitNumber } from "@/components/ui/FitNumber";
 import { createClient } from "@/lib/supabase/client";
 
 export default function InvoicesPage() {
-  const [invoices, setInvoices] = useState<InvoiceRecord[]>(RECONCILED_INVOICES);
+  const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedMode, setSelectedMode] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
 
   useEffect(() => {
     async function loadInvoices() {
+      setLoading(true);
       try {
         const supabase = createClient();
-        const { data, error } = await supabase
-          .from("invoices")
-          .select("*, customers(name, shop_name)")
-          .order("created_at", { ascending: false });
+        const [{ data, error }, { data: paymentsData }] = await Promise.all([
+          supabase
+            .from("invoices")
+            .select("*, customers(name, shop_name)")
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("payments")
+            .select("amount, customer_id"),
+        ]);
 
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           const mapped: InvoiceRecord[] = data.map((inv: any) => {
             const custName = inv.customers?.shop_name || inv.customers?.name || "Customer";
+            const grandTotal = Number(inv.grand_total) || 0;
             return {
               id: inv.id,
               invoice_number: inv.invoice_number || "INV-LIVE",
               customer_name: custName,
               customer_id: inv.customer_id,
               mode: (inv.mode as InvoiceRecord["mode"]) || "gst",
-              invoice_date: inv.invoice_date || new Date().toISOString().split("T")[0],
-              due_date: inv.due_date || inv.invoice_date || new Date().toISOString().split("T")[0],
-              grand_total: Number(inv.grand_total) || 0,
+              invoice_date: inv.invoice_date || (inv.created_at || new Date().toISOString()).split("T")[0],
+              due_date: inv.due_date || inv.invoice_date || (inv.created_at || new Date().toISOString()).split("T")[0],
+              grand_total: grandTotal,
               paid_amount: 0,
-              outstanding: Number(inv.grand_total) || 0,
+              outstanding: grandTotal,
               status: (inv.status as InvoiceRecord["status"]) || "finalized",
             };
           });
 
-          const merged = [...mapped, ...RECONCILED_INVOICES.filter(ri => !mapped.some(m => m.id === ri.id))];
-          setInvoices(merged);
+          setInvoices(mapped);
         }
       } catch (e) {
         console.warn("Could not load invoices from Supabase", e);
+      } finally {
+        setLoading(false);
       }
     }
     loadInvoices();

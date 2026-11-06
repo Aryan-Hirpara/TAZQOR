@@ -25,20 +25,30 @@ function createLCG(seed: number) {
 }
 
 export function DottedParticleChart({
-  averageItems = 8.3,
+  averageItems = 0,
   data,
 }: DottedParticleChartProps) {
-  const columns: DottedColumn[] = useMemo(
-    () =>
-      data || [
-        { month: "may", value: 11.4, dotsCount: 16 },
-        { month: "jun", value: 8.1, dotsCount: 12 },
-        { month: "jul", value: 2.1, dotsCount: 5 },
-        { month: "aug", value: 7.3, dotsCount: 10 },
-        { month: "sep", value: 12.5, dotsCount: 18, highlight: true },
-      ],
-    [data]
-  );
+  const columns: DottedColumn[] = useMemo(() => {
+    if (data && data.length > 0) return data;
+    const monthNames = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+    const now = new Date();
+    const curIdx = now.getMonth();
+    const list: DottedColumn[] = [];
+    const baseVal = averageItems > 0 ? averageItems : 0;
+    for (let i = 4; i >= 0; i--) {
+      const idx = (curIdx - i + 12) % 12;
+      const isLatest = i === 0;
+      const val = isLatest ? baseVal : Number((baseVal * (0.8 + ((i % 3) * 0.1))).toFixed(1));
+      const dots = Math.max(0, Math.min(22, Math.round(val * 1.5)));
+      list.push({
+        month: monthNames[idx],
+        value: val,
+        dotsCount: dots,
+        highlight: isLatest,
+      });
+    }
+    return list;
+  }, [data, averageItems]);
 
   // Compute deterministic stipple dots for each column
   const columnDots = useMemo(() => {

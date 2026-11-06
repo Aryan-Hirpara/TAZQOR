@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Bell,
@@ -17,6 +17,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { createClient } from "@/lib/supabase/client";
+import { formatINR } from "@/lib/formatting/currency";
+
 export interface NotificationItem {
   id: string;
   category: "inventory" | "billing" | "payment" | "orders";
@@ -27,59 +30,6 @@ export interface NotificationItem {
   link: string;
   unread: boolean;
 }
-
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: "notif-1",
-    category: "inventory",
-    type: "warning",
-    title: "Low Stock: Citrus Floor Cleaner (5 L)",
-    message: "8 units remaining in Batch B-FLR-2026-01. Below minimum threshold of 15 units.",
-    time: "15m ago",
-    link: "/inventory",
-    unread: true,
-  },
-  {
-    id: "notif-2",
-    category: "billing",
-    type: "alert",
-    title: "Overdue Balance: Shreeji Supermarket",
-    message: "Invoice INV/2025-26/0001 has ₹7,770 unpaid balance overdue since March 1.",
-    time: "1h ago",
-    link: "/invoices/INV-1",
-    unread: true,
-  },
-  {
-    id: "notif-3",
-    category: "payment",
-    type: "success",
-    title: "Payment Received: Riddhi Mart",
-    message: "₹12,000 received via HDFC UPI. Auto-reconciled with ledger.",
-    time: "3h ago",
-    link: "/payments",
-    unread: false,
-  },
-  {
-    id: "notif-4",
-    category: "orders",
-    type: "info",
-    title: "New Order #ORD-2026-104",
-    message: "Field Rep Aryan recorded an order for 20 cases of Sparkle Dish Wash Gel.",
-    time: "5h ago",
-    link: "/orders",
-    unread: false,
-  },
-  {
-    id: "notif-5",
-    category: "inventory",
-    type: "warning",
-    title: "FEFO Alert: Expiring Batch",
-    message: "Batch B-DSH-2026-01 expires within 45 days. Prioritize for dispatch.",
-    time: "Yesterday",
-    link: "/inventory",
-    unread: false,
-  },
-];
 
 interface NotificationsPopoverProps {
   isOpen: boolean;
@@ -95,8 +45,141 @@ export function NotificationsPopover({
   anchorPosition = "sidebar",
 }: NotificationsPopoverProps) {
   const router = useRouter();
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | "unread" | "alerts">("all");
+
+  useEffect(() => {
+    async function loadRealNotifications() {
+      try {
+        const supabase = createClient();
+        const items: NotificationItem[] = [];
+
+        // 1. Fetch pending / unpaid invoices
+        const { data: invoices } = await supabase
+          .from("invoices")
+          .select("id, invoice_number, grand_total, status, due_date, created_at, customers(name, shop_name)")
+          .neq("status", "cancelled")
+          .order("created_at", { ascending: false })
+          .limit(4);
+
+        if (invoices) {
+          invoices.forEach((inv: any) => {
+            const custName = inv.customers?.shop_name || inv.customers?.name || "Customer";
+            const isPaid = inv.status === "paid";
+            items.push({
+              id: `notif-inv-${inv.id}`,
+              category: "billing",
+              type: isPaid ? "success" : "alert",
+              title: isPaid ? `Invoice Paid: ${custName}` : `Pending Balance: ${custName}`,
+              message: `Invoice ${inv.invoice_number} for ${formatINR(Number(inv.grand_total) || 0)} is ${inv.status}.`,
+              time: formatRelativeTime(inv.created_at),
+              link: `/invoices/${inv.id}`,
+              unread: !isPaid,
+            });
+          });
+        }
+
+        // 2. Fetch live batches
+        const { data: batches } = await supabase
+          .from("batches")
+          .select("id, batch_number, quantity_received, expiry_date, created_at, product_variants(name, sku, products(name))")
+          .order("created_at", { ascending: false })
+          .limit(3);
+
+        if (batches) {
+          batches.forEach((b: any) => {
+            const prodName = (b.product_variants as any)?.products?.name || "Product";
+            const qty = Number(b.quantity_received) || 0;
+            const isLow = qty <= 20;
+            items.push({
+              id: `notif-batch-${b.id}`,
+              category: "inventory",
+              type: isLow ? "warning" : "info",
+              title: isLow ? `Low Stock: ${prodName}` : `Batch Active: ${b.batch_number}`,
+              message: `${qty} units in batch ${b.batch_number}. Expiry: ${b.expiry_date || "N/A"}.`,
+              time: formatRelativeTime(b.created_at),
+              link: "/inventory",
+              unread: isLow,
+            });
+          });
+        }
+
+        // 3. Fetch live orders
+        const { data: orders } = await supabase
+          .from("orders")
+          .select("id, order_number, status, created_at, customers(name, shop_name)")
+          .order("created_at", { ascending: false })
+          .limit(3);
+
+        if (orders) {
+          orders.forEach((ord: any) => {
+            const custName = ord.customers?.shop_name || ord.customers?.name || "Customer";
+            items.push({
+              id: `notif-ord-${ord.id}`,
+              category: "orders",
+              type: "info",
+              title: `Order ${ord.order_number}`,
+              message: `Order for ${custName} status is ${ord.status}.`,
+              time: formatRelativeTime(ord.created_at),
+              link: "/orders",
+              unread: ord.status === "confirmed",
+            });
+          });
+        }
+
+        // 4. Fetch live payments
+        const { data: payments } = await supabase
+          .from("payments")
+          .select("id, amount, method, payment_date, created_at, customers(name, shop_name)")
+          .order("payment_date", { ascending: false })
+          .limit(2);
+
+        if (payments) {
+          payments.forEach((p: any) => {
+            const custName = p.customers?.shop_name || p.customers?.name || "Customer";
+            items.push({
+              id: `notif-pay-${p.id}`,
+              category: "payment",
+              type: "success",
+              title: `Payment Received: ${formatINR(Number(p.amount) || 0)}`,
+              message: `Recorded from ${custName} via ${(p.method || "UPI").toUpperCase()}.`,
+              time: formatRelativeTime(p.created_at || p.payment_date),
+              link: "/payments",
+              unread: false,
+            });
+          });
+        }
+
+        setNotifications(items);
+        const unread = items.filter((i) => i.unread).length;
+        onUnreadCountChange?.(unread);
+      } catch (err) {
+        console.warn("Could not load real notifications:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadRealNotifications();
+  }, []);
+
+  function formatRelativeTime(dateStr?: string) {
+    if (!dateStr) return "recently";
+    try {
+      const d = new Date(dateStr);
+      const diffMs = Date.now() - d.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 1) return "just now";
+      if (diffMins < 60) return `${diffMins}m ago`;
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+      const diffDays = Math.floor(diffHours / 24);
+      return `${diffDays}d ago`;
+    } catch {
+      return "recently";
+    }
+  }
 
   const unreadCount = notifications.filter((n) => n.unread).length;
 

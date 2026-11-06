@@ -35,7 +35,7 @@ export function TopHeader({
   const pathname = usePathname();
   const [launcherOpen, setLauncherOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [unreadNotifsCount, setUnreadNotifsCount] = useState(2);
+  const [unreadNotifsCount, setUnreadNotifsCount] = useState(0);
   const [outletMenuOpen, setOutletMenuOpen] = useState(false);
   const [selectedOutlet, setSelectedOutlet] = useState("All Outlets");
 

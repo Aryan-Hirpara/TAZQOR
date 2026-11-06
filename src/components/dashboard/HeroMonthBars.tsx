@@ -6,7 +6,7 @@ import { ArrowUpRight } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { FitNumber } from "@/components/ui/FitNumber";
 
-interface MonthBarData {
+export interface MonthBarData {
   month: string;
   heightPct: number;
   isActive?: boolean;
@@ -17,25 +17,34 @@ interface HeroMonthBarsProps {
   monthlySales: number;
   salesChange: number;
   activeMonth?: string;
+  months?: MonthBarData[];
 }
 
 export function HeroMonthBars({
   userName = "there",
   monthlySales,
   salesChange,
-  activeMonth = "oct",
+  activeMonth,
+  months: customMonths,
 }: HeroMonthBarsProps) {
-  const months: MonthBarData[] = useMemo(
-    () => [
-      { month: "may", heightPct: 62 },
-      { month: "jun", heightPct: 78 },
-      { month: "jul", heightPct: 45 },
-      { month: "aug", heightPct: 88 },
-      { month: "sep", heightPct: 70 },
-      { month: "oct", heightPct: 92, isActive: true },
-    ],
-    []
-  );
+  const months: MonthBarData[] = useMemo(() => {
+    if (customMonths && customMonths.length > 0) return customMonths;
+    const monthNames = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+    const now = new Date();
+    const curMonthIdx = now.getMonth();
+    const list: MonthBarData[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const idx = (curMonthIdx - i + 12) % 12;
+      const mName = monthNames[idx];
+      const isAct = activeMonth ? mName.toLowerCase() === activeMonth.toLowerCase() : i === 0;
+      list.push({
+        month: mName,
+        heightPct: isAct ? 92 : 35,
+        isActive: isAct,
+      });
+    }
+    return list;
+  }, [customMonths, activeMonth]);
 
   const isPositive = salesChange >= 0;
 
@@ -59,7 +68,7 @@ export function HeroMonthBars({
         <div className="flex items-end justify-between gap-2 sm:gap-3 h-28 sm:h-32 px-1">
           {months.map((m) => {
             const isActive =
-              m.isActive || m.month.toLowerCase() === activeMonth.toLowerCase();
+              m.isActive || (activeMonth ? m.month.toLowerCase() === activeMonth.toLowerCase() : false);
 
             return (
               <div

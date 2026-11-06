@@ -7,7 +7,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { FitNumber } from "@/components/ui/FitNumber";
 
 export interface OrderCardProps {
-  type: "Transfer" | "Purchase orders";
+  type: "Transfer" | "Purchase orders" | "Order" | "Inventory";
   title: string;
   subtitle: string;
   amount: number;

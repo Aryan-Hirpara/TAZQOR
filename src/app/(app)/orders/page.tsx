@@ -17,16 +17,18 @@ import {
 import { TopHeader } from "@/components/layout/TopHeader";
 import { formatINR } from "@/lib/formatting/currency";
 import { formatDate } from "@/lib/formatting/dates";
-import { RECONCILED_ORDERS, OrderRecord } from "@/lib/services/businessData";
+import { OrderRecord } from "@/lib/services/businessData";
 import { createClient } from "@/lib/supabase/client";
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<OrderRecord[]>(RECONCILED_ORDERS);
+  const [orders, setOrders] = useState<OrderRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
 
   useEffect(() => {
     async function loadOrders() {
+      setLoading(true);
       try {
         const supabase = createClient();
         const { data, error } = await supabase
@@ -34,7 +36,7 @@ export default function OrdersPage() {
           .select("*, customers(name, shop_name), order_items(*)")
           .order("created_at", { ascending: false });
 
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           const mapped: OrderRecord[] = data.map((o: any) => {
             const customerName = o.customers?.shop_name || o.customers?.name || "Customer";
             const itemCount = o.order_items?.length || 1;
@@ -42,7 +44,7 @@ export default function OrdersPage() {
             const orderTotal = (o.order_items || []).reduce(
               (sum: number, it: any) => sum + (Number(it.unit_price) * Number(it.quantity) || 0),
               0
-            ) || 5500;
+            ) || 0;
 
             return {
               id: o.id,
@@ -57,12 +59,12 @@ export default function OrdersPage() {
             };
           });
 
-          // Prepend newly inserted orders before demo orders
-          const merged = [...mapped, ...RECONCILED_ORDERS.filter(ro => !mapped.some(m => m.id === ro.id))];
-          setOrders(merged);
+          setOrders(mapped);
         }
       } catch (e) {
         console.warn("Could not load orders from Supabase", e);
+      } finally {
+        setLoading(false);
       }
     }
     loadOrders();

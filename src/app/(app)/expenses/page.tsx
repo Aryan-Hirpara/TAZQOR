@@ -27,60 +27,23 @@ interface ExpenseItem {
   payment_method: string;
 }
 
-const DEMO_EXPENSES: ExpenseItem[] = [
-  {
-    id: "exp-1",
-    date: "2026-02-14",
-    category: "Raw Materials",
-    vendor: "Gujarat Chemical Corp",
-    description: "Pine oil, surfactants and citrus fragrance concentrate for batch production",
-    amount: 34500.00,
-    payment_method: "Bank Transfer",
-  },
-  {
-    id: "exp-2",
-    date: "2026-02-12",
-    category: "Packaging",
-    vendor: "PlastoPack Industries",
-    description: "500x 5-Litre HDPE blow-moulded cans with anti-leak caps",
-    amount: 14200.00,
-    payment_method: "UPI",
-  },
-  {
-    id: "exp-3",
-    date: "2026-02-10",
-    category: "Transport & Fuel",
-    vendor: "Indian Oil Petrol Pump",
-    description: "Diesel fuel for delivery van route (Ahmedabad & Gandhinagar)",
-    amount: 4800.00,
-    payment_method: "Cash",
-  },
-  {
-    id: "exp-4",
-    date: "2026-02-05",
-    category: "Rent & Maintenance",
-    vendor: "GIDC Industrial Estate",
-    description: "Warehouse unit monthly rent & maintenance",
-    amount: 22000.00,
-    payment_method: "Bank Transfer",
-  },
-];
-
 export default function ExpensesPage() {
-  const [expenses, setExpenses] = useState<ExpenseItem[]>(DEMO_EXPENSES);
+  const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
   useEffect(() => {
     async function loadExpenses() {
       try {
+        setLoading(true);
         const supabase = createClient();
         const { data, error } = await supabase
           .from("expenses")
           .select("*")
           .order("expense_date", { ascending: false });
 
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           const list: ExpenseItem[] = data.map((d: any) => ({
             id: d.id,
             date: d.expense_date,
@@ -93,7 +56,9 @@ export default function ExpensesPage() {
           setExpenses(list);
         }
       } catch (err) {
-        console.warn("Supabase expenses fallback:", err);
+        console.warn("Supabase expenses query error:", err);
+      } finally {
+        setLoading(false);
       }
     }
     loadExpenses();
@@ -108,6 +73,16 @@ export default function ExpensesPage() {
   });
 
   const totalExpenseAmount = expenses.reduce((acc, e) => acc + e.amount, 0);
+
+  const categoryTotals = expenses.reduce((acc, exp) => {
+    acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const largestCat = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0] || [
+    "Operational",
+    totalExpenseAmount,
+  ];
 
   return (
     <div className="min-h-screen pb-12">
@@ -131,9 +106,11 @@ export default function ExpensesPage() {
               Largest expense category
             </span>
             <div className="text-3xl font-normal text-neutral-900 mt-1 tracking-tight">
-              Raw Materials
+              {largestCat[0]}
             </div>
-            <p className="text-[11px] font-light text-neutral-500 mt-0.5">₹34,500.00 spent this month</p>
+            <p className="text-[11px] font-light text-neutral-500 mt-0.5">
+              {formatINR(largestCat[1])} spent this month
+            </p>
           </div>
 
           <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm flex items-center justify-between">

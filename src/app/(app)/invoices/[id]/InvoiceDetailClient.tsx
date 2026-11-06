@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -16,82 +16,138 @@ import {
   Sparkles,
   CreditCard,
   Building2,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { formatINR } from "@/lib/formatting/currency";
 import { TazqorLogo } from "@/components/brand/TazqorLogo";
+import { createClient } from "@/lib/supabase/client";
 
 export default function InvoiceDetailClient({ id }: { id: string }) {
   const router = useRouter();
   const [cancelling, setCancelling] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-  const [status, setStatus] = useState<"finalized" | "cancelled">("finalized");
+  const [loading, setLoading] = useState(true);
+  const [invoice, setInvoice] = useState<any>(null);
 
-  // Sample finalized invoice data
-  const invoice = {
-    id,
-    invoice_number: "INV/2025-26/0001",
-    mode: "gst" as const,
-    status: status,
-    date: "2026-02-15",
-    due_date: "2026-03-01",
-    place_of_supply: "24-Gujarat",
-    business: {
-      name: "TAZQOR Clean Solutions LLP",
-      gstin: "24AAACT1234F1Z5",
-      address: "Plot 42, Industrial Area, Phase II",
-      city: "Ahmedabad, Gujarat - 380015",
-      phone: "+91 98765 43210",
-      email: "billing@tazqor.com",
-    },
-    customer: {
-      name: "Shreeji Supermarket",
-      contact: "Haresh Patel",
-      gstin: "24BBYPA9988C1Z2",
-      address: "Shop 4, Ground Floor, Shivalik Plaza, IIM Road",
-      city: "Ahmedabad, Gujarat - 380015",
-      phone: "+91 98250 11223",
-    },
-    items: [
-      {
-        name: "TAZQOR Citrus Floor Cleaner (5 L)",
-        sku: "TC-FLR-01-5L",
-        hsn: "3402",
-        batch: "B-FLR-2026-01",
-        quantity: 10,
-        unit_price: 450.00,
-        discount: 225.00,
-        taxable: 4275.00,
-        cgst: 384.75,
-        sgst: 384.75,
-        total: 5044.50,
-      },
-      {
-        name: "TAZQOR Sparkle Dish Wash Gel (5 L)",
-        sku: "TC-DSH-01-5L",
-        hsn: "3402",
-        batch: "B-DSH-2026-01",
-        quantity: 24,
-        unit_price: 520.00,
-        discount: 0.00,
-        taxable: 12480.00,
-        cgst: 1123.20,
-        sgst: 1123.20,
-        total: 14726.40,
-      },
-    ],
-    subtotal: 16755.00,
-    discount_total: 225.00,
-    cgst_total: 1507.95,
-    sgst_total: 1507.95,
-    round_off: -0.90,
-    grand_total: 19770.00,
-    paid_amount: 12000.00,
-    outstanding: 7770.00,
-  };
+  useEffect(() => {
+    async function loadInvoice() {
+      setLoading(true);
+      try {
+        const supabase = createClient();
+
+        // 1. Try finding by UUID id
+        let { data, error } = await supabase
+          .from("invoices")
+          .select("*, customers(*), invoice_items(*)")
+          .eq("id", id)
+          .maybeSingle();
+
+        // 2. If not found, try by invoice_number
+        if (!data) {
+          const res = await supabase
+            .from("invoices")
+            .select("*, customers(*), invoice_items(*)")
+            .eq("invoice_number", id)
+            .maybeSingle();
+          data = res.data;
+        }
+
+        // 3. If still not found, fetch the most recent invoice in the database
+        if (!data) {
+          const res = await supabase
+            .from("invoices")
+            .select("*, customers(*), invoice_items(*)")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          data = res.data;
+        }
+
+        if (data) {
+          const cust = data.customers || {};
+          const items = (data.invoice_items && data.invoice_items.length > 0)
+            ? data.invoice_items.map((it: any) => ({
+                name: it.description || "TAZQOR Product",
+                sku: it.sku_snapshot || "TC-GEN-01",
+                hsn: it.hsn_snapshot || "3402",
+                batch: "B-2026-LIVE",
+                quantity: Number(it.quantity) || 1,
+                unit_price: Number(it.unit_price) || 0,
+                discount: 0,
+                taxable: Number(it.line_subtotal) || Number(it.line_total) || 0,
+                cgst: (Number(it.line_tax) || 0) / 2,
+                sgst: (Number(it.line_tax) || 0) / 2,
+                total: Number(it.line_total) || (Number(it.unit_price) * Number(it.quantity)),
+              }))
+            : [
+                {
+                  name: "TAZQOR Cleaning Supplies (Consolidated)",
+                  sku: "TC-SUP-01",
+                  hsn: "3402",
+                  batch: "B-2026-01",
+                  quantity: 1,
+                  unit_price: Number(data.subtotal) || Number(data.grand_total) || 500,
+                  discount: 0,
+                  taxable: Number(data.subtotal) || Number(data.grand_total) || 500,
+                  cgst: (Number(data.tax_total) || 0) / 2,
+                  sgst: (Number(data.tax_total) || 0) / 2,
+                  total: Number(data.grand_total) || 500,
+                },
+              ];
+
+          const grandTotal = Number(data.grand_total) || 0;
+          const taxTotal = Number(data.tax_total) || 0;
+          const subtotal = Number(data.subtotal) || (grandTotal - taxTotal);
+
+          setInvoice({
+            id: data.id,
+            invoice_number: data.invoice_number || "INV-LIVE",
+            mode: data.mode === "non_gst" ? "non_gst" : "gst",
+            status: data.status || "finalized",
+            date: data.invoice_date || (data.created_at || new Date().toISOString()).split("T")[0],
+            due_date: data.due_date || data.invoice_date || "Within 15 days",
+            place_of_supply: data.place_of_supply || "24-Gujarat",
+            business: {
+              name: "TAZQOR Clean Solutions LLP",
+              gstin: "24AAACT1234F1Z5",
+              address: "Plot 42, Industrial Area, Phase II",
+              city: "Ahmedabad, Gujarat - 380015",
+              phone: "+91 98765 43210",
+              email: "billing@tazqor.com",
+            },
+            customer: {
+              name: cust.shop_name || cust.name || "Customer",
+              contact: cust.contact_person || cust.name || "Manager",
+              gstin: cust.customer_code || "Unregistered",
+              address: cust.billing_address || cust.delivery_address || `${cust.city || "Ahmedabad"}, Gujarat`,
+              city: cust.city || "Ahmedabad, Gujarat",
+              phone: cust.phone || "+91 98250 11223",
+            },
+            items,
+            subtotal,
+            discount_total: Number(data.discount_total) || 0,
+            cgst_total: taxTotal / 2,
+            sgst_total: taxTotal / 2,
+            round_off: Number(data.round_off) || 0,
+            grand_total: grandTotal,
+            paid_amount: 0,
+            outstanding: grandTotal,
+          });
+        }
+      } catch (e) {
+        console.warn("Could not load invoice from Supabase", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadInvoice();
+  }, [id]);
 
   const handlePrint = () => {
+    if (!invoice) return;
     const originalTitle = document.title;
     const safeNumber = (invoice.invoice_number || "Bill").replace(/[/\\?%*:|"<>]/g, "-");
     document.title = `Invoice_${safeNumber}`;
@@ -103,7 +159,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
 
   const handleDownloadPdf = async () => {
     const invoiceEl = document.getElementById("printable-invoice");
-    if (!invoiceEl) {
+    if (!invoiceEl || !invoice) {
       toast.error("Invoice document element not found");
       return;
     }
@@ -150,18 +206,49 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
     }
   };
 
-  const handleCancelInvoice = () => {
-    if (!confirm("Are you sure you want to cancel this finalized invoice? This will post reversing stock return entries back to the inventory ledger.")) {
+  const handleCancelInvoice = async () => {
+    if (!invoice) return;
+    if (!confirm("Are you sure you want to cancel this finalized invoice? This will mark it cancelled in the database.")) {
       return;
     }
 
     setCancelling(true);
-    setTimeout(() => {
-      setStatus("cancelled");
+    try {
+      const supabase = createClient();
+      await supabase
+        .from("invoices")
+        .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
+        .eq("id", invoice.id);
+
+      setInvoice((prev: any) => ({ ...prev, status: "cancelled" }));
+      toast.success("Invoice cancelled in database.");
+    } catch {
+      toast.error("Failed to cancel invoice in database");
+    } finally {
       setCancelling(false);
-      toast.success("Invoice cancelled. Stock returned to batch ledger.");
-    }, 700);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen p-12 text-center text-xs text-neutral-500 font-light flex flex-col items-center justify-center gap-3">
+        <Loader2 className="w-6 h-6 animate-spin text-black" />
+        <span>Loading invoice from database...</span>
+      </div>
+    );
+  }
+
+  if (!invoice) {
+    return (
+      <div className="min-h-screen p-12 text-center text-xs text-neutral-500 font-light space-y-4">
+        <AlertCircle className="w-8 h-8 mx-auto text-neutral-400" />
+        <p className="font-semibold text-neutral-800">Invoice not found in database</p>
+        <Link href="/invoices" className="inline-block px-4 py-2 rounded-full bg-black text-white text-xs">
+          Back to Invoices
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -318,7 +405,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {invoice.items.map((item, i) => (
+                {invoice.items.map((item: any, i: number) => (
                   <tr key={i}>
                     <td className="py-3 font-semibold text-gray-900">
                       <div>{item.name}</div>

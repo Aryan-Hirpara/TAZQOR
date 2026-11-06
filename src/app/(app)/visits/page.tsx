@@ -29,62 +29,22 @@ interface VisitRecord {
   status: 'completed' | 'upcoming' | 'missed';
 }
 
-const DEMO_VISITS: VisitRecord[] = [
-  {
-    id: "v-1",
-    customer_name: "Shreeji Supermarket",
-    shop_name: "Shreeji Provision Store",
-    visit_date: "Today, 11:30 AM",
-    outcome: "Presented new 5L Floor cleaner bulk discount scheme. Haresh Bhai agreed to place 10-can order.",
-    next_follow_up: "2026-02-24",
-    gps_verified: true,
-    status: "completed",
-  },
-  {
-    id: "v-2",
-    customer_name: "Hotel Pride Plaza",
-    shop_name: "Pride Hospitality Group",
-    visit_date: "Today, 3:00 PM",
-    outcome: "Meeting with housekeeping supervisor for monthly hotel sanitization supply renewal.",
-    next_follow_up: "2026-02-28",
-    gps_verified: false,
-    status: "upcoming",
-  },
-  {
-    id: "v-3",
-    customer_name: "Apex Co-Working Space",
-    shop_name: "Apex Tech Park",
-    visit_date: "Yesterday, 2:15 PM",
-    outcome: "Delivered product trial samples for foam hand wash dispenser.",
-    next_follow_up: "2026-02-20",
-    gps_verified: true,
-    status: "completed",
-  },
-  {
-    id: "v-4",
-    customer_name: "Radhe Krishna PG",
-    shop_name: "Radhe PG Accommodations",
-    visit_date: "2026-02-12",
-    outcome: "Payment reminder and collected cash payment of ₹3,700 for previous supply.",
-    gps_verified: true,
-    status: "completed",
-  },
-];
-
 export default function VisitsPage() {
-  const [visits, setVisits] = useState<VisitRecord[]>(DEMO_VISITS);
+  const [visits, setVisits] = useState<VisitRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "today" | "upcoming">("all");
 
   useEffect(() => {
     async function loadVisits() {
       try {
+        setLoading(true);
         const supabase = createClient();
         const { data, error } = await supabase
           .from("customer_visits")
           .select("*, customers(name, shop_name)")
           .order("visit_date", { ascending: false });
 
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           const mapped: VisitRecord[] = data.map((v: any) => {
             const custName = v.customers?.name || "Customer";
             const shopName = v.customers?.shop_name || custName;
@@ -100,11 +60,12 @@ export default function VisitsPage() {
             };
           });
 
-          const merged = [...mapped, ...DEMO_VISITS.filter(dv => !mapped.some(m => m.id === dv.id))];
-          setVisits(merged);
+          setVisits(mapped);
         }
       } catch (e) {
         console.warn("Could not load visits from Supabase", e);
+      } finally {
+        setLoading(false);
       }
     }
     loadVisits();
@@ -122,9 +83,12 @@ export default function VisitsPage() {
               Today&apos;s store visits
             </span>
             <div className="text-3xl font-normal text-neutral-900 mt-1 tracking-tight">
-              2 Scheduled
+              {visits.length} Logged
             </div>
-            <p className="text-[11px] font-light text-neutral-500 mt-0.5">1 Completed, 1 Pending</p>
+            <p className="text-[11px] font-light text-neutral-500 mt-0.5">
+              {visits.filter((v) => v.status === "completed").length} Completed,{" "}
+              {visits.filter((v) => v.status === "upcoming").length} Upcoming
+            </p>
           </div>
 
           <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm">
@@ -132,9 +96,11 @@ export default function VisitsPage() {
               Total logged this month
             </span>
             <div className="text-3xl font-normal text-emerald-800 mt-1 tracking-tight">
-              18 Visits
+              {visits.length} Visits
             </div>
-            <p className="text-[11px] font-light text-neutral-500 mt-0.5">14 Resulted in fresh orders</p>
+            <p className="text-[11px] font-light text-neutral-500 mt-0.5">
+              Field representative check-ins
+            </p>
           </div>
 
           <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-6 shadow-sm flex items-center justify-between">

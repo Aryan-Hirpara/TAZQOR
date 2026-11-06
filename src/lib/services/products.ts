@@ -262,7 +262,7 @@ export async function getProducts(query?: { search?: string; categoryId?: string
     console.warn("Supabase products fetch fallback:", err);
   }
 
-  let list = [...DEMO_PRODUCTS];
+  let list: Product[] = [];
 
   if (query?.search) {
     const q = query.search.toLowerCase();

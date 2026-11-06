@@ -17,7 +17,7 @@ interface DailyPillBarChartProps {
 }
 
 export function DailyPillBarChart({
-  averageSaleValue = 1240.0,
+  averageSaleValue = 0,
   data,
 }: DailyPillBarChartProps) {
   // 22 daily bars matching master reference distribution
