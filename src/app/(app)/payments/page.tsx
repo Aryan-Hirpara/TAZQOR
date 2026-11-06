@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   Wallet,
   Plus,
   Search,
-  Filter,
   CheckCircle2,
   Calendar,
   CreditCard,
@@ -14,6 +13,7 @@ import {
   ChevronRight,
   Receipt,
   Download,
+  X,
 } from "lucide-react";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { formatINR } from "@/lib/formatting/currency";
@@ -36,6 +36,7 @@ export default function PaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedMethod, setSelectedMethod] = useState("all");
+  const [printPayment, setPrintPayment] = useState<PaymentRecord | null>(null);
 
   useEffect(() => {
     async function loadPayments() {
@@ -83,6 +84,46 @@ export default function PaymentsPage() {
   });
 
   const totalCollected = payments.reduce((acc, p) => acc + p.amount, 0);
+
+  const handlePrintReceipt = (p: PaymentRecord) => {
+    setPrintPayment(p);
+    setTimeout(() => {
+      const printArea = document.getElementById("receipt-print-area");
+      if (!printArea) return;
+      const html = printArea.innerHTML;
+      const win = window.open("", "_blank", "width=400,height=600");
+      if (!win) return;
+      win.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Receipt</title>
+            <style>
+              * { margin:0; padding:0; box-sizing:border-box; font-family: sans-serif; }
+              body { padding: 24px; color: #111; }
+              .r-header { text-align:center; border-bottom:2px solid #111; padding-bottom:12px; margin-bottom:16px; }
+              .r-header h1 { font-size:20px; font-weight:700; letter-spacing:2px; }
+              .r-header p { font-size:11px; color:#666; margin-top:4px; }
+              .r-row { display:flex; justify-content:space-between; margin:8px 0; font-size:13px; }
+              .r-row span:first-child { color:#555; }
+              .r-row span:last-child { font-weight:600; }
+              .r-amount { text-align:center; border:2px solid #111; border-radius:8px; padding:12px; margin:16px 0; }
+              .r-amount .label { font-size:11px; color:#555; margin-bottom:4px; }
+              .r-amount .value { font-size:28px; font-weight:700; }
+              .r-footer { text-align:center; margin-top:20px; padding-top:12px; border-top:1px dashed #aaa; font-size:10px; color:#888; }
+              @media print { body { padding:12px; } }
+            </style>
+          </head>
+          <body>${html}</body>
+        </html>
+      `);
+      win.document.close();
+      win.focus();
+      win.print();
+      win.close();
+      setPrintPayment(null);
+    }, 100);
+  };
 
   return (
     <div className="min-h-screen pb-12">
@@ -213,7 +254,7 @@ export default function PaymentsPage() {
                     <td className="py-4 px-6 text-right">
                       <button
                         type="button"
-                        onClick={() => window.print()}
+                        onClick={() => handlePrintReceipt(p)}
                         className="inline-flex items-center justify-center gap-1 px-4 min-h-[44px] rounded-full bg-white/70 text-neutral-800 text-xs font-light hover:bg-black hover:text-white transition-all cursor-pointer border border-white/80"
                       >
                         <Receipt className="w-3.5 h-3.5" />
@@ -227,6 +268,30 @@ export default function PaymentsPage() {
           </div>
         </div>
       </div>
+
+      {/* Hidden receipt print area — rendered off-screen, content extracted by handlePrintReceipt */}
+      {printPayment && (
+        <div id="receipt-print-area" style={{ position: "absolute", left: "-9999px", top: 0 }}>
+          <div className="r-header">
+            <h1>TAZQOR</h1>
+            <p>Payment Receipt</p>
+          </div>
+          <div className="r-amount">
+            <div className="label">Amount Received</div>
+            <div className="value">₹{printPayment.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</div>
+          </div>
+          <div className="r-row"><span>Customer</span><span>{printPayment.customer_name}</span></div>
+          <div className="r-row"><span>Receipt #</span><span>{printPayment.id.length > 12 ? `RCPT-${printPayment.id.slice(0, 6).toUpperCase()}` : printPayment.id}</span></div>
+          <div className="r-row"><span>Date</span><span>{printPayment.payment_date}</span></div>
+          <div className="r-row"><span>Method</span><span>{printPayment.method.replace("_", " ").toUpperCase()}</span></div>
+          <div className="r-row"><span>Reference</span><span>{printPayment.reference}</span></div>
+          <div className="r-row"><span>Allocated To</span><span>{printPayment.allocated_to}</span></div>
+          <div className="r-footer">
+            <p>Thank you for your payment!</p>
+            <p>TAZQOR Business — tazqor@gmail.com</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

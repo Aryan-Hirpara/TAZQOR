@@ -3,16 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  CalendarCheck,
   Plus,
-  Search,
-  CheckCircle2,
-  Clock,
   MapPin,
-  Calendar,
-  Phone,
-  MessageCircle,
-  ChevronRight,
 } from "lucide-react";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { createClient } from "@/lib/supabase/client";
@@ -32,7 +24,7 @@ interface VisitRecord {
 export default function VisitsPage() {
   const [visits, setVisits] = useState<VisitRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "today" | "upcoming">("all");
+  const [filter, setFilter] = useState<"all" | "today">("all");
 
   useEffect(() => {
     async function loadVisits() {
@@ -52,7 +44,7 @@ export default function VisitsPage() {
               id: v.id,
               customer_name: custName,
               shop_name: shopName,
-              visit_date: v.visit_date || "Today",
+              visit_date: v.visit_date || new Date().toISOString().split("T")[0],
               outcome: v.outcome || v.notes || "Visited store",
               next_follow_up: undefined,
               gps_verified: true,
@@ -70,6 +62,12 @@ export default function VisitsPage() {
     }
     loadVisits();
   }, []);
+
+  // Filter visits based on selected tab
+  const todayStr = new Date().toISOString().split("T")[0];
+  const filteredVisits = filter === "today"
+    ? visits.filter((v) => v.visit_date.startsWith(todayStr))
+    : visits;
 
   return (
     <div className="min-h-screen pb-12">
@@ -172,57 +170,68 @@ export default function VisitsPage() {
 
         {/* Visits List */}
         <div className="space-y-3">
-          {visits.map((v) => (
-            <div
-              key={v.id}
-              className="bg-white/55 backdrop-blur-xl rounded-[24px] p-5 sm:p-6 border border-white/65 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-            >
-              <div className="space-y-1.5 min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2 min-w-0">
-                  <h3 className="text-base font-normal text-neutral-900">{v.customer_name}</h3>
-                  <span className="text-[11px] font-light text-neutral-500">({v.shop_name})</span>
-                  {v.gps_verified && (
-                    <span className="inline-flex items-center gap-0.5 text-[10px] font-light text-neutral-700 bg-white/70 px-2 py-0.5 rounded-full border border-white/80">
-                      <MapPin className="w-3 h-3 text-[#E0FE52]" />
-                      GPS
-                    </span>
-                  )}
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-light border capitalize ${
-                      v.status === "completed"
-                        ? "bg-emerald-50 text-emerald-800 border-emerald-200/60"
-                        : "bg-amber-50 text-amber-800 border-amber-200/60"
-                    }`}
-                  >
-                    {v.status}
-                  </span>
-                </div>
-
-                <p className="text-xs font-light text-neutral-600 max-w-2xl">{v.outcome}</p>
-
-                <div className="flex items-center gap-4 text-[11px] text-neutral-400 font-light pt-1">
-                  <span>Visit Date: {formatDate(v.visit_date)}</span>
-                  {v.next_follow_up && (
-                    <span className="text-neutral-700 font-normal">
-                      Next Follow-up: {formatDate(v.next_follow_up)}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <Link
-                  href="/customers"
-                  className="px-4 min-h-[44px] flex items-center justify-center rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm cursor-pointer"
-                >
-                  View Shop
-                </Link>
-              </div>
+          {loading ? (
+            <div className="bg-white/55 backdrop-blur-xl rounded-[24px] p-8 border border-white/65 text-center">
+              <p className="text-sm font-light text-neutral-500">Loading visits...</p>
             </div>
-          ))}
+          ) : filteredVisits.length === 0 ? (
+            <div className="bg-white/55 backdrop-blur-xl rounded-[24px] p-8 border border-white/65 text-center">
+              <p className="text-sm font-light text-neutral-500">
+                {filter === "today" ? "No visits logged today." : "No visits found."}
+              </p>
+            </div>
+          ) : (
+            filteredVisits.map((v) => (
+              <div
+                key={v.id}
+                className="bg-white/55 backdrop-blur-xl rounded-[24px] p-5 sm:p-6 border border-white/65 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+              >
+                <div className="space-y-1.5 min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2 min-w-0">
+                    <h3 className="text-base font-normal text-neutral-900">{v.customer_name}</h3>
+                    <span className="text-[11px] font-light text-neutral-500">({v.shop_name})</span>
+                    {v.gps_verified && (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-light text-neutral-700 bg-white/70 px-2 py-0.5 rounded-full border border-white/80">
+                        <MapPin className="w-3 h-3 text-[#E0FE52]" />
+                        GPS
+                      </span>
+                    )}
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-light border capitalize ${
+                        v.status === "completed"
+                          ? "bg-emerald-50 text-emerald-800 border-emerald-200/60"
+                          : "bg-amber-50 text-amber-800 border-amber-200/60"
+                      }`}
+                    >
+                      {v.status}
+                    </span>
+                  </div>
+
+                  <p className="text-xs font-light text-neutral-600 max-w-2xl">{v.outcome}</p>
+
+                  <div className="flex items-center gap-4 text-[11px] text-neutral-400 font-light pt-1">
+                    <span>Visit Date: {formatDate(v.visit_date)}</span>
+                    {v.next_follow_up && (
+                      <span className="text-neutral-700 font-normal">
+                        Next Follow-up: {formatDate(v.next_follow_up)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link
+                    href="/customers"
+                    className="px-4 min-h-[44px] flex items-center justify-center rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm cursor-pointer"
+                  >
+                    View Shop
+                  </Link>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
   );
 }
-

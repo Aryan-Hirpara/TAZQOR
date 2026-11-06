@@ -38,21 +38,44 @@ export default function ReportsPage() {
         setLoading(true);
         const supabase = createClient();
 
-        // 1. Fetch Invoices with items and customer city
+        // Calculate date range based on period
+        const now = new Date();
+        let startDate: string;
+        let endDate: string;
+
+        if (period === "this_month") {
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+        } else if (period === "last_month") {
+          startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split("T")[0];
+          endDate = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split("T")[0];
+        } else {
+          // FY 2026-27: April 2026 - March 2027
+          startDate = "2026-04-01";
+          endDate = "2027-03-31";
+        }
+
+        // 1. Fetch Invoices with items and customer city filtered by date
         const { data: invData } = await supabase
           .from("invoices")
           .select("id, grand_total, status, invoice_date, created_at, customers(name, city), invoice_items(description, quantity, line_total)")
+          .gte("invoice_date", startDate)
+          .lte("invoice_date", endDate)
           .order("created_at", { ascending: false });
 
-        // 2. Fetch Expenses
+        // 2. Fetch Expenses filtered by date
         const { data: expData } = await supabase
           .from("expenses")
-          .select("id, amount, description, expense_date");
+          .select("id, amount, description, expense_date")
+          .gte("expense_date", startDate)
+          .lte("expense_date", endDate);
 
-        // 3. Fetch Payments
+        // 3. Fetch Payments filtered by date
         const { data: payData } = await supabase
           .from("payments")
-          .select("id, amount, payment_date");
+          .select("id, amount, payment_date")
+          .gte("payment_date", startDate)
+          .lte("payment_date", endDate);
 
         if (invData) {
           const validInvoices = invData.filter((i) => i.status !== "cancelled" && i.status !== "draft");
@@ -81,19 +104,12 @@ export default function ReportsPage() {
             share: Number(((data.sales / totalProdSales) * 100).toFixed(1)),
           })).sort((a, b) => b.sales - a.sales);
 
-          setTopProducts(
-            prods.length > 0
-              ? prods
-              : [
-                  { name: "TAZQOR Citrus Floor Cleaner (5 L)", sales: 4500, units: 10, share: 68.4 },
-                  { name: "TAZQOR Sparkle Dish Wash Gel (5 L)", sales: 2080, units: 4, share: 31.6 },
-                ]
-          );
+          setTopProducts(prods);
 
           // Group by customer city
           const cityMap: Record<string, number> = {};
           validInvoices.forEach((inv) => {
-            const city = (inv.customers as any)?.city || "Gujarat Central";
+            const city = (inv.customers as any)?.city || "Unknown";
             cityMap[city] = (cityMap[city] || 0) + (Number(inv.grand_total) || 0);
           });
 
@@ -104,14 +120,7 @@ export default function ReportsPage() {
             percentage: Number(((sales / totalCitySales) * 100).toFixed(1)),
           })).sort((a, b) => b.sales - a.sales);
 
-          setSalesByCity(
-            cities.length > 0
-              ? cities
-              : [
-                  { city: "Gandhinagar", sales: 6355, percentage: 92.7 },
-                  { city: "Ahmedabad", sales: 500, percentage: 7.3 },
-                ]
-          );
+          setSalesByCity(cities);
         }
 
         if (expData) {
@@ -131,7 +140,7 @@ export default function ReportsPage() {
     }
 
     fetchReportsData();
-  }, []);
+  }, [period]);
 
   // Compute calculated metrics
   const grossProfit = Math.round(revenue * 0.535); // Estimated ~53.5% chemical gross margin
