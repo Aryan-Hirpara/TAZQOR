@@ -38,52 +38,52 @@ interface BillLineItem {
 
 const AVAILABLE_VARIANTS: BillLineItem[] = [
   {
-    variant_id: "v-flr-5l",
-    name: "TAZQOR Citrus Floor Cleaner",
-    pack_size: "5 L Can",
-    sku: "TC-FLR-01-5L",
+    variant_id: "v-phn-1l",
+    name: "TAZQOR Phenyl",
+    pack_size: "1 Litre Bottle",
+    sku: "TC-PHN-01-1L",
     hsn: "3402",
     quantity: 1,
-    unit_price: 450,
+    unit_price: 90,
+    discount_percent: 0,
+    tax_rate: 18,
+    stock_on_hand: 50,
+  },
+  {
+    variant_id: "v-tlt-500m",
+    name: "TAZQOR Toilet Cleaner",
+    pack_size: "500 mL Bottle",
+    sku: "TC-TLT-01-500M",
+    hsn: "3402",
+    quantity: 1,
+    unit_price: 80,
+    discount_percent: 0,
+    tax_rate: 18,
+    stock_on_hand: 40,
+  },
+  {
+    variant_id: "v-hnd-250m",
+    name: "TAZQOR Hand Wash",
+    pack_size: "250 mL Pump Dispenser",
+    sku: "TC-HND-01-250M",
+    hsn: "3401",
+    quantity: 1,
+    unit_price: 75,
+    discount_percent: 0,
+    tax_rate: 18,
+    stock_on_hand: 60,
+  },
+  {
+    variant_id: "v-dsh-250m",
+    name: "TAZQOR Dish Wash",
+    pack_size: "250 mL Bottle",
+    sku: "TC-DSH-01-250M",
+    hsn: "3402",
+    quantity: 1,
+    unit_price: 65,
     discount_percent: 0,
     tax_rate: 18,
     stock_on_hand: 45,
-  },
-  {
-    variant_id: "v-flr-1l",
-    name: "TAZQOR Citrus Floor Cleaner",
-    pack_size: "1 L Bottle",
-    sku: "TC-FLR-01-1L",
-    hsn: "3402",
-    quantity: 1,
-    unit_price: 110,
-    discount_percent: 0,
-    tax_rate: 18,
-    stock_on_hand: 120,
-  },
-  {
-    variant_id: "v-dsh-5l",
-    name: "TAZQOR Sparkle Dish Wash Gel",
-    pack_size: "5 L Can",
-    sku: "TC-DSH-01-5L",
-    hsn: "3402",
-    quantity: 1,
-    unit_price: 520,
-    discount_percent: 0,
-    tax_rate: 18,
-    stock_on_hand: 35,
-  },
-  {
-    variant_id: "v-hnd-500m",
-    name: "TAZQOR Anti-Bacterial Hand Wash",
-    pack_size: "500 mL Pump",
-    sku: "TC-HND-01-500M",
-    hsn: "3401",
-    quantity: 1,
-    unit_price: 85,
-    discount_percent: 0,
-    tax_rate: 18,
-    stock_on_hand: 140,
   },
 ];
 
@@ -91,6 +91,7 @@ export default function NewInvoicePage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [customerList, setCustomerList] = useState<Customer[]>([]);
+  const [pendingOrders, setPendingOrders] = useState<any[]>([]);
 
   // Business GST state (configured in settings)
   const isGstEligible = true; // In production read from business_settings
@@ -118,10 +119,77 @@ export default function NewInvoicePage() {
     loadCusts();
   }, []);
 
+  // Fetch pending customer orders when customer selection changes
+  useEffect(() => {
+    async function fetchOrdersForCustomer() {
+      if (!customer) return;
+      try {
+        const supabase = createClient();
+        let resolvedId = customer;
+        if (customer.startsWith("c1") || customer.length < 32) {
+          const { data: c } = await supabase.from("customers").select("id").limit(1);
+          if (c && c[0]) resolvedId = c[0].id;
+        }
+        const { data: ords } = await supabase
+          .from("orders")
+          .select("id, order_number, created_at, status, order_items(id, quantity, unit_price, product_variant_id)")
+          .eq("customer_id", resolvedId)
+          .order("created_at", { ascending: false })
+          .limit(3);
+        if (ords && ords.length > 0) {
+          setPendingOrders(ords);
+        } else {
+          setPendingOrders([]);
+        }
+      } catch (e) {
+        console.warn("Could not load orders for customer", e);
+      }
+    }
+    fetchOrdersForCustomer();
+  }, [customer]);
+
   const [lines, setLines] = useState<BillLineItem[]>([
     { ...AVAILABLE_VARIANTS[0], quantity: 10, discount_percent: 5 },
-    { ...AVAILABLE_VARIANTS[2], quantity: 4, discount_percent: 0 },
+    { ...AVAILABLE_VARIANTS[1], quantity: 4, discount_percent: 0 },
   ]);
+
+  const handleLoadOrder = (ord: any) => {
+    const items = ord.order_items || [];
+    if (items.length === 0) {
+      toast.error("This order has no line items.");
+      return;
+    }
+    const newLines: BillLineItem[] = items.map((it: any, i: number) => {
+      const defaultVariant = AVAILABLE_VARIANTS[i % AVAILABLE_VARIANTS.length];
+      return {
+        ...defaultVariant,
+        quantity: Number(it.quantity) || 1,
+        unit_price: Number(it.unit_price) || defaultVariant.unit_price,
+        discount_percent: 0,
+      };
+    });
+    setLines(newLines);
+    toast.success(`Loaded ${newLines.length} item(s) from Order ${ord.order_number}!`);
+  };
+
+  const handleProductChange = (idx: number, variantId: string) => {
+    const match = AVAILABLE_VARIANTS.find((v) => v.variant_id === variantId);
+    if (match) {
+      const copy = [...lines];
+      copy[idx] = {
+        ...copy[idx],
+        variant_id: match.variant_id,
+        name: match.name,
+        pack_size: match.pack_size,
+        sku: match.sku,
+        hsn: match.hsn,
+        unit_price: match.unit_price,
+        tax_rate: match.tax_rate,
+        stock_on_hand: match.stock_on_hand,
+      };
+      setLines(copy);
+    }
+  };
 
   // Recalculate invoice totals accurately using the money calculation engine
   const calculationInputs: LineItemCalculationInput[] = useMemo(() => {
@@ -140,7 +208,8 @@ export default function NewInvoicePage() {
   }, [calculationInputs, roundOffEnabled]);
 
   const addLine = () => {
-    setLines([...lines, { ...AVAILABLE_VARIANTS[1], quantity: 6, discount_percent: 0 }]);
+    const nextVariant = AVAILABLE_VARIANTS[lines.length % AVAILABLE_VARIANTS.length] || AVAILABLE_VARIANTS[0];
+    setLines([...lines, { ...nextVariant, quantity: 1, discount_percent: 0 }]);
   };
 
   const removeLine = (idx: number) => {
@@ -162,13 +231,12 @@ export default function NewInvoicePage() {
 
     setSubmitting(true);
     try {
-      const generatedNumber = formatDocumentNumber(
-        mode === "gst" ? "INV" : "BILL",
-        mode === "gst" ? 3 : 2,
-        new Date()
-      );
-
       const supabase = createClient();
+
+      // Continuous sequential numbering from live database invoices count
+      const { count } = await supabase.from("invoices").select("id", { count: "exact", head: true });
+      const nextSeq = (count || 0) + 1;
+      const generatedNumber = `${mode === "gst" ? "INV" : "BILL"}/2026-27/${String(nextSeq).padStart(4, "0")}`;
       let resolvedCustomerId = customer;
       if (customer.startsWith("c1") || !customer.includes("-") || customer.length < 32) {
         const { data: c } = await supabase.from("customers").select("id").limit(1);
@@ -350,6 +418,27 @@ export default function NewInvoicePage() {
               />
             </div>
           </div>
+
+          {/* Pending Order Pre-loader Banner */}
+          {pendingOrders.length > 0 && (
+            <div className="p-4 rounded-2xl bg-[#E0FE52]/25 border border-[#E0FE52]/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-xs font-medium text-neutral-950 block">
+                  Customer has confirmed Order ({pendingOrders[0].order_number}) with {pendingOrders[0].order_items?.length || 0} item(s)
+                </span>
+                <span className="text-[11px] text-neutral-700 font-light">
+                  Directly load customer booked items to create this invoice, or add items manually below.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleLoadOrder(pendingOrders[0])}
+                className="px-4 py-2 rounded-full bg-black text-white text-xs font-normal hover:scale-105 active:scale-95 transition-all shadow-sm shrink-0 cursor-pointer"
+              >
+                Load Order Items
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Invoice Line Items */}
@@ -380,14 +469,20 @@ export default function NewInvoicePage() {
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                     <div className="sm:col-span-4">
                       <label className="block text-[11px] font-normal text-neutral-700 mb-1">
-                        Product Variant
+                        Select Product & Variant *
                       </label>
-                      <input
-                        type="text"
-                        value={`${line.name} (${line.pack_size})`}
-                        readOnly
-                        className="w-full h-10 px-3 text-xs bg-white/80 rounded-xl border border-neutral-200/70 font-normal text-neutral-900"
-                      />
+                      <select
+                        aria-label="Select Product & Variant"
+                        value={line.variant_id}
+                        onChange={(e) => handleProductChange(idx, e.target.value)}
+                        className="w-full h-10 px-3 text-xs bg-white/80 rounded-xl border border-neutral-200/70 font-normal text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
+                      >
+                        {AVAILABLE_VARIANTS.map((v) => (
+                          <option key={v.variant_id} value={v.variant_id}>
+                            {v.name} — {v.pack_size} (₹{v.unit_price})
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     <div className="sm:col-span-2">
@@ -559,6 +654,27 @@ export default function NewInvoicePage() {
               <span>{submitting ? "Finalizing & Deducting Stock..." : "Finalize & Issue Stock"}</span>
             </button>
           </div>
+
+          {/* Pending Order Pre-loader Banner */}
+          {pendingOrders.length > 0 && (
+            <div className="p-4 rounded-2xl bg-[#E0FE52]/25 border border-[#E0FE52]/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-xs font-medium text-neutral-950 block">
+                  Customer has confirmed Order ({pendingOrders[0].order_number}) with {pendingOrders[0].order_items?.length || 0} item(s)
+                </span>
+                <span className="text-[11px] text-neutral-700 font-light">
+                  Directly load customer booked items to create this invoice, or add items manually below.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleLoadOrder(pendingOrders[0])}
+                className="px-4 py-2 rounded-full bg-black text-white text-xs font-normal hover:scale-105 active:scale-95 transition-all shadow-sm shrink-0 cursor-pointer"
+              >
+                Load Order Items
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

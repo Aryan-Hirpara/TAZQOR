@@ -45,25 +45,13 @@ export function MoreLauncherSheet({ isOpen, onClose }: MoreLauncherSheetProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
 
-  // Initialize theme state from DOM or localStorage
+  // Ensure dark mode is disabled so text is always high-contrast and readable
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const darkActive = document.documentElement.classList.contains("dark");
-      setIsDark(darkActive);
-    }
-  }, [isOpen]);
-
-  const toggleTheme = () => {
-    const nextDark = !isDark;
-    setIsDark(nextDark);
-    if (nextDark) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("tazqor-theme", "dark");
-    } else {
       document.documentElement.classList.remove("dark");
-      localStorage.setItem("tazqor-theme", "light");
+      localStorage.removeItem("tazqor-theme");
     }
-  };
+  }, []);
 
   // Close on Escape & Lock body scroll while open
   useEffect(() => {
@@ -159,22 +147,11 @@ export function MoreLauncherSheet({ isOpen, onClose }: MoreLauncherSheetProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Theme Toggle */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-700 dark:text-neutral-300 hover:scale-105 active:scale-95 transition-all"
-              title={isDark ? "Switch to Light Theme" : "Switch to Dark Theme"}
-              aria-label="Toggle theme"
-            >
-              {isDark ? <Sun className="w-4 h-4 text-[#D7FF00]" /> : <Moon className="w-4 h-4" />}
-            </button>
-
             {/* Close Button */}
             <button
               type="button"
               onClick={onClose}
-              className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:scale-105 active:scale-95 transition-all"
+              className="w-9 h-9 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-600 hover:text-black hover:scale-105 active:scale-95 transition-all"
               aria-label="Close menu"
             >
               <X className="w-4 h-4" />

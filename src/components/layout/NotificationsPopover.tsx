@@ -309,6 +309,34 @@ export function NotificationsPopover({
           </div>
         </div>
 
+        {/* Real-time Push & Email Notifications Bar */}
+        <div className="px-4 py-2 bg-neutral-50 border-b border-neutral-100 flex items-center justify-between text-[11px]">
+          <span className="text-neutral-600 font-light truncate">
+            📧 Email alerts: <strong className="font-normal text-neutral-900">tazqor@gmail.com</strong>
+          </span>
+          {typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted" && (
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const res = await Notification.requestPermission();
+                  if (res === "granted") {
+                    new Notification("TAZQOR Alerts Enabled", {
+                      body: "Real-time notifications are now active on this device.",
+                      icon: "/icon-192.png",
+                    });
+                  }
+                } catch (e) {
+                  console.warn("Notification error:", e);
+                }
+              }}
+              className="text-[10px] px-2.5 py-0.5 rounded-full bg-black text-[#E0FE52] font-normal hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0 ml-2"
+            >
+              Enable Screen Alerts
+            </button>
+          )}
+        </div>
+
         {/* Filter Tabs */}
         <div className="px-4 py-2 border-b border-neutral-100 dark:border-neutral-800 flex items-center gap-1.5 bg-neutral-50/50 dark:bg-neutral-950/30">
           <button

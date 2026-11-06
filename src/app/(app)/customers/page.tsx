@@ -7,6 +7,8 @@ import {
   Search,
   Plus,
   Phone,
+  MessageCircle,
+  Mail,
   MapPin,
   ChevronRight,
   Store,
@@ -311,13 +313,38 @@ export default function CustomersPage() {
                         </td>
 
                         <td className="py-4 px-6 text-right">
-                          <Link
-                            href={`/customers/${c.id}`}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/60 text-neutral-800 text-xs font-light hover:bg-black hover:text-white border border-white/70 transition-all shadow-none"
-                          >
-                            <span>Profile</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </Link>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <a
+                              href={`tel:${c.phone.replace(/\s+/g, "")}`}
+                              title="Call Store"
+                              className="w-8 h-8 rounded-full bg-white/70 hover:bg-black hover:text-white flex items-center justify-center text-neutral-700 transition-all border border-white/80"
+                            >
+                              <Phone className="w-3.5 h-3.5" />
+                            </a>
+                            <a
+                              href={`https://wa.me/${(c.whatsapp || c.phone || "").replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`Hello ${c.contact_person || c.shop_name}, greetings from TAZQOR!`)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="WhatsApp Message"
+                              className="w-8 h-8 rounded-full bg-emerald-50 hover:bg-emerald-600 hover:text-white flex items-center justify-center text-emerald-700 transition-all border border-emerald-200/60"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                            </a>
+                            <a
+                              href={`mailto:${c.email || "tazqor@gmail.com"}?subject=${encodeURIComponent(`TAZQOR Business - ${c.shop_name || c.name}`)}`}
+                              title="Send Email"
+                              className="w-8 h-8 rounded-full bg-blue-50 hover:bg-blue-600 hover:text-white flex items-center justify-center text-blue-700 transition-all border border-blue-200/60"
+                            >
+                              <Mail className="w-3.5 h-3.5" />
+                            </a>
+                            <Link
+                              href={`/customers/${c.id}`}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/60 text-neutral-800 text-xs font-light hover:bg-black hover:text-white border border-white/70 transition-all shadow-none ml-1"
+                            >
+                              <span>Profile</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -375,16 +402,38 @@ export default function CustomersPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="text-[11px] font-light text-neutral-400">
-                        Added {formatDate(c.created_at)}
-                      </span>
+                    <div className="flex items-center justify-between pt-1 border-t border-white/30">
+                      <div className="flex items-center gap-1.5">
+                        <a
+                          href={`tel:${c.phone.replace(/\s+/g, "")}`}
+                          className="w-9 h-9 rounded-full bg-white/70 flex items-center justify-center text-neutral-800 border border-white/80 active:scale-95"
+                          title="Call"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                        </a>
+                        <a
+                          href={`https://wa.me/${(c.whatsapp || c.phone || "").replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`Hello ${c.contact_person || c.shop_name}, greetings from TAZQOR!`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200/60 active:scale-95"
+                          title="WhatsApp"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </a>
+                        <a
+                          href={`mailto:${c.email || "tazqor@gmail.com"}?subject=${encodeURIComponent(`TAZQOR Business - ${c.shop_name || c.name}`)}`}
+                          className="w-9 h-9 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200/60 active:scale-95"
+                          title="Mail"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
 
                       <Link
                         href={`/customers/${c.id}`}
                         className="inline-flex items-center justify-center gap-1 px-4 min-h-[44px] rounded-full bg-black text-white text-xs font-normal hover:scale-105 active:scale-95 transition-all shadow-none"
                       >
-                        <span>View</span>
+                        <span>Profile</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>

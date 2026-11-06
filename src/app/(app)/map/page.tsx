@@ -103,42 +103,45 @@ export default function StoreMapPage() {
         {viewMode === "map" ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             {/* Interactive Map Canvas Container */}
-            <div className="lg:col-span-8 bg-white/55 backdrop-blur-xl rounded-[28px] p-6 border border-white/65 shadow-sm flex flex-col justify-between min-h-[500px] relative overflow-hidden">
-              {/* Map Canvas with simulated OSM Grid & real markers */}
-              <div className="absolute inset-0 bg-[#E8ECEF] flex items-center justify-center">
-                {/* SVG Map Background Pattern */}
-                <div className="w-full h-full opacity-40 bg-[radial-gradient(#CBD5E1_1px,transparent_1px)] [background-size:16px_16px]" />
+            <div className="lg:col-span-8 bg-white/55 backdrop-blur-xl rounded-[28px] border border-white/65 shadow-sm flex flex-col justify-between min-h-[520px] relative overflow-hidden">
+              {/* Real Google Map iframe */}
+              <div className="absolute inset-0 bg-[#E8ECEF]">
+                <iframe
+                  title="Google Maps Gujarat Stores"
+                  src={`https://www.google.com/maps?q=${selectedCustomer?.lat || 23.0225},${selectedCustomer?.lng || 72.5714}&z=13&output=embed`}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="w-full h-full"
+                />
 
-                {/* Simulated OSM Pins for Ahmedabad and Gandhinagar */}
-                {mapPins.map((c, i) => {
-                  const isSelected = selectedCustomer?.id === c.id;
-                  // Position relative to canvas coordinates
-                  const topPos = 30 + (i * 18);
-                  const leftPos = 25 + (i * 20);
+                {/* Store Selector Strip overlaid on Map */}
+                <div className="absolute top-4 left-4 right-4 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none pointer-events-auto">
+                  {mapPins.map((c) => {
+                    const isSelected = selectedCustomer?.id === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setSelectedCustomer(c)}
+                        className={`px-3.5 py-1.5 rounded-full flex items-center gap-2 shadow-md transition-all shrink-0 cursor-pointer text-xs ${
+                          isSelected
+                            ? "bg-black text-[#E0FE52] font-normal scale-105"
+                            : "bg-white/95 backdrop-blur-md text-neutral-800 font-light hover:bg-white"
+                        }`}
+                      >
+                        <MapPin className="w-3.5 h-3.5 fill-current" />
+                        <span>{c.shop_name || c.name}</span>
+                        <span className="text-[10px] opacity-70">({c.city})</span>
+                      </button>
+                    );
+                  })}
+                </div>
 
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setSelectedCustomer(c)}
-                      style={{ top: `${topPos}%`, left: `${leftPos}%` }}
-                      className={`absolute -translate-x-1/2 -translate-y-1/2 p-2 rounded-2xl flex items-center gap-2 shadow-xl transition-all duration-300 ${
-                        isSelected
-                          ? "bg-black text-[#D4F732] scale-110 z-20 ring-4 ring-[#D4F732]/40"
-                          : "bg-white/90 backdrop-blur-md text-neutral-900 hover:scale-105 z-10"
-                      }`}
-                    >
-                      <MapPin className="w-4 h-4 fill-current" />
-                      <div className="text-left pr-1">
-                        <div className="text-xs font-normal leading-tight">{c.name}</div>
-                        <div className={`text-[10px] leading-tight ${isSelected ? "text-neutral-300" : "text-neutral-500 font-light"}`}>{c.city}</div>
-                      </div>
-                    </button>
-                  );
-                })}
-
-                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-[10px] text-neutral-500 font-mono shadow-sm">
-                  OpenStreetMap • 4 Stores Positioned in Gujarat
+                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3.5 py-1.5 rounded-full text-[10px] text-neutral-700 font-mono shadow-sm border border-white/80 pointer-events-none">
+                  Google Maps • {mapPins.length} Stores in Gujarat Live
                 </div>
               </div>
             </div>

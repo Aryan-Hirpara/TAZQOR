@@ -224,9 +224,9 @@ export default function DashboardPage() {
             .reduce((sum, inv) => sum + (Number(inv.grand_total) || 0), 0);
         }
 
-        // If current period has no invoices yet, fall back gracefully to all live invoices total so dashboard displays the business state
-        const displaySales = periodSales > 0 ? periodSales : salesThisYear;
-        const activeInvoices = periodInvoices.length > 0 ? periodInvoices : invoicesList;
+        // Calculate period sales and active invoices directly based on period selection
+        const displaySales = periodSales;
+        const activeInvoices = periodInvoices;
 
         // Items per bill
         let totalItemsCount = 0;

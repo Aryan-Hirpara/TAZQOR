@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   Phone,
   MessageCircle,
+  Mail,
   MapPin,
   ArrowLeft,
   AlertCircle,
@@ -116,23 +117,29 @@ export default function CustomerDetailClient({ id }: { id: string }) {
             <div className="flex flex-wrap items-center gap-2">
               <a
                 href={`tel:${customer.phone.replace(/\s+/g, "")}`}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm"
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-black text-white text-xs font-normal hover:scale-105 active:scale-95 transition-all shadow-sm"
               >
-                <Phone className="w-3.5 h-3.5 text-blue-600" />
-                <span>Call</span>
+                <Phone className="w-3.5 h-3.5 text-[#E0FE52]" />
+                <span>Call Store</span>
               </a>
 
-              {customer.whatsapp && (
-                <a
-                  href={`https://wa.me/${customer.whatsapp.replace(/[^0-9]/g, "")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm"
-                >
-                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>WhatsApp</span>
-                </a>
-              )}
+              <a
+                href={`https://wa.me/${(customer.whatsapp || customer.phone || "").replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`Hello ${customer.contact_person || customer.shop_name}, greetings from TAZQOR!`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-emerald-600 text-white text-xs font-normal hover:bg-emerald-700 hover:scale-105 active:scale-95 transition-all shadow-sm"
+              >
+                <MessageCircle className="w-3.5 h-3.5 text-white" />
+                <span>WhatsApp</span>
+              </a>
+
+              <a
+                href={`mailto:${customer.email || "tazqor@gmail.com"}?subject=${encodeURIComponent(`TAZQOR Business Order - ${customer.shop_name || customer.name}`)}`}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm"
+              >
+                <Mail className="w-3.5 h-3.5 text-blue-600" />
+                <span>Mail Compose</span>
+              </a>
 
               {customer.lat && customer.lng && (
                 <a
@@ -141,7 +148,7 @@ export default function CustomerDetailClient({ id }: { id: string }) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm"
                 >
-                  <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                  <MapPin className="w-3.5 h-3.5 text-rose-600" />
                   <span>Directions</span>
                 </a>
               )}

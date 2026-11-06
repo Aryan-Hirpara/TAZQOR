@@ -18,57 +18,106 @@ interface OrderLine {
   stock_available: number;
 }
 
+const DEFAULT_PRODUCTS = [
+  { name: "1 Litre Phenyl", prod_name: "TAZQOR Phenyl", pack: "1 L Bottle", price: 90, stock: 50 },
+  { name: "500ml Toilet Cleaner", prod_name: "TAZQOR Toilet Cleaner", pack: "500 mL Bottle", price: 80, stock: 40 },
+  { name: "250ml Hand Wash", prod_name: "TAZQOR Hand Wash", pack: "250 mL Pump Dispenser", price: 75, stock: 60 },
+  { name: "250ml Dish Wash", prod_name: "TAZQOR Dish Wash", pack: "250 mL Bottle", price: 65, stock: 45 },
+];
+
 export default function NewOrderPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [customerList, setCustomerList] = useState<Customer[]>([]);
+  const [productList, setProductList] = useState(DEFAULT_PRODUCTS);
 
   const [customer, setCustomer] = useState("c1-shreeji");
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
-    async function loadCusts() {
+    async function loadData() {
       try {
         const custs = await getCustomers();
         if (custs && custs.length > 0) {
           setCustomerList(custs);
           setCustomer(custs[0].id);
         }
+
+        const supabase = createClient();
+        const { data: dbProds } = await supabase
+          .from("products")
+          .select("name, product_variants(name, pack_size, selling_price)");
+
+        if (dbProds && dbProds.length > 0) {
+          const prods: typeof DEFAULT_PRODUCTS = [];
+          dbProds.forEach((p: any) => {
+            (p.product_variants || []).forEach((v: any) => {
+              prods.push({
+                name: `${v.pack_size || ""} ${p.name}`.trim(),
+                prod_name: p.name,
+                pack: v.name || v.pack_size || "Standard",
+                price: Number(v.selling_price) || 80,
+                stock: 50,
+              });
+            });
+          });
+          if (prods.length > 0) {
+            setProductList(prods);
+          }
+        }
       } catch (e) {
-        console.warn("Could not load customers for order form", e);
+        console.warn("Could not load data for order form", e);
       }
     }
-    loadCusts();
+    loadData();
   }, []);
 
   const [lines, setLines] = useState<OrderLine[]>([
     {
-      product_name: "TAZQOR Citrus Floor Cleaner",
-      pack_size: "5 L Can",
+      product_name: DEFAULT_PRODUCTS[0].prod_name,
+      pack_size: DEFAULT_PRODUCTS[0].pack,
       quantity: 10,
-      unit_price: 450,
-      stock_available: 45,
+      unit_price: DEFAULT_PRODUCTS[0].price,
+      stock_available: DEFAULT_PRODUCTS[0].stock,
     },
     {
-      product_name: "TAZQOR Sparkle Dish Wash Gel",
-      pack_size: "5 L Can",
-      quantity: 2,
-      unit_price: 520,
-      stock_available: 35,
+      product_name: DEFAULT_PRODUCTS[1].prod_name,
+      pack_size: DEFAULT_PRODUCTS[1].pack,
+      quantity: 5,
+      unit_price: DEFAULT_PRODUCTS[1].price,
+      stock_available: DEFAULT_PRODUCTS[1].stock,
     },
   ]);
 
-  const addLine = () => {
+  const addLine = (prodIndex = 2) => {
+    const selectedProd = productList[prodIndex % productList.length] || DEFAULT_PRODUCTS[0];
     setLines([
       ...lines,
       {
-        product_name: "TAZQOR Anti-Bacterial Hand Wash",
-        pack_size: "500 mL Dispenser",
-        quantity: 12,
-        unit_price: 85,
-        stock_available: 140,
+        product_name: selectedProd.prod_name,
+        pack_size: selectedProd.pack,
+        quantity: 5,
+        unit_price: selectedProd.price,
+        stock_available: selectedProd.stock,
       },
     ]);
+  };
+
+  const handleProductChange = (idx: number, prodNameWithPack: string) => {
+    const match = productList.find(
+      (p) => `${p.prod_name} (${p.pack})` === prodNameWithPack || p.prod_name === prodNameWithPack
+    );
+    if (match) {
+      const copy = [...lines];
+      copy[idx] = {
+        ...copy[idx],
+        product_name: match.prod_name,
+        pack_size: match.pack,
+        unit_price: match.price,
+        stock_available: match.stock,
+      };
+      setLines(copy);
+    }
   };
 
   const removeLine = (idx: number) => {
@@ -211,7 +260,7 @@ export default function NewOrderPage() {
               </div>
               <button
                 type="button"
-                onClick={addLine}
+                onClick={() => addLine()}
                 className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 text-[#E0FE52]" />
@@ -230,14 +279,20 @@ export default function NewOrderPage() {
                   >
                     <div className="sm:col-span-5">
                       <label className="block text-[11px] font-light text-neutral-600 mb-1">
-                        Product & Pack Size
+                        Select Product & Variant *
                       </label>
-                      <input
-                        type="text"
+                      <select
+                        aria-label="Select Product & Variant"
                         value={`${line.product_name} (${line.pack_size})`}
-                        readOnly
-                        className="w-full h-10 px-4 text-xs bg-white/60 rounded-full border border-white/70 font-normal text-neutral-900"
-                      />
+                        onChange={(e) => handleProductChange(idx, e.target.value)}
+                        className="w-full h-10 px-4 text-xs bg-white/70 rounded-full border border-white/80 font-normal text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
+                      >
+                        {productList.map((p, pIdx) => (
+                          <option key={pIdx} value={`${p.prod_name} (${p.pack})`}>
+                            {p.prod_name} — {p.pack} (₹{p.price})
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     <div className="sm:col-span-2">

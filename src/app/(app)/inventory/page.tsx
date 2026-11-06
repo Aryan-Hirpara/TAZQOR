@@ -332,7 +332,15 @@ export default function InventoryPage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/products/new"
+              className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-white/70 text-neutral-800 border border-white/80 text-xs font-light shadow-sm hover:bg-black hover:text-white transition-all cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5 text-[#E0FE52]" />
+              <span>Add New Product</span>
+            </Link>
+
             <button
               type="button"
               onClick={() => setAdjustStockOpen(true)}

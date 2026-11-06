@@ -31,6 +31,26 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
   const [loading, setLoading] = useState(true);
   const [invoice, setInvoice] = useState<any>(null);
 
+  const [bankDetails, setBankDetails] = useState({
+    accountName: "TAZQOR",
+    bankName: "State Bank of India",
+    accountNo: "38920199201",
+    ifsc: "SBIN0001234",
+    upiId: "tazqor@upi",
+  });
+  const [editingBank, setEditingBank] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("tazqor_bank_details");
+      if (saved) {
+        try {
+          setBankDetails(JSON.parse(saved));
+        } catch {}
+      }
+    }
+  }, []);
+
   useEffect(() => {
     async function loadInvoice() {
       setLoading(true);
@@ -115,14 +135,14 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
               address: "Plot 42, Industrial Area, Phase II",
               city: "Ahmedabad, Gujarat - 380015",
               phone: "+91 98765 43210",
-              email: "billing@tazqor.com",
+              email: "tazqor@gmail.com",
             },
             customer: {
               name: cust.shop_name || cust.name || "Customer",
-              contact: cust.contact_person || cust.name || "Manager",
+              contact: cust.contact_person || cust.name || "Store Manager",
               gstin: cust.customer_code || "Unregistered",
-              address: cust.billing_address || cust.delivery_address || `${cust.city || "Ahmedabad"}, Gujarat`,
-              city: cust.city || "Ahmedabad, Gujarat",
+              address: cust.delivery_address || cust.billing_address || `${cust.city || "Ahmedabad"} Store Location`,
+              city: `${cust.city || "Ahmedabad"}${cust.district ? ", " + cust.district : ""}, ${cust.state || "Gujarat"}${cust.pin ? " - " + cust.pin : ""}`,
               phone: cust.phone || "+91 98250 11223",
             },
             items,
@@ -472,15 +492,84 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
           {/* Signatures & Bank Details */}
           <div className="mt-12 pt-8 border-t border-gray-200 grid grid-cols-2 gap-8 text-[11px] text-gray-500">
             <div>
-              <p className="font-bold text-gray-700">Bank Details for Payment:</p>
-              <p>Account Name: TAZQOR Clean Solutions LLP</p>
-              <p>Bank: HDFC Bank, Bodakdev Branch</p>
-              <p>A/C No: 50200088991122</p>
-              <p>IFSC: HDFC0001234 • UPI ID: tazqor@hdfcbank</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="font-bold text-gray-700">Bank Details for Payment:</p>
+                <button
+                  type="button"
+                  onClick={() => setEditingBank(!editingBank)}
+                  className="text-[10px] text-blue-600 hover:underline font-light print:hidden cursor-pointer"
+                >
+                  {editingBank ? "Done" : "Edit"}
+                </button>
+              </div>
+
+              {editingBank ? (
+                <div className="space-y-1.5 p-2.5 bg-neutral-50 rounded-xl border border-neutral-200 print:hidden text-xs">
+                  <div>
+                    <label className="text-[10px] text-neutral-500 block">Bank Name</label>
+                    <input
+                      type="text"
+                      value={bankDetails.bankName}
+                      onChange={(e) => {
+                        const updated = { ...bankDetails, bankName: e.target.value };
+                        setBankDetails(updated);
+                        localStorage.setItem("tazqor_bank_details", JSON.stringify(updated));
+                      }}
+                      className="w-full h-7 px-2 text-xs border rounded bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-neutral-500 block">Account Number</label>
+                    <input
+                      type="text"
+                      value={bankDetails.accountNo}
+                      onChange={(e) => {
+                        const updated = { ...bankDetails, accountNo: e.target.value };
+                        setBankDetails(updated);
+                        localStorage.setItem("tazqor_bank_details", JSON.stringify(updated));
+                      }}
+                      className="w-full h-7 px-2 text-xs border rounded bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-neutral-500 block">IFSC Code</label>
+                    <input
+                      type="text"
+                      value={bankDetails.ifsc}
+                      onChange={(e) => {
+                        const updated = { ...bankDetails, ifsc: e.target.value };
+                        setBankDetails(updated);
+                        localStorage.setItem("tazqor_bank_details", JSON.stringify(updated));
+                      }}
+                      className="w-full h-7 px-2 text-xs border rounded bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-neutral-500 block">UPI ID</label>
+                    <input
+                      type="text"
+                      value={bankDetails.upiId}
+                      onChange={(e) => {
+                        const updated = { ...bankDetails, upiId: e.target.value };
+                        setBankDetails(updated);
+                        localStorage.setItem("tazqor_bank_details", JSON.stringify(updated));
+                      }}
+                      className="w-full h-7 px-2 text-xs border rounded bg-white"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p>Account Name: {bankDetails.accountName}</p>
+                  <p>Bank: {bankDetails.bankName}</p>
+                  <p>A/C No: {bankDetails.accountNo}</p>
+                  <p>IFSC: {bankDetails.ifsc} • UPI ID: {bankDetails.upiId}</p>
+                </>
+              )}
             </div>
 
             <div className="text-right flex flex-col justify-between items-end">
-              <p className="font-bold text-gray-700">For TAZQOR Clean Solutions LLP</p>
+              <p className="font-bold text-gray-700">For TAZQOR Clean Solutions</p>
               <div className="h-10" />
               <p className="border-t border-gray-300 pt-1 w-48 text-center text-neutral-600">
                 Authorized Signatory

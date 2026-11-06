@@ -11,6 +11,8 @@ import { createCustomer } from "@/lib/services/customers";
 export default function NewCustomerPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [sameAsShopName, setSameAsShopName] = useState(false);
+  const [sameAsPrimaryPhone, setSameAsPrimaryPhone] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -109,7 +111,14 @@ export default function NewCustomerPage() {
               <input
                 type="text"
                 value={form.shop_name}
-                onChange={(e) => setForm({ ...form, shop_name: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setForm((prev) => ({
+                    ...prev,
+                    shop_name: val,
+                    ...(sameAsShopName ? { name: val } : {}),
+                  }));
+                }}
                 placeholder="e.g. Shreeji Provision Store"
                 required
                 className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
@@ -117,9 +126,26 @@ export default function NewCustomerPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-light text-neutral-600 mb-1.5">
-                Account / Billing Name *
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-light text-neutral-600">
+                  Account / Billing Name *
+                </label>
+                <label className="inline-flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sameAsShopName}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setSameAsShopName(checked);
+                      if (checked) {
+                        setForm((prev) => ({ ...prev, name: prev.shop_name }));
+                      }
+                    }}
+                    className="w-3.5 h-3.5 rounded text-neutral-900 focus:ring-[#E0FE52] accent-neutral-900 cursor-pointer"
+                  />
+                  <span className="text-[11px] font-light text-neutral-600">Same as shop name</span>
+                </label>
+              </div>
               <input
                 type="text"
                 value={form.name}
@@ -176,7 +202,14 @@ export default function NewCustomerPage() {
               <input
                 type="tel"
                 value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setForm((prev) => ({
+                    ...prev,
+                    phone: val,
+                    ...(sameAsPrimaryPhone ? { whatsapp: val } : {}),
+                  }));
+                }}
                 placeholder="+91 98250 11223"
                 required
                 className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
@@ -184,9 +217,26 @@ export default function NewCustomerPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-light text-neutral-600 mb-1.5">
-                WhatsApp Number
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-light text-neutral-600">
+                  WhatsApp Number
+                </label>
+                <label className="inline-flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sameAsPrimaryPhone}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setSameAsPrimaryPhone(checked);
+                      if (checked) {
+                        setForm((prev) => ({ ...prev, whatsapp: prev.phone }));
+                      }
+                    }}
+                    className="w-3.5 h-3.5 rounded text-neutral-900 focus:ring-[#E0FE52] accent-neutral-900 cursor-pointer"
+                  />
+                  <span className="text-[11px] font-light text-neutral-600">Same as primary</span>
+                </label>
+              </div>
               <input
                 type="tel"
                 value={form.whatsapp}
@@ -284,7 +334,7 @@ export default function NewCustomerPage() {
               <div>
                 <span className="text-xs font-normal text-neutral-900 block">GPS Coordinates for Store Map</span>
                 <span className="text-[11px] font-light text-neutral-500">
-                  Latitude: {form.lat || "Not set"} • Longitude: {form.lng || "Not set"}
+                  Latitude: {form.lat || "23.0225 (Ahmedabad default)"} • Longitude: {form.lng || "72.5714 (Ahmedabad default)"}
                 </span>
               </div>
               <button
@@ -295,6 +345,19 @@ export default function NewCustomerPage() {
                 <MapPin className="w-3.5 h-3.5 text-[#E0FE52]" />
                 <span>Capture GPS</span>
               </button>
+            </div>
+
+            {/* Google Maps Pin Location Preview */}
+            <div className="rounded-2xl overflow-hidden border border-white/70 h-48 bg-neutral-100 relative">
+              <iframe
+                title="Google Maps Location Preview"
+                src={`https://www.google.com/maps?q=${form.lat || 23.0225},${form.lng || 72.5714}&z=14&output=embed`}
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
             </div>
           </div>
 
