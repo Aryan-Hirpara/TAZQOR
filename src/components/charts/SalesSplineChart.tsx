@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { formatINR } from "@/lib/formatting/currency";
 import { ChevronsLeft, ChevronsRight, Plus } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -12,8 +12,8 @@ interface SalesSplineChartProps {
 }
 
 export function SalesSplineChart({
-  totalSales = 385990.3,
-  comparisonSales = 311056.0,
+  totalSales = 0,
+  comparisonSales = 0,
 }: SalesSplineChartProps) {
   const months = [
     "jan",
@@ -29,30 +29,32 @@ export function SalesSplineChart({
     "nov",
     "dec",
   ];
-  const [activeMonthIdx, setActiveMonthIdx] = useState(6); // July default matching reference
+  const currentMonthIdx = typeof window !== "undefined" ? new Date().getMonth() : 10;
+  const [activeMonthIdx, setActiveMonthIdx] = useState(currentMonthIdx);
 
-  // 12 data points plotted across a 1000 x 260 viewBox
-  const points = [
-    { month: "jan", x: 40, yCur: 180, yPrev: 200, cur: 184000, prev: 160000 },
-    { month: "feb", x: 120, yCur: 160, yPrev: 185, cur: 210000, prev: 175000 },
-    { month: "mar", x: 200, yCur: 175, yPrev: 170, cur: 195000, prev: 190000 },
-    { month: "apr", x: 290, yCur: 130, yPrev: 155, cur: 260000, prev: 215000 },
-    { month: "may", x: 380, yCur: 140, yPrev: 140, cur: 245000, prev: 245000 },
-    { month: "jun", x: 480, yCur: 90, yPrev: 125, cur: 320000, prev: 270000 },
-    {
-      month: "jul",
-      x: 570,
-      yCur: 45,
-      yPrev: 100,
-      cur: 385990.3,
-      prev: 311056.0,
-    },
-    { month: "aug", x: 670, yCur: 60, yPrev: 85, cur: 360000, prev: 330000 },
-    { month: "sep", x: 760, yCur: 80, yPrev: 110, cur: 335000, prev: 290000 },
-    { month: "oct", x: 840, yCur: 55, yPrev: 95, cur: 370000, prev: 315000 },
-    { month: "nov", x: 910, yCur: 70, yPrev: 80, cur: 350000, prev: 335000 },
-    { month: "dec", x: 960, yCur: 50, yPrev: 75, cur: 380000, prev: 345000 },
-  ];
+  // 12 data points plotted dynamically across a 1000 x 260 viewBox
+  const points = useMemo(() => {
+    const xCoords = [40, 120, 200, 290, 380, 480, 570, 670, 760, 840, 910, 960];
+    const maxVal = Math.max(1000, totalSales * 1.3, comparisonSales * 1.3);
+
+    return months.map((m, idx) => {
+      const isCurrentMonth = idx === currentMonthIdx;
+      const curVal = isCurrentMonth ? totalSales : (idx < currentMonthIdx ? Math.round(totalSales * 0.8) : 0);
+      const prevVal = comparisonSales > 0 ? Math.round(comparisonSales / 12) : 0;
+
+      const yCur = curVal > 0 ? Math.max(35, Math.min(220, 220 - (curVal / maxVal) * 170)) : 210;
+      const yPrev = prevVal > 0 ? Math.max(45, Math.min(220, 220 - (prevVal / maxVal) * 160)) : 215;
+
+      return {
+        month: m,
+        x: xCoords[idx],
+        yCur,
+        yPrev,
+        cur: curVal,
+        prev: prevVal,
+      };
+    });
+  }, [totalSales, comparisonSales, currentMonthIdx]);
 
   // Smooth cubic bezier SVG curve calculation
   const createSmoothPath = (pts: { x: number; y: number }[]) => {

@@ -119,13 +119,13 @@ export default function InventoryPage() {
       // 2. Fetch live stock movements
       const { data: mData, error: mErr } = await supabase
         .from("stock_movements")
-        .select("id, created_at, movement_type, quantity, notes, reference_number, batches(batch_number, product_variants(name, products(name)))")
+        .select("id, created_at, movement_type, quantity, reason, notes, product_variants(name, sku, products(name)), batches(batch_number)")
         .order("created_at", { ascending: false });
 
       if (!mErr && mData) {
         const mappedMovs: StockMovement[] = mData.map((m: any) => {
           const b = m.batches;
-          const pv = b?.product_variants;
+          const pv = m.product_variants;
           const prodDesc = pv?.products?.name ? `${pv.products.name} (${pv.name})` : "General Product";
           return {
             id: m.id,
@@ -134,8 +134,8 @@ export default function InventoryPage() {
             type: m.movement_type || "purchase_in",
             quantity: Number(m.quantity) || 0,
             batch_number: b?.batch_number || "BATCH",
-            reason: m.notes || "Recorded movement",
-            ref_doc: m.reference_number || "REF",
+            reason: m.reason || m.notes || "Recorded movement",
+            ref_doc: b?.batch_number ? `Batch ${b.batch_number}` : "GRN",
           };
         });
         setMovements(mappedMovs);
@@ -215,10 +215,11 @@ export default function InventoryPage() {
         await supabase.from("stock_movements").insert({
           business_id: "00000000-0000-0000-0000-000000000001",
           batch_id: insertedBatch.id,
+          product_variant_id: variantId,
           movement_type: "purchase_in",
           quantity: Number(receiveForm.quantity),
-          notes: "Supplier receipt: " + receiveForm.supplier,
-          reference_number: "GRN-" + Math.floor(1000 + Math.random() * 9000),
+          reason: "Supplier receipt: " + receiveForm.supplier,
+          notes: "GRN-" + Math.floor(1000 + Math.random() * 9000),
         });
       }
 
@@ -253,8 +254,8 @@ export default function InventoryPage() {
         batch_id: targetBatch.id,
         movement_type: adjustForm.type,
         quantity: qty,
-        notes: adjustForm.reason || "Manual Stock Adjustment",
-        reference_number: "ADJ-" + Math.floor(100 + Math.random() * 900),
+        reason: adjustForm.reason || "Manual Stock Adjustment",
+        notes: "ADJ-" + Math.floor(100 + Math.random() * 900),
       });
 
       await loadData();

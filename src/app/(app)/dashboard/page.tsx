@@ -139,14 +139,14 @@ export default function DashboardPage() {
         // 5. Fetch recent stock movement
         const { data: movsData } = await supabase
           .from("stock_movements")
-          .select("id, movement_type, quantity, notes, reference_number, batches(batch_number, cost_per_unit, product_variants(name, products(name)))")
+          .select("id, movement_type, quantity, reason, notes, product_variants(name, sku, products(name)), batches(batch_number, cost_per_unit)")
           .order("created_at", { ascending: false })
           .limit(1);
 
         if (movsData && movsData.length > 0) {
-          const m = movsData[0];
-          const b = m.batches as any;
-          const pv = b?.product_variants;
+          const m = movsData[0] as any;
+          const b = m.batches;
+          const pv = m.product_variants;
           const prodTitle = pv?.products?.name ? `${pv.products.name} (${pv.name})` : "Finished Goods";
           const cost = Number(b?.cost_per_unit) || 280;
           const qty = Number(m.quantity) || 1;
@@ -154,11 +154,11 @@ export default function DashboardPage() {
             id: m.id,
             batch_number: b?.batch_number || "BATCH",
             product: prodTitle,
-            type: m.movement_type === "purchase_in" ? "Received" : "Dispatched",
+            type: m.movement_type === "opening_stock" || m.movement_type === "purchase_in" ? "In Stock" : "Dispatched",
             quantity: qty,
             valuation: qty * cost,
-            notes: m.notes || "Stock movement",
-            ref_doc: m.reference_number || "GRN-01",
+            notes: m.reason || m.notes || "Stock movement",
+            ref_doc: b?.batch_number ? `Batch ${b.batch_number}` : "GRN-01",
           });
         }
 
@@ -409,7 +409,11 @@ export default function DashboardPage() {
         <div className="bento-gross-profit min-w-0 min-h-0 relative">
           <GrossProfitCard
             grossProfit={metrics.grossProfit}
-            grossMarginPct={53.5}
+            grossMarginPct={
+              metrics.monthlySales > 0
+                ? Number(((metrics.grossProfit / metrics.monthlySales) * 100).toFixed(1))
+                : 0
+            }
           />
           {/* Overlapping Round Arrow Button */}
           <Link
@@ -427,7 +431,11 @@ export default function DashboardPage() {
         <div className="bento-net-profit min-w-0 min-h-0">
           <NetProfitCard
             netProfit={metrics.netProfit}
-            netMarginPct={43.1}
+            netMarginPct={
+              metrics.monthlySales > 0
+                ? Number(((metrics.netProfit / metrics.monthlySales) * 100).toFixed(1))
+                : 0
+            }
           />
         </div>
       </div>
