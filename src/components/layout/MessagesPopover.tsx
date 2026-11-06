@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
 import {
   Mail,
   Send,
@@ -9,67 +8,31 @@ import {
   X,
   CheckCheck,
   Plus,
-  MessageSquare,
+  RefreshCw,
+  ExternalLink,
   ChevronRight,
-  Phone,
+  Paperclip,
+  Check,
+  AlertCircle,
+  KeyRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-export interface MessageItem {
+export interface MailMessage {
   id: string;
-  sender: string;
-  role: string;
-  category: "customer" | "team";
-  content: string;
-  time: string;
+  uid: number;
+  subject: string;
+  fromName: string;
+  fromEmail: string;
+  toEmail: string;
+  date: string;
+  snippet: string;
+  htmlBody: string;
+  textBody: string;
   unread: boolean;
-  phone?: string;
-  link?: string;
+  hasAttachments: boolean;
 }
-
-const INITIAL_MESSAGES: MessageItem[] = [
-  {
-    id: "msg-1",
-    sender: "Haresh Patel",
-    role: "Shreeji Supermarket",
-    category: "customer",
-    content: "Please send the updated wholesale price list for 5 L Dish Wash refills. We need delivery by Saturday.",
-    time: "10m ago",
-    unread: true,
-    phone: "+91 98250 11223",
-  },
-  {
-    id: "msg-2",
-    sender: "Kishan Shah",
-    role: "Field Sales Rep",
-    category: "team",
-    content: "Store visit finished at Reliance Retail Vastrapur. Placed draft order for 35 cases of Citrus Cleaner.",
-    time: "45m ago",
-    unread: true,
-    link: "/orders",
-  },
-  {
-    id: "msg-3",
-    sender: "Hemant Mehta",
-    role: "Accounts & Tax",
-    category: "team",
-    content: "January GSTR-1 reconciled. All 42 B2B invoices matched against GST portal.",
-    time: "2h ago",
-    unread: false,
-    link: "/invoices",
-  },
-  {
-    id: "msg-4",
-    sender: "Central Warehouse",
-    role: "Logistics Team",
-    category: "team",
-    content: "Batch B-FLR-2026-01 packaging complete. Ready for outbound transporter pickup.",
-    time: "Yesterday",
-    unread: false,
-    link: "/inventory",
-  },
-];
 
 interface MessagesPopoverProps {
   isOpen: boolean;
@@ -84,12 +47,51 @@ export function MessagesPopover({
   onUnreadCountChange,
   anchorPosition = "sidebar",
 }: MessagesPopoverProps) {
-  const router = useRouter();
-  const [messages, setMessages] = useState<MessageItem[]>(INITIAL_MESSAGES);
-  const [activeTab, setActiveTab] = useState<"all" | "customer" | "team">("all");
-  const [selectedMessage, setSelectedMessage] = useState<MessageItem | null>(null);
+  const [messages, setMessages] = useState<MailMessage[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isLive, setIsLive] = useState(false);
+  const [requiresAppPassword, setRequiresAppPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState<"all" | "unread" | "inquiries">("all");
+  const [selectedEmail, setSelectedEmail] = useState<MailMessage | null>(null);
+
+  // Quick reply & compose states
   const [replyText, setReplyText] = useState("");
-  const [isReplying, setIsReplying] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [isComposing, setIsComposing] = useState(false);
+  const [composeTo, setComposeTo] = useState("");
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
+
+  // App Password setup modal / banner state
+  const [showConfig, setShowConfig] = useState(false);
+  const [appPasswordInput, setAppPasswordInput] = useState("");
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  // Fetch inbox from API
+  const fetchInbox = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/mail/inbox");
+      const data = await res.json();
+      if (data && Array.isArray(data.messages)) {
+        setMessages(data.messages);
+        setIsLive(Boolean(data.isLive));
+        setRequiresAppPassword(Boolean(data.requiresAppPassword));
+        const unread = data.messages.filter((m: MailMessage) => m.unread).length;
+        onUnreadCountChange?.(unread);
+      }
+    } catch (err) {
+      console.warn("Could not fetch mail inbox:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchInbox();
+    }
+  }, [isOpen]);
 
   const unreadCount = messages.filter((m) => m.unread).length;
 
@@ -97,99 +99,217 @@ export function MessagesPopover({
     const updated = messages.map((m) => ({ ...m, unread: false }));
     setMessages(updated);
     onUnreadCountChange?.(0);
-    toast.success("All messages marked as read");
+    toast.success("All emails marked as read");
   };
 
-  const handleSelectMessage = (item: MessageItem) => {
-    // Mark as read
+  const handleSelectEmail = (msg: MailMessage) => {
     const updated = messages.map((m) =>
-      m.id === item.id ? { ...m, unread: false } : m
+      m.id === msg.id ? { ...m, unread: false } : m
     );
     setMessages(updated);
-    const newUnread = updated.filter((m) => m.unread).length;
-    onUnreadCountChange?.(newUnread);
+    onUnreadCountChange?.(updated.filter((m) => m.unread).length);
 
-    setSelectedMessage(item);
+    setSelectedEmail(msg);
     setReplyText("");
+    setIsComposing(false);
   };
 
-  const handleSendReply = (e: React.FormEvent) => {
+  // Send Reply
+  const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!replyText.trim() || !selectedMessage) return;
+    if (!replyText.trim() || !selectedEmail) return;
 
-    setIsReplying(true);
-    setTimeout(() => {
-      toast.success(`Reply sent to ${selectedMessage.sender}!`);
-      setIsReplying(false);
+    setIsSending(true);
+    try {
+      const res = await fetch("/api/mail/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: selectedEmail.fromEmail,
+          subject: selectedEmail.subject.startsWith("Re:")
+            ? selectedEmail.subject
+            : `Re: ${selectedEmail.subject}`,
+          text: replyText.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send email");
+
+      toast.success(`Reply sent to ${selectedEmail.fromEmail}!`);
       setReplyText("");
-      setSelectedMessage(null);
-    }, 500);
+      setSelectedEmail(null);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to send email");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // Send New Composed Email
+  const handleSendComposed = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!composeTo.trim() || !composeSubject.trim() || !composeBody.trim()) {
+      toast.error("Please fill recipient, subject, and message body.");
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      const res = await fetch("/api/mail/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: composeTo.trim(),
+          subject: composeSubject.trim(),
+          text: composeBody.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send email");
+
+      toast.success(`Email sent to ${composeTo.trim()}!`);
+      setComposeTo("");
+      setComposeSubject("");
+      setComposeBody("");
+      setIsComposing(false);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to send email");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // Connect Google App Password
+  const handleConnectAppPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!appPasswordInput.trim()) return;
+
+    setIsConnecting(true);
+    try {
+      const res = await fetch("/api/mail/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: "tazqor@gmail.com",
+          appPassword: appPasswordInput.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to connect to Gmail");
+
+      toast.success("Connected to live Gmail inbox tazqor@gmail.com!");
+      setShowConfig(false);
+      setAppPasswordInput("");
+      fetchInbox();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to authenticate with Gmail");
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   if (!isOpen) return null;
 
   const filtered = messages.filter((item) => {
-    if (activeTab === "customer") return item.category === "customer";
-    if (activeTab === "team") return item.category === "team";
+    if (activeTab === "unread") return item.unread;
+    if (activeTab === "inquiries") {
+      return (
+        item.subject.toLowerCase().includes("order") ||
+        item.subject.toLowerCase().includes("quotation") ||
+        item.snippet.toLowerCase().includes("wholesale")
+      );
+    }
     return true;
   });
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase();
+  const formatDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      const now = new Date();
+      const diffMs = now.getTime() - d.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 60) return `${Math.max(1, diffMins)}m ago`;
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+      return d.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+    } catch {
+      return dateStr;
+    }
   };
 
   const containerClasses =
     anchorPosition === "sidebar"
-      ? "fixed md:absolute left-3 md:left-16 bottom-20 md:bottom-20 z-50 w-[calc(100vw-24px)] max-w-[390px]"
-      : "fixed md:absolute right-3 top-16 z-50 w-[calc(100vw-24px)] max-w-[390px]";
+      ? "fixed md:absolute left-3 md:left-16 bottom-20 md:bottom-16 z-50 w-[calc(100vw-24px)] max-w-[420px]"
+      : "fixed md:absolute right-3 top-16 z-50 w-[calc(100vw-24px)] max-w-[420px]";
 
   return (
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[2px] transition-opacity"
+        className="fixed inset-0 z-40 bg-black/15 backdrop-blur-[2px] transition-opacity"
         onClick={onClose}
       />
 
       {/* Popover Sheet */}
       <div
         className={cn(
-          "bg-white/95 dark:bg-neutral-900/95 backdrop-blur-2xl rounded-[28px] border border-white/80 dark:border-neutral-800 shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 select-none",
+          "bg-white/95 dark:bg-neutral-900/95 backdrop-blur-2xl rounded-[28px] border border-white/80 dark:border-neutral-800 shadow-[0_20px_50px_rgba(0,0,0,0.18)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 select-none z-50",
           containerClasses
         )}
-        style={{ maxHeight: "calc(100dvh - 120px)" }}
+        style={{ height: "560px", maxHeight: "calc(100dvh - 100px)" }}
       >
         {/* Header */}
         <div className="p-4 pb-3 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-neutral-900 text-[#D7FF00] flex items-center justify-center">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-black text-[#D7FF00] flex items-center justify-center shrink-0">
               <Mail className="w-4 h-4" />
             </div>
-            <div>
-              <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 leading-none">
-                Store Messages
-              </h3>
-              <span className="text-[10px] text-neutral-500 font-light">
-                {unreadCount > 0 ? `${unreadCount} unread communications` : "All messages read"}
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate leading-none">
+                  tazqor@gmail.com
+                </h3>
+                {isLive ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
+                    Live Sync
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowConfig(!showConfig)}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400 hover:underline cursor-pointer"
+                  >
+                    <KeyRound className="w-2.5 h-2.5" />
+                    <span>Setup Live Sync</span>
+                  </button>
+                )}
+              </div>
+              <span className="text-[10px] text-neutral-500 font-light block truncate mt-0.5">
+                {unreadCount > 0 ? `${unreadCount} unread emails` : "All emails read"}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
-            {unreadCount > 0 && !selectedMessage && (
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={fetchInbox}
+              disabled={loading}
+              className="w-7 h-7 rounded-full text-neutral-500 hover:text-black dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center transition-colors disabled:opacity-50"
+              title="Refresh inbox"
+            >
+              <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin text-black dark:text-[#D7FF00]")} />
+            </button>
+
+            {!isComposing && !selectedEmail && (
               <button
                 type="button"
-                onClick={handleMarkAllAsRead}
-                className="px-2.5 py-1 rounded-full text-[11px] font-medium text-neutral-600 hover:text-black dark:text-neutral-300 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex items-center gap-1"
-                title="Mark all as read"
+                onClick={() => setIsComposing(true)}
+                className="px-2.5 py-1 rounded-full bg-black text-[#D7FF00] text-[11px] font-medium flex items-center gap-1 hover:bg-black/90 active:scale-95 transition-all cursor-pointer"
+                title="Compose new email"
               >
-                <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Mark read</span>
+                <Plus className="w-3 h-3" />
+                <span>Compose</span>
               </button>
             )}
 
@@ -204,66 +324,167 @@ export function MessagesPopover({
           </div>
         </div>
 
-        {/* View Details / Reply Panel */}
-        {selectedMessage ? (
-          <div className="p-4 flex flex-col space-y-3">
+        {/* Live App Password Connect Drawer Banner */}
+        {showConfig && (
+          <div className="p-3 bg-amber-50/90 dark:bg-amber-950/40 border-b border-amber-200/60 dark:border-amber-800/40 text-xs animate-in slide-in-from-top-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="space-y-1">
+                <p className="font-semibold text-amber-900 dark:text-amber-200">
+                  Connect Live Gmail (tazqor@gmail.com)
+                </p>
+                <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80 leading-relaxed font-light">
+                  Enter your Google 16-character App Password.
+                </p>
+              </div>
+              <a
+                href="https://myaccount.google.com/apppasswords"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] text-amber-900 dark:text-amber-200 underline font-medium inline-flex items-center gap-0.5 shrink-0"
+              >
+                <span>Get Code</span>
+                <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+            </div>
+
+            <form onSubmit={handleConnectAppPassword} className="mt-2.5 flex items-center gap-2">
+              <input
+                type="password"
+                value={appPasswordInput}
+                onChange={(e) => setAppPasswordInput(e.target.value)}
+                placeholder="e.g. abcd efgh ijkl mnop"
+                className="flex-1 h-8 px-2.5 rounded-xl bg-white dark:bg-neutral-800 border border-amber-300 dark:border-amber-700 text-xs text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-black"
+              />
+              <button
+                type="submit"
+                disabled={!appPasswordInput.trim() || isConnecting}
+                className="h-8 px-3 rounded-xl bg-black text-[#D7FF00] font-semibold text-xs disabled:opacity-50 hover:bg-black/90 active:scale-95 transition-all shrink-0 cursor-pointer"
+              >
+                {isConnecting ? "Connecting..." : "Connect"}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* ==================== VIEW 1: COMPOSE NEW EMAIL ==================== */}
+        {isComposing ? (
+          <div className="flex-1 p-4 flex flex-col space-y-3 overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-neutral-100 dark:border-neutral-800">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-black text-[#D7FF00] font-semibold text-xs flex items-center justify-center">
-                  {getInitials(selectedMessage.sender)}
-                </div>
-                <div>
-                  <h4 className="text-xs font-semibold text-neutral-900 dark:text-neutral-100">
-                    {selectedMessage.sender}
-                  </h4>
-                  <p className="text-[10px] text-neutral-500 font-light">
-                    {selectedMessage.role}
-                  </p>
+              <h4 className="text-xs font-semibold text-neutral-900 dark:text-neutral-100">
+                New Email from tazqor@gmail.com
+              </h4>
+              <button
+                type="button"
+                onClick={() => setIsComposing(false)}
+                className="text-xs text-neutral-500 hover:text-black dark:hover:text-white underline cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <form onSubmit={handleSendComposed} className="flex-1 flex flex-col space-y-2.5">
+              <div>
+                <label className="text-[10px] font-semibold text-neutral-500 uppercase block mb-1">
+                  To (Recipient Email)
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={composeTo}
+                  onChange={(e) => setComposeTo(e.target.value)}
+                  placeholder="customer@domain.com"
+                  className="w-full h-9 px-3 rounded-xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-xs text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-semibold text-neutral-500 uppercase block mb-1">
+                  Subject
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={composeSubject}
+                  onChange={(e) => setComposeSubject(e.target.value)}
+                  placeholder="Quotation / Invoice / Inquiry"
+                  className="w-full h-9 px-3 rounded-xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-xs text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+
+              <div className="flex-1 flex flex-col">
+                <label className="text-[10px] font-semibold text-neutral-500 uppercase block mb-1">
+                  Message Body
+                </label>
+                <textarea
+                  required
+                  rows={6}
+                  value={composeBody}
+                  onChange={(e) => setComposeBody(e.target.value)}
+                  placeholder="Type your message here..."
+                  className="flex-1 w-full p-3 rounded-2xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-xs text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-black resize-none"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isSending}
+                  className="h-9 px-4 rounded-full bg-black text-[#D7FF00] font-semibold text-xs flex items-center gap-1.5 shadow-sm hover:bg-black/90 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{isSending ? "Sending..." : "Send Email"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : selectedEmail ? (
+          /* ==================== VIEW 2: EMAIL READING & REPLY ==================== */
+          <div className="flex-1 p-4 flex flex-col space-y-3 overflow-y-auto">
+            {/* Subject and Back to Inbox */}
+            <div className="flex items-start justify-between gap-2 pb-2 border-b border-neutral-100 dark:border-neutral-800">
+              <div className="min-w-0">
+                <h4 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 leading-snug">
+                  {selectedEmail.subject}
+                </h4>
+                <div className="flex items-center gap-1.5 mt-1 text-[11px] text-neutral-500">
+                  <span className="font-semibold text-neutral-800 dark:text-neutral-200">
+                    {selectedEmail.fromName}
+                  </span>
+                  <span>&lt;{selectedEmail.fromEmail}&gt;</span>
                 </div>
               </div>
 
               <button
                 type="button"
-                onClick={() => setSelectedMessage(null)}
-                className="text-[11px] text-neutral-500 hover:text-black dark:hover:text-white underline"
+                onClick={() => setSelectedEmail(null)}
+                className="text-xs text-neutral-500 hover:text-black dark:hover:text-white underline shrink-0 cursor-pointer"
               >
-                Back to list
+                Back to Inbox
               </button>
             </div>
 
-            <div className="bg-neutral-50 dark:bg-neutral-800/50 rounded-2xl p-3 border border-neutral-100 dark:border-neutral-700/50 text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed font-light">
-              {selectedMessage.content}
+            {/* Email Body Content */}
+            <div className="flex-1 bg-neutral-50/70 dark:bg-neutral-800/40 rounded-2xl p-3.5 border border-neutral-100 dark:border-neutral-700/50 text-xs text-neutral-800 dark:text-neutral-200 leading-relaxed font-light overflow-y-auto">
+              <div
+                dangerouslySetInnerHTML={{ __html: selectedEmail.htmlBody || selectedEmail.textBody.replace(/\n/g, "<br/>") }}
+              />
             </div>
 
-            {selectedMessage.link && (
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  router.push(selectedMessage.link!);
-                }}
-                className="w-full py-1.5 px-3 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-800 dark:text-neutral-200 hover:bg-black hover:text-white transition-colors flex items-center justify-center gap-1.5"
-              >
-                <span>Go to associated page</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            )}
-
-            {/* Quick Reply Form */}
-            <form onSubmit={handleSendReply} className="pt-2 space-y-2">
+            {/* Quick Reply Box */}
+            <form onSubmit={handleSendReply} className="pt-1 space-y-2">
               <div className="relative">
                 <input
                   type="text"
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
-                  placeholder={`Reply to ${selectedMessage.sender}...`}
-                  className="w-full h-10 pl-3 pr-10 text-xs rounded-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-[#D7FF00]"
+                  placeholder={`Reply to ${selectedEmail.fromEmail}...`}
+                  className="w-full h-10 pl-3 pr-10 text-xs rounded-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-black"
                 />
                 <button
                   type="submit"
-                  disabled={!replyText.trim() || isReplying}
+                  disabled={!replyText.trim() || isSending}
                   className="absolute right-1.5 top-1.5 w-7 h-7 rounded-full bg-black text-[#D7FF00] disabled:opacity-40 flex items-center justify-center cursor-pointer transition-opacity"
-                  title="Send message"
+                  title="Send reply"
                 >
                   <Send className="w-3 h-3" />
                 </button>
@@ -271,87 +492,127 @@ export function MessagesPopover({
             </form>
           </div>
         ) : (
+          /* ==================== VIEW 3: INBOX EMAIL LIST ==================== */
           <>
             {/* Filter Tabs */}
-            <div className="px-4 py-2 border-b border-neutral-100 dark:border-neutral-800 flex items-center gap-1.5 bg-neutral-50/50 dark:bg-neutral-950/30">
-              <button
-                type="button"
-                onClick={() => setActiveTab("all")}
-                className={cn(
-                  "px-3 py-1 rounded-full text-xs transition-all",
-                  activeTab === "all"
-                    ? "bg-black text-white font-medium shadow-sm"
-                    : "text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white"
-                )}
-              >
-                All ({messages.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("customer")}
-                className={cn(
-                  "px-3 py-1 rounded-full text-xs transition-all",
-                  activeTab === "customer"
-                    ? "bg-black text-white font-medium shadow-sm"
-                    : "text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white"
-                )}
-              >
-                Customers
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("team")}
-                className={cn(
-                  "px-3 py-1 rounded-full text-xs transition-all",
-                  activeTab === "team"
-                    ? "bg-black text-white font-medium shadow-sm"
-                    : "text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white"
-                )}
-              >
-                Field Team
-              </button>
-            </div>
-
-            {/* Messages List */}
-            <div className="flex-1 overflow-y-auto divide-y divide-neutral-100 dark:divide-neutral-800/80 p-2 space-y-1">
-              {filtered.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => handleSelectMessage(item)}
+            <div className="px-4 py-2 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/50 dark:bg-neutral-950/30">
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("all")}
                   className={cn(
-                    "group p-3 rounded-2xl flex items-start gap-3 cursor-pointer transition-all hover:bg-neutral-100/70 dark:hover:bg-neutral-800/50",
-                    item.unread ? "bg-lime-50/30 dark:bg-lime-950/20" : ""
+                    "px-3 py-1 rounded-full text-xs transition-all",
+                    activeTab === "all"
+                      ? "bg-black text-white font-medium shadow-sm"
+                      : "text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white"
                   )}
                 >
-                  <div className="w-8 h-8 rounded-full bg-black text-[#D7FF00] font-semibold text-xs flex items-center justify-center shrink-0">
-                    {getInitials(item.sender)}
-                  </div>
+                  Inbox ({messages.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("unread")}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs transition-all flex items-center gap-1",
+                    activeTab === "unread"
+                      ? "bg-black text-white font-medium shadow-sm"
+                      : "text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white"
+                  )}
+                >
+                  <span>Unread</span>
+                  {unreadCount > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("inquiries")}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs transition-all",
+                    activeTab === "inquiries"
+                      ? "bg-black text-white font-medium shadow-sm"
+                      : "text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white"
+                  )}
+                >
+                  Orders & Rates
+                </button>
+              </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <h4 className="text-xs font-semibold text-neutral-900 dark:text-neutral-100 truncate">
-                          {item.sender}
-                        </h4>
-                        {item.unread && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                        )}
-                      </div>
-                      <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono shrink-0">
-                        {item.time}
-                      </span>
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleMarkAllAsRead}
+                  className="text-[11px] font-medium text-neutral-500 hover:text-black dark:hover:text-white flex items-center gap-1 cursor-pointer"
+                  title="Mark all as read"
+                >
+                  <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Mark read</span>
+                </button>
+              )}
+            </div>
+
+            {/* Email Rows List */}
+            <div className="flex-1 overflow-y-auto divide-y divide-neutral-100 dark:divide-neutral-800/80 p-2 space-y-1">
+              {loading ? (
+                <div className="py-16 text-center text-xs text-neutral-400 flex flex-col items-center justify-center gap-2">
+                  <RefreshCw className="w-5 h-5 animate-spin text-neutral-600" />
+                  <span>Fetching emails from tazqor@gmail.com...</span>
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="py-16 text-center text-xs text-neutral-400">
+                  <Mail className="w-7 h-7 mx-auto mb-2 opacity-50" />
+                  <span>No emails found in this view.</span>
+                </div>
+              ) : (
+                filtered.map((msg) => (
+                  <div
+                    key={msg.id}
+                    onClick={() => handleSelectEmail(msg)}
+                    className={cn(
+                      "group p-3 rounded-2xl flex items-start gap-3 cursor-pointer transition-all hover:bg-neutral-100/70 dark:hover:bg-neutral-800/50",
+                      msg.unread ? "bg-lime-50/30 dark:bg-lime-950/20" : ""
+                    )}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-black text-[#D7FF00] font-semibold text-xs flex items-center justify-center shrink-0">
+                      {msg.fromName
+                        .split(" ")
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join("")
+                        .toUpperCase() || "M"}
                     </div>
 
-                    <p className="text-[10px] text-neutral-500 font-light truncate">
-                      {item.role}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <h4 className={cn("text-xs truncate", msg.unread ? "font-bold text-neutral-950 dark:text-white" : "font-semibold text-neutral-800 dark:text-neutral-200")}>
+                            {msg.fromName}
+                          </h4>
+                          {msg.unread && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                          )}
+                          {msg.hasAttachments && (
+                            <Paperclip className="w-3 h-3 text-neutral-400 shrink-0" />
+                          )}
+                        </div>
+                        <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono shrink-0">
+                          {formatDate(msg.date)}
+                        </span>
+                      </div>
 
-                    <p className="text-[11px] text-neutral-600 dark:text-neutral-400 line-clamp-2 mt-1 leading-snug font-light">
-                      {item.content}
-                    </p>
+                      <h5 className={cn("text-[11px] truncate mt-0.5", msg.unread ? "font-semibold text-neutral-900 dark:text-neutral-100" : "text-neutral-600 dark:text-neutral-400")}>
+                        {msg.subject}
+                      </h5>
+
+                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400 line-clamp-1 mt-0.5 leading-snug font-light">
+                        {msg.snippet}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </>
         )}
