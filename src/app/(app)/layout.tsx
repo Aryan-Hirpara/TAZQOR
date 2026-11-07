@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
+import AppLoading from "./loading";
 
 export default function AppLayout({
   children,
@@ -21,7 +22,7 @@ export default function AppLayout({
           Mobile: equal px-4 sm:px-6 padding, full width, safe bottom padding for floating bottom nav */}
       <div className="flex-1 flex flex-col min-w-0 w-full max-w-full md:pl-[15px] md:pr-6 px-4 sm:px-6 print:p-0 print:m-0 print:w-full print:max-w-none print:block">
         <main className="flex-1 w-full min-w-0 pb-[calc(110px+env(safe-area-inset-bottom,20px))] md:pb-0 print:p-0 print:m-0 print:w-full print:pb-0">
-          <Suspense fallback={<div className="p-8 text-center text-xs text-neutral-400 font-light">Loading...</div>}>
+          <Suspense fallback={<AppLoading />}>
             {children}
           </Suspense>
         </main>

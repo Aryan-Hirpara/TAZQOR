@@ -225,6 +225,16 @@ body.dark {
   scrollbar-width: none;
 }
 
+@keyframes tazqor-shimmer {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.animate-tazqor-shimmer {
+  animation: tazqor-shimmer 1.8s ease-in-out infinite;
+}
+
 /* Master Bento Grid (20 columns x 5 equal-height rows, scaled for 1440x960 canvas and 1470x800 page) */
 @media (min-width: 1024px) {
   .bento-grid {
