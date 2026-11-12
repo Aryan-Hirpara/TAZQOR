@@ -185,6 +185,13 @@ export async function fetchGmailInbox(limit = 15): Promise<{
   }
 }
 
+export interface MailAttachment {
+  filename: string;
+  content: string;
+  encoding?: "base64";
+  contentType?: string;
+}
+
 /**
  * Send an email using Gmail SMTP
  */
@@ -193,11 +200,13 @@ export async function sendGmailMessage({
   subject,
   text,
   html,
+  attachments,
 }: {
   to: string;
   subject: string;
   text: string;
   html?: string;
+  attachments?: MailAttachment[];
 }): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const config = getMailConfig();
 
@@ -223,6 +232,14 @@ export async function sendGmailMessage({
       subject,
       text,
       html: html || text.replace(/\n/g, "<br/>"),
+      attachments:
+        attachments && attachments.length > 0
+          ? attachments.map((att) => ({
+              filename: att.filename,
+              content: Buffer.from(att.content, att.encoding === "base64" ? "base64" : "utf8"),
+              contentType: att.contentType || "application/pdf",
+            }))
+          : undefined,
     });
 
     return {

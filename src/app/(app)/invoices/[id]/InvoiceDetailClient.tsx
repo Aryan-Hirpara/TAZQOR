@@ -35,6 +35,7 @@ import {
   toIndianCurrencyWords,
 } from "@/lib/invoices/bill-format";
 import { loadTransparentSignatureDataUrl } from "@/lib/invoices/signature-ink";
+import { generateInvoicePdf } from "@/lib/invoices/pdf-generator";
 
 type BillCopyMode = "digital" | "print";
 
@@ -58,6 +59,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [isSharingWhatsApp, setIsSharingWhatsApp] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isUploadingSign, setIsUploadingSign] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -336,66 +338,23 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
     }, 1500);
   };
 
-  const handleDownloadPdf = async () => {
+  const captureInvoicePdf = async (forceDigital: boolean) => {
+    if (forceDigital && copyMode !== "digital") {
+      setCopyMode("digital");
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      );
+    }
     const invoiceEl = document.getElementById("printable-invoice");
     if (!invoiceEl || !invoice) {
-      toast.error("Invoice document element not found");
-      return;
+      throw new Error("Invoice document element not found");
     }
-
-    setIsDownloadingPdf(true);
-    const toastId = toast.loading("Generating invoice PDF...");
-
-    try {
-      const html2canvas = (await import("html2canvas-pro")).default;
-      const { jsPDF } = await import("jspdf");
-
-      const canvas = await html2canvas(invoiceEl, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-        windowWidth: 1024,
-      });
-
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const margin = 10;
-      const printWidth = pageWidth - margin * 2;
-      const printHeight = (canvas.height * printWidth) / canvas.width;
-
-      pdf.addImage(imgData, "JPEG", margin, margin, printWidth, printHeight);
-
-      const safeNumber = (invoice.invoice_number || "Bill").replace(/[/\\?%*:|"<>]/g, "-");
-      const filename = `Invoice_${safeNumber}.pdf`;
-      pdf.save(filename);
-
-      toast.success(`${filename} downloaded!`, { id: toastId });
-    } catch (err) {
-      console.error("PDF generation error:", err);
-      toast.error("Could not generate PDF. Please use Print Bill > Save as PDF.", { id: toastId });
-    } finally {
-      setIsDownloadingPdf(false);
-    }
+    return generateInvoicePdf(invoiceEl, invoice.invoice_number);
   };
 
-  const handleShareWhatsApp = () => {
-    if (!invoice) return;
-    const digits = normalizeWhatsAppDigits(invoice.customer.phone);
-    if (!digits) {
-      toast.error("Customer phone/WhatsApp number is not available.");
-      return;
-    }
-
-    setCopyMode("digital");
+  const buildShareMessageLines = () => {
     const docLabel = invoice.mode === "gst" ? "Tax Invoice" : "Bill of Supply";
-    const lines = [
+    return [
       `*${invoice.business.name}* — ${docLabel} (Digital Copy)`,
       `Bill No: *${invoice.invoice_number}*`,
       `Date: ${invoice.date}`,
@@ -407,26 +366,111 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
         ? "Status: PAID IN FULL"
         : `Balance Due: ${formatINR(invoice.outstanding)}`,
     ];
+  };
 
-    window.open(
-      `https://wa.me/${digits}?text=${encodeURIComponent(lines.join("\n"))}`,
-      "_blank",
-      "noopener,noreferrer"
-    );
-    toast.success("Opened WhatsApp. Download the Digital Copy PDF to attach the bill.");
+  const handleDownloadPdf = async () => {
+    if (!invoice) return;
+
+    setIsDownloadingPdf(true);
+    const toastId = toast.loading("Generating invoice PDF...");
+
+    try {
+      const generated = await captureInvoicePdf(false);
+      generated.save();
+      toast.success(`${generated.filename} downloaded!`, { id: toastId });
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      toast.error("Could not generate PDF. Please use Print Bill > Save as PDF.", { id: toastId });
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
+  const handleShareWhatsApp = async () => {
+    if (!invoice || isSharingWhatsApp) return;
+    const digits = normalizeWhatsAppDigits(invoice.customer.phone);
+    if (!digits) {
+      toast.error("Customer phone/WhatsApp number is not available.");
+      return;
+    }
+
+    setIsSharingWhatsApp(true);
+    const toastId = toast.loading("Preparing Digital Copy PDF for WhatsApp...");
+
+    try {
+      const generated = await captureInvoicePdf(true);
+      const message = buildShareMessageLines().join("\n");
+      const isMobile =
+        typeof navigator !== "undefined" &&
+        /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      if (
+        isMobile &&
+        typeof navigator.share === "function" &&
+        typeof navigator.canShare === "function" &&
+        navigator.canShare({ files: [generated.file] })
+      ) {
+        try {
+          await navigator.share({
+            title: `Invoice ${invoice.invoice_number}`,
+            text: message,
+            files: [generated.file],
+          });
+          toast.success("Shared Digital Copy PDF!", { id: toastId });
+          return;
+        } catch (shareErr: unknown) {
+          if (shareErr instanceof Error && shareErr.name === "AbortError") {
+            toast.dismiss(toastId);
+            return;
+          }
+        }
+      }
+
+      generated.save();
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(message).catch(() => {});
+      }
+
+      const waUrl = `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+      const popup = window.open(waUrl, "_blank", "noopener,noreferrer");
+      if (!popup) {
+        toast.success(
+          `Downloaded ${generated.filename}. Click "Open WhatsApp" if your browser blocked the tab.`,
+          {
+            id: toastId,
+            action: {
+              label: "Open WhatsApp",
+              onClick: () => window.open(waUrl, "_blank", "noopener,noreferrer"),
+            },
+          }
+        );
+        return;
+      }
+
+      toast.success(
+        `Downloaded ${generated.filename} & opened WhatsApp — attach the PDF and press Send!`,
+        { id: toastId }
+      );
+    } catch (err) {
+      console.error("WhatsApp share error:", err);
+      toast.error("Could not prepare PDF for WhatsApp.", { id: toastId });
+    } finally {
+      setIsSharingWhatsApp(false);
+    }
   };
 
   const handleEmailDigitalCopy = async () => {
-    if (!invoice) return;
+    if (!invoice || isSendingEmail) return;
     const recipient = invoice.customer.email;
     if (!recipient) {
       toast.error("Customer email address is not saved yet.");
       return;
     }
 
-    setCopyMode("digital");
     setIsSendingEmail(true);
+    const toastId = toast.loading("Generating signed PDF & sending email...");
     try {
+      const generated = await captureInvoicePdf(true);
       const docLabel = invoice.mode === "gst" ? "Tax Invoice" : "Bill of Supply";
       const res = await fetch("/api/mail/send", {
         method: "POST",
@@ -437,7 +481,8 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
           text: [
             `Dear ${invoice.customer.name},`,
             "",
-            `${docLabel} ${invoice.invoice_number} (Digital Copy) from ${invoice.business.name}:`,
+            `Please find attached ${docLabel} ${invoice.invoice_number} (Digital Copy) from ${invoice.business.name}.`,
+            "",
             `Date: ${invoice.date}`,
             `Total Amount: ${formatINR(invoice.grand_total)}`,
             invoice.outstanding <= 0 ? "Status: Paid in Full" : `Balance Due: ${formatINR(invoice.outstanding)}`,
@@ -445,16 +490,24 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
             "Terms & Conditions:",
             ...termsList.map((t, i) => `${i + 1}. ${t}`),
           ].join("\n"),
+          attachments: [
+            {
+              filename: generated.filename,
+              content: generated.base64,
+              encoding: "base64",
+              contentType: "application/pdf",
+            },
+          ],
         }),
       });
       const payload = await res.json().catch(() => null);
       if (!res.ok || !payload?.success) {
-        toast.error(payload?.error || "Failed to send bill email");
+        toast.error(payload?.error || "Failed to send bill email", { id: toastId });
         return;
       }
-      toast.success(payload.message || `Sent to ${recipient}.`);
+      toast.success(payload.message || `PDF sent to ${recipient}!`, { id: toastId });
     } catch {
-      toast.error("Error sending bill email.");
+      toast.error("Error generating or sending bill email.", { id: toastId });
     } finally {
       setIsSendingEmail(false);
     }
@@ -629,10 +682,15 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
               <button
                 type="button"
                 onClick={handleShareWhatsApp}
-                className="flex items-center gap-1.5 px-3.5 h-10 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200 hover:bg-emerald-100 transition-all cursor-pointer"
+                disabled={isSharingWhatsApp}
+                className="flex items-center gap-1.5 px-3.5 h-10 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200 hover:bg-emerald-100 transition-all disabled:opacity-50 cursor-pointer"
               >
-                <MessageCircle className="w-3.5 h-3.5" />
-                <span>WhatsApp</span>
+                {isSharingWhatsApp ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <MessageCircle className="w-3.5 h-3.5" />
+                )}
+                <span>{isSharingWhatsApp ? "Preparing PDF..." : "WhatsApp"}</span>
               </button>
 
               {invoice.customer.email && (
@@ -642,8 +700,12 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
                   disabled={isSendingEmail}
                   className="flex items-center gap-1.5 px-3.5 h-10 rounded-full bg-white/80 text-neutral-800 text-xs font-semibold border border-neutral-300/80 hover:bg-white transition-all disabled:opacity-50 cursor-pointer"
                 >
-                  <Mail className="w-3.5 h-3.5" />
-                  <span>Email Bill</span>
+                  {isSendingEmail ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Mail className="w-3.5 h-3.5" />
+                  )}
+                  <span>{isSendingEmail ? "Sending PDF..." : "Email PDF"}</span>
                 </button>
               )}
 
