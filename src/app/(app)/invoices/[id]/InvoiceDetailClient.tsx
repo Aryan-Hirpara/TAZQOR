@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -12,6 +12,12 @@ import {
   CheckCircle2,
   Trash2,
   AlertCircle,
+  Upload,
+  RefreshCw,
+  FileCheck2,
+  PenLine,
+  MessageCircle,
+  Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
@@ -19,36 +25,101 @@ import { formatINR } from "@/lib/formatting/currency";
 import { TazqorLogo } from "@/components/brand/TazqorLogo";
 import { createClient } from "@/lib/supabase/client";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import {
+  DEFAULT_INVOICE_TERMS,
+  formatBillCustomerBlock,
+  formatBusinessAddressLines,
+  formatPlaceOfSupplyWithCode,
+  normalizeWhatsAppDigits,
+  toIndianCurrencyWords,
+} from "@/lib/invoices/bill-format";
+import { loadTransparentSignatureDataUrl } from "@/lib/invoices/signature-ink";
+
+type BillCopyMode = "digital" | "print";
+
+const TERMS_STORAGE_KEY = "tazqor_invoice_terms_v1";
+
+interface SignatureMeta {
+  available: boolean;
+  filename: string | null;
+  source: "root" | "brand" | null;
+  url: string | null;
+}
 
 export default function InvoiceDetailClient({ id }: { id: string }) {
   const router = useRouter();
+  const signatureInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [copyMode, setCopyMode] = useState<BillCopyMode>("digital");
   const [confirmKind, setConfirmKind] = useState<"cancel" | "delete" | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [finalizing, setFinalizing] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isUploadingSign, setIsUploadingSign] = useState(false);
   const [loading, setLoading] = useState(true);
   const [invoice, setInvoice] = useState<any>(null);
 
-  const [bankDetails, setBankDetails] = useState({
-    accountName: "",
-    bankName: "",
-    accountNo: "",
-    ifsc: "",
-    upiId: "",
+  const [signatureMeta, setSignatureMeta] = useState<SignatureMeta>({
+    available: false,
+    filename: null,
+    source: null,
+    url: null,
   });
-  const [editingBank, setEditingBank] = useState(false);
+  const [transparentSignUrl, setTransparentSignUrl] = useState<string | null>(null);
+
+  const [termsList, setTermsList] = useState<string[]>([...DEFAULT_INVOICE_TERMS]);
+  const [editingTerms, setEditingTerms] = useState(false);
+  const [termsDraftText, setTermsDraftText] = useState(DEFAULT_INVOICE_TERMS.join("\n"));
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("tazqor_bank_details");
-      if (saved) {
-        try {
-          setBankDetails(JSON.parse(saved));
-        } catch {}
+      try {
+        const saved = localStorage.getItem(TERMS_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setTermsList(parsed);
+            setTermsDraftText(parsed.join("\n"));
+          }
+        }
+      } catch {
+        // ignore invalid stored terms
       }
     }
   }, []);
+
+  const loadSignatureMeta = useCallback(async () => {
+    try {
+      const res = await fetch("/api/business/signature?meta=1", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = (await res.json()) as SignatureMeta;
+      setSignatureMeta(data);
+    } catch {
+      // ignore signature metadata fetch failures
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSignatureMeta();
+  }, [loadSignatureMeta]);
+
+  useEffect(() => {
+    let active = true;
+    if (!signatureMeta.available || !signatureMeta.url) {
+      setTransparentSignUrl(null);
+      return;
+    }
+    loadTransparentSignatureDataUrl(signatureMeta.url).then((processed) => {
+      if (active) {
+        setTransparentSignUrl(processed || signatureMeta.url);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [signatureMeta.available, signatureMeta.url]);
 
   const loadInvoice = useCallback(async () => {
     setLoading(true);
@@ -81,9 +152,23 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
           .maybeSingle(),
       ]);
 
-      const cust = (invRow.snapshot_customer as any) || invRow.customers || {};
+      const rawCust = (invRow.snapshot_customer as any) || invRow.customers || {};
+      const liveCust = invRow.customers || {};
+      const mergedCust = {
+        ...rawCust,
+        whatsapp: rawCust.whatsapp || liveCust.whatsapp,
+        email: rawCust.email || liveCust.email,
+      };
       const snapBiz = (invRow.snapshot_business as any) || {};
       const bizName = bizSettings?.legal_name || snapBiz.name || "Your Business";
+      const bizAddr = formatBusinessAddressLines({
+        address_line1: bizSettings?.address_line1,
+        address_line2: bizSettings?.address_line2,
+        city: bizSettings?.city,
+        state: bizSettings?.state,
+        pin: bizSettings?.pin,
+      });
+      const formattedCust = formatBillCustomerBlock(mergedCust);
 
       const items = (invRow.invoice_items || []).map((it: any) => {
         const batches = (it.invoice_item_batches || [])
@@ -139,23 +224,27 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
         status: invRow.status || "draft",
         date: invRow.invoice_date || (invRow.created_at || "").split("T")[0],
         due_date: invRow.due_date || "—",
-        place_of_supply: invRow.place_of_supply || cust.state || "—",
+        place_of_supply: formatPlaceOfSupplyWithCode(
+          invRow.place_of_supply || mergedCust.state || "—",
+          bizSettings?.state_code
+        ),
         notes: invRow.notes || "",
         business: {
           name: bizName,
           gstin: bizSettings?.gstin || snapBiz.gstin || "",
-          address: [bizSettings?.address_line1, bizSettings?.address_line2].filter(Boolean).join(", "),
-          city: [bizSettings?.city, bizSettings?.state, bizSettings?.pin].filter(Boolean).join(", "),
+          address: bizAddr.streetLine,
+          city: bizAddr.regionLine,
           phone: bizSettings?.phone || "",
           email: bizSettings?.email || "",
         },
         customer: {
-          name: cust.shop_name || cust.name || "Customer",
-          contact: cust.contact_person || cust.name || "",
-          gstin: cust.customer_code || "",
-          address: cust.delivery_address || cust.billing_address || "",
-          city: [cust.city, cust.district, cust.state, cust.pin].filter(Boolean).join(", "),
-          phone: cust.phone || "",
+          name: formattedCust.displayName,
+          contact: formattedCust.attnContact,
+          gstin: formattedCust.gstin,
+          address: formattedCust.streetLine,
+          city: formattedCust.regionLine,
+          phone: formattedCust.phone,
+          email: formattedCust.email,
         },
         items,
         subtotal,
@@ -179,11 +268,66 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
     loadInvoice();
   }, [loadInvoice]);
 
+  const handleSaveTerms = () => {
+    const cleaned = termsDraftText
+      .split("\n")
+      .map((line) => line.replace(/^\d+[.)]\s*/, "").trim())
+      .filter(Boolean);
+    const nextTerms = cleaned.length > 0 ? cleaned : [...DEFAULT_INVOICE_TERMS];
+    setTermsList(nextTerms);
+    setTermsDraftText(nextTerms.join("\n"));
+    if (typeof window !== "undefined") {
+      localStorage.setItem(TERMS_STORAGE_KEY, JSON.stringify(nextTerms));
+    }
+    setEditingTerms(false);
+    toast.success("Terms & Conditions updated.");
+  };
+
+  const handleResetTerms = () => {
+    const defaults = [...DEFAULT_INVOICE_TERMS];
+    setTermsList(defaults);
+    setTermsDraftText(defaults.join("\n"));
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(TERMS_STORAGE_KEY);
+    }
+    toast.success("Reset to default Terms & Conditions.");
+  };
+
+  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setIsUploadingSign(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/business/signature", { method: "POST", body: fd });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        toast.error(data?.error || "Failed to upload signature");
+        return;
+      }
+      setSignatureMeta({
+        available: true,
+        filename: data.filename,
+        source: data.source,
+        url: data.url,
+      });
+      setCopyMode("digital");
+      toast.success("Digital signature uploaded!");
+    } catch {
+      toast.error("Could not upload signature.");
+    } finally {
+      setIsUploadingSign(false);
+    }
+  };
+
   const handlePrint = () => {
     if (!invoice) return;
     const originalTitle = document.title;
     const safeNumber = (invoice.invoice_number || "Bill").replace(/[/\\?%*:|"<>]/g, "-");
-    document.title = `Invoice_${safeNumber}`;
+    document.title = `Invoice_${safeNumber}_${copyMode === "digital" ? "Digital" : "Print"}`;
     window.print();
     setTimeout(() => {
       document.title = originalTitle;
@@ -239,26 +383,102 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
     }
   };
 
+  const handleShareWhatsApp = () => {
+    if (!invoice) return;
+    const digits = normalizeWhatsAppDigits(invoice.customer.phone);
+    if (!digits) {
+      toast.error("Customer phone/WhatsApp number is not available.");
+      return;
+    }
+
+    setCopyMode("digital");
+    const docLabel = invoice.mode === "gst" ? "Tax Invoice" : "Bill of Supply";
+    const lines = [
+      `*${invoice.business.name}* — ${docLabel} (Digital Copy)`,
+      `Bill No: *${invoice.invoice_number}*`,
+      `Date: ${invoice.date}`,
+      `Billed To: ${invoice.customer.name}`,
+      `Total Amount: *${formatINR(invoice.grand_total)}*`,
+      invoice.status === "cancelled"
+        ? "Status: CANCELLED / VOID"
+        : invoice.outstanding <= 0
+        ? "Status: PAID IN FULL"
+        : `Balance Due: ${formatINR(invoice.outstanding)}`,
+    ];
+
+    window.open(
+      `https://wa.me/${digits}?text=${encodeURIComponent(lines.join("\n"))}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+    toast.success("Opened WhatsApp. Download the Digital Copy PDF to attach the bill.");
+  };
+
+  const handleEmailDigitalCopy = async () => {
+    if (!invoice) return;
+    const recipient = invoice.customer.email;
+    if (!recipient) {
+      toast.error("Customer email address is not saved yet.");
+      return;
+    }
+
+    setCopyMode("digital");
+    setIsSendingEmail(true);
+    try {
+      const docLabel = invoice.mode === "gst" ? "Tax Invoice" : "Bill of Supply";
+      const res = await fetch("/api/mail/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: recipient,
+          subject: `${docLabel} ${invoice.invoice_number} (Digital Copy) — ${invoice.business.name}`,
+          text: [
+            `Dear ${invoice.customer.name},`,
+            "",
+            `${docLabel} ${invoice.invoice_number} (Digital Copy) from ${invoice.business.name}:`,
+            `Date: ${invoice.date}`,
+            `Total Amount: ${formatINR(invoice.grand_total)}`,
+            invoice.outstanding <= 0 ? "Status: Paid in Full" : `Balance Due: ${formatINR(invoice.outstanding)}`,
+            "",
+            "Terms & Conditions:",
+            ...termsList.map((t, i) => `${i + 1}. ${t}`),
+          ].join("\n"),
+        }),
+      });
+      const payload = await res.json().catch(() => null);
+      if (!res.ok || !payload?.success) {
+        toast.error(payload?.error || "Failed to send bill email");
+        return;
+      }
+      toast.success(payload.message || `Sent to ${recipient}.`);
+    } catch {
+      toast.error("Error sending bill email.");
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   const handleFinalizeDraft = async () => {
     if (!invoice || invoice.status !== "draft") return;
     setFinalizing(true);
     try {
-      const supabase = createClient();
       const key =
         typeof crypto !== "undefined" && crypto.randomUUID
           ? crypto.randomUUID()
           : `fin-${invoice.id}-${Date.now()}`;
 
-      const { data, error } = await supabase.rpc("finalize_invoice", {
-        p_invoice_id: invoice.id,
-        p_idempotency_key: key,
+      const res = await fetch(`/api/invoices/${invoice.id}/finalize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idempotency_key: key }),
       });
+      const payload = await res.json().catch(() => null);
 
-      if (error) {
-        toast.error(error.message || "Could not finalize invoice");
+      if (!res.ok || !payload?.success) {
+        toast.error(payload?.error || "Could not finalize invoice");
         return;
       }
-      toast.success(`Invoice finalized (${(data as any)?.invoice_number || ""})!`);
+      toast.success(`Invoice finalized (${payload?.invoice_number || ""})!`);
       await loadInvoice();
     } catch (err: any) {
       toast.error(err?.message || "Finalization error");
@@ -272,26 +492,30 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
     setConfirmLoading(true);
     setConfirmError(null);
     try {
-      const supabase = createClient();
       if (confirmKind === "delete") {
-        const { data, error } = await supabase
-          .from("invoices")
-          .delete()
-          .eq("id", invoice.id)
-          .select("id");
-        if (error || !data || data.length === 0) {
-          setConfirmError(error?.message || "Only draft invoices can be deleted.");
+        const res = await fetch(`/api/invoices/${invoice.id}`, {
+          method: "DELETE",
+        });
+        const payload = await res.json().catch(() => null);
+        if (!res.ok || !payload?.success) {
+          setConfirmError(payload?.error || "Failed to delete bill.");
           return;
         }
-        toast.success("Draft invoice deleted.");
+        toast.success(
+          payload.stockMovementsRemoved > 0
+            ? `Bill ${invoice.invoice_number} deleted and stock recovered.`
+            : `Bill ${invoice.invoice_number} permanently deleted.`
+        );
         router.push("/invoices");
       } else {
-        const { error } = await supabase.rpc("cancel_invoice", {
-          p_invoice_id: invoice.id,
-          p_reason: "Cancelled by user",
+        const res = await fetch(`/api/invoices/${invoice.id}/cancel`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason: "Cancelled by user" }),
         });
-        if (error) {
-          setConfirmError(error.message);
+        const payload = await res.json().catch(() => null);
+        if (!res.ok || !payload?.success) {
+          setConfirmError(payload?.error || "Failed to cancel invoice");
           return;
         }
         toast.success("Invoice cancelled and allocated stock returned.");
@@ -326,15 +550,8 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
     );
   }
 
-  const updateBankField = (field: keyof typeof bankDetails, val: string) => {
-    const updated = { ...bankDetails, [field]: val };
-    setBankDetails(updated);
-    localStorage.setItem("tazqor_bank_details", JSON.stringify(updated));
-  };
-
-  const hasBankInfo = Boolean(
-    bankDetails.bankName || bankDetails.accountNo || bankDetails.ifsc || bankDetails.upiId
-  );
+  const isDigitalCopy = copyMode === "digital";
+  const amountInWords = toIndianCurrencyWords(invoice.grand_total);
 
   return (
     <div className="min-h-screen">
@@ -347,18 +564,18 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
 
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-4xl mx-auto print:p-0 print:m-0 print:max-w-none print:space-y-0">
         {/* Actions Bar */}
-        <div className="print:hidden flex flex-wrap items-center justify-between gap-4">
-          <Link
-            href="/invoices"
-            className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-semibold text-neutral-600 hover:text-black transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Invoices</span>
-          </Link>
+        <div className="print:hidden space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <Link
+              href="/invoices"
+              className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-semibold text-neutral-600 hover:text-black transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to Invoices</span>
+            </Link>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {invoice.status === "draft" && (
-              <>
+            <div className="flex flex-wrap items-center gap-2">
+              {invoice.status === "draft" && (
                 <button
                   type="button"
                   onClick={handleFinalizeDraft}
@@ -368,60 +585,155 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>{finalizing ? "Finalizing..." : "Finalize & Deduct Stock"}</span>
                 </button>
+              )}
+
+              {invoice.status === "finalized" && (
                 <button
                   type="button"
                   onClick={() => {
                     setConfirmError(null);
-                    setConfirmKind("delete");
+                    setConfirmKind("cancel");
                   }}
-                  className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-rose-50 text-rose-700 text-xs font-semibold border border-rose-200 hover:bg-rose-100 transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200 hover:bg-amber-100 transition-all cursor-pointer"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete Draft</span>
+                  <Ban className="w-3.5 h-3.5" />
+                  <span>Cancel Invoice</span>
                 </button>
-              </>
-            )}
+              )}
 
-            {invoice.status === "finalized" && (
               <button
                 type="button"
                 onClick={() => {
                   setConfirmError(null);
-                  setConfirmKind("cancel");
+                  setConfirmKind("delete");
                 }}
-                className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-rose-50 text-rose-700 text-xs font-bold border border-rose-200 hover:bg-rose-100 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-rose-50 text-rose-700 text-xs font-semibold border border-rose-200 hover:bg-rose-100 transition-all cursor-pointer"
               >
-                <Ban className="w-3.5 h-3.5" />
-                <span>Cancel Invoice</span>
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Bill</span>
               </button>
-            )}
 
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-white/80 text-neutral-800 text-xs font-semibold border border-neutral-300/80 hover:bg-white transition-all cursor-pointer"
-            >
-              <Printer className="w-3.5 h-3.5 text-neutral-700" />
-              <span>Print Bill</span>
-            </button>
+              <button
+                type="button"
+                onClick={handleShareWhatsApp}
+                className="flex items-center gap-1.5 px-3.5 h-10 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200 hover:bg-emerald-100 transition-all cursor-pointer"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>WhatsApp</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={handleDownloadPdf}
-              disabled={isDownloadingPdf}
-              className="flex items-center gap-1.5 px-5 h-10 rounded-full bg-[#0A0A0A] text-white text-xs font-semibold hover:bg-black/90 transition-all disabled:opacity-60 cursor-pointer"
-            >
-              {isDownloadingPdf ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#D7FF00]" />
-              ) : (
-                <Download className="w-3.5 h-3.5 text-[#D7FF00]" />
+              {invoice.customer.email && (
+                <button
+                  type="button"
+                  onClick={handleEmailDigitalCopy}
+                  disabled={isSendingEmail}
+                  className="flex items-center gap-1.5 px-3.5 h-10 rounded-full bg-white/80 text-neutral-800 text-xs font-semibold border border-neutral-300/80 hover:bg-white transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Email Bill</span>
+                </button>
               )}
-              <span>{isDownloadingPdf ? "Saving PDF..." : "Download PDF"}</span>
-            </button>
+
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-white/80 text-neutral-800 text-xs font-semibold border border-neutral-300/80 hover:bg-white transition-all cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5 text-neutral-700" />
+                <span>Print Bill</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={isDownloadingPdf}
+                className="flex items-center gap-1.5 px-5 h-10 rounded-full bg-[#0A0A0A] text-white text-xs font-semibold hover:bg-black/90 transition-all disabled:opacity-60 cursor-pointer"
+              >
+                {isDownloadingPdf ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#D7FF00]" />
+                ) : (
+                  <Download className="w-3.5 h-3.5 text-[#D7FF00]" />
+                )}
+                <span>{isDownloadingPdf ? "Saving PDF..." : "Download PDF"}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Copy Mode & Digital Signature Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-white/75 backdrop-blur-md border border-white/80 px-4 py-2.5 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex rounded-full bg-neutral-100 p-1 border border-neutral-200/80">
+                <button
+                  type="button"
+                  onClick={() => setCopyMode("digital")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                    isDigitalCopy
+                      ? "bg-[#0A0A0A] text-white shadow-sm"
+                      : "text-neutral-600 hover:text-neutral-900"
+                  }`}
+                >
+                  <FileCheck2 className="w-3.5 h-3.5" />
+                  <span>Digital Copy (E-Sign)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCopyMode("print")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                    !isDigitalCopy
+                      ? "bg-[#0A0A0A] text-white shadow-sm"
+                      : "text-neutral-600 hover:text-neutral-900"
+                  }`}
+                >
+                  <PenLine className="w-3.5 h-3.5" />
+                  <span>Physical Print Copy</span>
+                </button>
+              </div>
+              <span className="text-[11px] text-neutral-500">
+                {isDigitalCopy
+                  ? "Digital signature & India e-bill declaration (WhatsApp / Email)"
+                  : "Blank signatory space for printing & handwritten signature"}
+              </span>
+            </div>
+
+            {isDigitalCopy && (
+              <div className="flex items-center gap-2 shrink-0">
+                <input
+                  ref={signatureInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={handleSignatureUpload}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => signatureInputRef.current?.click()}
+                  disabled={isUploadingSign}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-neutral-300 text-neutral-800 text-[11px] font-semibold hover:bg-neutral-50 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Upload className="w-3 h-3" />
+                  <span>
+                    {isUploadingSign
+                      ? "Uploading..."
+                      : signatureMeta.available
+                      ? "Change Sign"
+                      : "Upload Sign"}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={loadSignatureMeta}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white border border-neutral-300 text-neutral-700 text-[11px] font-medium hover:bg-neutral-50 transition-all cursor-pointer"
+                  title="Check project root directory for signature image (e.g. signature.png)"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  <span>Sync Root</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Printable Document */}
+        {/* Printable Document — Preserved Original Clean Structure */}
         <div
           id="printable-invoice"
           className="printable-document bg-white rounded-3xl p-6 sm:p-10 border border-[#E5E4EE] shadow-lg text-xs print:p-0 print:border-none print:shadow-none print:rounded-none"
@@ -438,15 +750,23 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
               {invoice.business.phone && (
                 <p className="text-gray-700 font-medium">Phone: {invoice.business.phone}</p>
               )}
+              {invoice.business.email && (
+                <p className="text-gray-500">Email: {invoice.business.email}</p>
+              )}
               {invoice.mode === "gst" && invoice.business.gstin && (
                 <p className="font-mono font-bold text-gray-800">GSTIN: {invoice.business.gstin}</p>
               )}
             </div>
 
             <div className="sm:text-right space-y-1">
-              <span className="text-xs font-extrabold tracking-wider uppercase px-3 py-1 rounded-full bg-[#0A0A0A] text-white inline-block">
-                {invoice.mode === "gst" ? "TAX INVOICE" : "BILL OF SUPPLY"}
-              </span>
+              <div className="flex flex-wrap sm:justify-end items-center gap-1.5">
+                <span className="text-xs font-extrabold tracking-wider uppercase px-3 py-1 rounded-full bg-[#0A0A0A] text-white inline-block">
+                  {invoice.mode === "gst" ? "TAX INVOICE" : "BILL OF SUPPLY"}
+                </span>
+                <span className="text-[10px] font-bold tracking-wide uppercase px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 border border-gray-200 inline-block">
+                  {isDigitalCopy ? "Digital Copy" : "Original for Recipient"}
+                </span>
+              </div>
               <h2 className="text-base font-mono font-black text-gray-900 mt-2">
                 {invoice.invoice_number}
               </h2>
@@ -571,12 +891,16 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
 
           {/* Totals Section */}
           <div className="pt-6 flex flex-col sm:flex-row justify-between gap-6">
-            <div className="text-[11px] text-gray-500 max-w-sm">
+            <div className="text-[11px] text-gray-500 max-w-sm space-y-2">
+              <div>
+                <p className="font-semibold text-gray-700 mb-0.5">Amount in Words:</p>
+                <p className="text-gray-800 font-medium">{amountInWords}</p>
+              </div>
               {invoice.notes && (
-                <>
-                  <p className="font-semibold text-gray-700 mb-1">Terms &amp; Notes:</p>
+                <div>
+                  <p className="font-semibold text-gray-700 mb-0.5">Notes:</p>
                   <p>{invoice.notes}</p>
-                </>
+                </div>
               )}
             </div>
 
@@ -625,93 +949,99 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
             </div>
           </div>
 
-          {/* Bank Details & Signatory */}
+          {/* Terms & Conditions + Signatory (Replaces Bank Details) */}
           <div className="mt-12 pt-8 border-t border-gray-200 grid grid-cols-1 sm:grid-cols-2 gap-8 text-[11px] text-gray-500">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <p className="font-bold text-gray-700">Bank Details for Payment:</p>
+              <div className="flex items-center gap-2 mb-1.5">
+                <p className="font-bold text-gray-700">Terms &amp; Conditions:</p>
                 <button
                   type="button"
-                  onClick={() => setEditingBank(!editingBank)}
+                  data-html2canvas-ignore="true"
+                  onClick={() => setEditingTerms(!editingTerms)}
                   className="text-[10px] text-blue-600 hover:underline font-light print:hidden cursor-pointer"
                 >
-                  {editingBank ? "Done" : "Edit"}
+                  {editingTerms ? "Cancel" : "Edit"}
                 </button>
               </div>
 
-              {editingBank ? (
-                <div className="space-y-1.5 p-2.5 bg-neutral-50 rounded-xl border border-neutral-200 print:hidden text-xs">
-                  <div>
-                    <label className="text-[10px] text-neutral-500 block">Account Name</label>
-                    <input
-                      type="text"
-                      value={bankDetails.accountName}
-                      onChange={(e) => updateBankField("accountName", e.target.value)}
-                      className="w-full h-7 px-2 text-xs border rounded bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-neutral-500 block">Bank Name</label>
-                    <input
-                      type="text"
-                      value={bankDetails.bankName}
-                      onChange={(e) => updateBankField("bankName", e.target.value)}
-                      className="w-full h-7 px-2 text-xs border rounded bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-neutral-500 block">Account Number</label>
-                    <input
-                      type="text"
-                      value={bankDetails.accountNo}
-                      onChange={(e) => updateBankField("accountNo", e.target.value)}
-                      className="w-full h-7 px-2 text-xs border rounded bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-neutral-500 block">IFSC Code</label>
-                    <input
-                      type="text"
-                      value={bankDetails.ifsc}
-                      onChange={(e) => updateBankField("ifsc", e.target.value)}
-                      className="w-full h-7 px-2 text-xs border rounded bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-neutral-500 block">UPI ID</label>
-                    <input
-                      type="text"
-                      value={bankDetails.upiId}
-                      onChange={(e) => updateBankField("upiId", e.target.value)}
-                      className="w-full h-7 px-2 text-xs border rounded bg-white"
-                    />
+              {editingTerms ? (
+                <div
+                  data-html2canvas-ignore="true"
+                  className="space-y-2 p-2.5 bg-neutral-50 rounded-xl border border-neutral-200 print:hidden text-xs"
+                >
+                  <textarea
+                    rows={5}
+                    value={termsDraftText}
+                    onChange={(e) => setTermsDraftText(e.target.value)}
+                    className="w-full p-2 text-[11px] border rounded bg-white text-gray-800"
+                    placeholder="Enter one term per line..."
+                  />
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={handleResetTerms}
+                      className="text-[10px] text-neutral-500 hover:text-neutral-800 cursor-pointer"
+                    >
+                      Reset Defaults
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveTerms}
+                      className="px-3 py-1 rounded-full bg-black text-white text-[10px] font-semibold cursor-pointer"
+                    >
+                      Save Terms
+                    </button>
                   </div>
                 </div>
-              ) : hasBankInfo ? (
-                <>
-                  {bankDetails.accountName && <p>Account Name: {bankDetails.accountName}</p>}
-                  {bankDetails.bankName && <p>Bank: {bankDetails.bankName}</p>}
-                  {bankDetails.accountNo && <p>A/C No: {bankDetails.accountNo}</p>}
-                  {(bankDetails.ifsc || bankDetails.upiId) && (
-                    <p>
-                      {bankDetails.ifsc ? `IFSC: ${bankDetails.ifsc}` : ""}
-                      {bankDetails.ifsc && bankDetails.upiId ? " • " : ""}
-                      {bankDetails.upiId ? `UPI ID: ${bankDetails.upiId}` : ""}
-                    </p>
-                  )}
-                </>
               ) : (
-                <p className="text-neutral-400 italic">No bank details configured yet. Click Edit to add.</p>
+                <ol className="space-y-1 text-[10px] text-gray-500 leading-relaxed list-decimal list-inside">
+                  {termsList.map((term, idx) => (
+                    <li key={idx}>{term}</li>
+                  ))}
+                </ol>
               )}
             </div>
 
             <div className="sm:text-right flex flex-col justify-between sm:items-end">
               <p className="font-bold text-gray-700">For {invoice.business.name}</p>
-              <div className="h-10" />
-              <p className="border-t border-gray-300 pt-1 w-48 text-center text-neutral-600">
-                Authorized Signatory
-              </p>
+
+              <div className="mt-auto pt-4 flex flex-col items-center sm:items-end">
+                {isDigitalCopy ? (
+                  <div className="w-48 flex items-end justify-center leading-none">
+                    {signatureMeta.available && (transparentSignUrl || signatureMeta.url) ? (
+                      <img
+                        src={transparentSignUrl || signatureMeta.url || ""}
+                        alt={`Signature of ${invoice.business.name}`}
+                        crossOrigin="anonymous"
+                        className="block max-h-14 w-auto max-w-[184px] object-contain object-bottom -mb-px"
+                      />
+                    ) : (
+                      <span className="text-[11px] font-semibold italic text-gray-700 pb-0.5">
+                        {invoice.business.name}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="h-12" />
+                )}
+
+                <p className="border-t border-gray-300 pt-1 w-48 text-center text-neutral-600">
+                  Authorized Signatory
+                </p>
+              </div>
             </div>
+          </div>
+
+          {/* Indian Digital / Billing Statutory Declaration */}
+          <div className="mt-6 pt-4 border-t border-gray-100 text-[10px] text-gray-400 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-6">
+            <p className="flex-1 sm:pr-8 leading-relaxed">
+              {isDigitalCopy
+                ? "Certified that the particulars given above are true and correct. This is a computer-generated Digital Copy bearing an authorized electronic signature."
+                : "Certified that the particulars given above are true and correct."}
+              {invoice.mode === "non_gst" &&
+                " Bill of Supply (Non-GST / Exempt / Unregistered Supply)."}
+            </p>
+            <span className="shrink-0 font-medium text-gray-500 whitespace-nowrap">E. &amp; O.E.</span>
           </div>
         </div>
       </div>
@@ -720,15 +1050,15 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
         open={Boolean(confirmKind)}
         title={
           confirmKind === "delete"
-            ? "Delete draft invoice?"
+            ? `Delete bill ${invoice.invoice_number}?`
             : `Cancel invoice ${invoice.invoice_number}?`
         }
         description={
           confirmKind === "delete"
-            ? "This draft invoice will be permanently deleted."
+            ? "This permanently removes this bill from the software and database, reverses ledger allocations, and automatically recovers any deducted inventory stock."
             : "This reverses allocated FEFO stock movements and marks the invoice cancelled."
         }
-        confirmLabel={confirmKind === "delete" ? "Delete Draft" : "Cancel Invoice"}
+        confirmLabel={confirmKind === "delete" ? "Delete Bill" : "Cancel Invoice"}
         loading={confirmLoading}
         error={confirmError}
         onConfirm={handleConfirmModal}

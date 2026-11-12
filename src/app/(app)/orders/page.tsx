@@ -103,24 +103,24 @@ export default function OrdersPage() {
     setActionLoading(true);
     setActionError(null);
     try {
-      const supabase = createClient();
       if (pendingAction.kind === "delete") {
-        const { data, error } = await supabase
-          .from("orders")
-          .delete()
-          .eq("id", pendingAction.order.id)
-          .select("id");
+        const res = await fetch(
+          `/api/orders/${pendingAction.order.id}?delete_linked_invoices=true`,
+          { method: "DELETE" }
+        );
+        const payload = await res.json().catch(() => null);
 
-        if (error) {
-          setActionError(error.message);
+        if (!res.ok || !payload?.success) {
+          setActionError(payload?.error || "Failed to delete order.");
           return;
         }
-        if (!data || data.length === 0) {
-          setActionError("Only draft orders can be permanently deleted. Cancel non-draft orders instead.");
-          return;
-        }
-        toast.success(`Draft order ${pendingAction.order.order_number} deleted.`);
+        toast.success(
+          payload.deletedInvoices > 0
+            ? `Order ${pendingAction.order.order_number}, linked bill(s), and stock updated.`
+            : `Order ${pendingAction.order.order_number} permanently deleted.`
+        );
       } else {
+        const supabase = createClient();
         const { data, error } = await supabase
           .from("orders")
           .update({ status: "cancelled" })
@@ -260,7 +260,7 @@ export default function OrdersPage() {
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 max-w-xl min-w-0">
             <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 z-10 pointer-events-none" />
               <input
                 type="text"
                 value={search}
@@ -367,21 +367,19 @@ export default function OrdersPage() {
                             </Link>
                           )}
 
-                          {o.rawStatus === "draft" && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActionError(null);
-                                setPendingAction({ order: o, kind: "delete" });
-                              }}
-                              aria-label={`Delete draft order ${o.order_number}`}
-                              title="Delete Draft Order"
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 text-xs font-medium hover:bg-rose-100 border border-rose-200 transition-all cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              <span>Remove</span>
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActionError(null);
+                              setPendingAction({ order: o, kind: "delete" });
+                            }}
+                            aria-label={`Delete order ${o.order_number}`}
+                            title="Delete Order"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 text-xs font-medium hover:bg-rose-100 border border-rose-200 transition-all cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete</span>
+                          </button>
 
                           {o.rawStatus !== "draft" &&
                             o.rawStatus !== "cancelled" &&
@@ -395,7 +393,7 @@ export default function OrdersPage() {
                                 }}
                                 aria-label={`Cancel order ${o.order_number}`}
                                 title="Cancel Order"
-                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 text-xs font-medium hover:bg-rose-100 border border-rose-200 transition-all cursor-pointer"
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-50 text-amber-800 text-xs font-medium hover:bg-amber-100 border border-amber-200 transition-all cursor-pointer"
                               >
                                 <Ban className="w-3.5 h-3.5" />
                                 <span>Cancel</span>
@@ -453,19 +451,18 @@ export default function OrdersPage() {
                   </div>
 
                   <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
-                    {o.rawStatus === "draft" && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActionError(null);
-                          setPendingAction({ order: o, kind: "delete" });
-                        }}
-                        className="inline-flex items-center justify-center gap-1 px-3.5 min-h-[40px] rounded-full bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Remove</span>
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActionError(null);
+                        setPendingAction({ order: o, kind: "delete" });
+                      }}
+                      aria-label={`Delete order ${o.order_number}`}
+                      className="inline-flex items-center justify-center gap-1 px-3.5 min-h-[40px] rounded-full bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete</span>
+                    </button>
 
                     {o.rawStatus !== "draft" &&
                       o.rawStatus !== "cancelled" &&
@@ -477,7 +474,7 @@ export default function OrdersPage() {
                             setActionError(null);
                             setPendingAction({ order: o, kind: "cancel" });
                           }}
-                          className="inline-flex items-center justify-center gap-1 px-3.5 min-h-[40px] rounded-full bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200"
+                          className="inline-flex items-center justify-center gap-1 px-3.5 min-h-[40px] rounded-full bg-amber-50 text-amber-800 text-xs font-medium border border-amber-200"
                         >
                           <Ban className="w-3.5 h-3.5" />
                           <span>Cancel</span>
@@ -513,15 +510,17 @@ export default function OrdersPage() {
         open={Boolean(pendingAction)}
         title={
           pendingAction?.kind === "delete"
-            ? `Delete draft order ${pendingAction.order.order_number}?`
+            ? `Delete order ${pendingAction.order.order_number}?`
             : `Cancel order ${pendingAction?.order.order_number}?`
         }
         description={
           pendingAction?.kind === "delete"
-            ? "This draft order and its line items will be permanently deleted."
+            ? pendingAction.order.invoiced
+              ? "This will permanently delete the order and its linked invoice(s) from the software and database, and automatically recover any deducted stock."
+              : "This will permanently delete the order and its line items from the software and database, and recover any deducted stock."
             : "This marks the customer order as cancelled while preserving the audit record."
         }
-        confirmLabel={pendingAction?.kind === "delete" ? "Delete Draft" : "Cancel Order"}
+        confirmLabel={pendingAction?.kind === "delete" ? "Delete Order" : "Cancel Order"}
         loading={actionLoading}
         error={actionError}
         onConfirm={handleConfirmAction}

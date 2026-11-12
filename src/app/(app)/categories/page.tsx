@@ -2,11 +2,16 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, FolderPlus, Layers, Package, Trash2 } from "lucide-react";
+import { ArrowLeft, FolderPlus, Layers, Lock, Package, Trash2 } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { createClient } from "@/lib/supabase/client";
+import {
+  COMBO_PACK_CATEGORY_DESCRIPTION,
+  COMBO_PACK_CATEGORY_NAME,
+  isComboPackCategoryName,
+} from "@/lib/products/combo-pack";
 
 const BUSINESS_ID = "00000000-0000-0000-0000-000000000001";
 
@@ -61,12 +66,34 @@ export default function CategoriesPage() {
         }
       });
 
-      const merged: CategoryRow[] = (catData || []).map((c: {
+      const rows = (catData || []) as Array<{
         id: string;
         name: string;
         description: string | null;
         sort_order: number | null;
-      }) => ({
+      }>;
+
+      // Ensure the permanent Combo Pack category is always available
+      if (!rows.some((c) => isComboPackCategoryName(c.name))) {
+        const nextSort =
+          rows.reduce((max, c) => Math.max(max, c.sort_order ?? 0), 0) + 1;
+        const { data: insertedCombo } = await supabase
+          .from("categories")
+          .insert({
+            business_id: BUSINESS_ID,
+            name: COMBO_PACK_CATEGORY_NAME,
+            description: COMBO_PACK_CATEGORY_DESCRIPTION,
+            sort_order: nextSort,
+          })
+          .select("id, name, description, sort_order")
+          .maybeSingle();
+
+        if (insertedCombo) {
+          rows.push(insertedCombo);
+        }
+      }
+
+      const merged: CategoryRow[] = rows.map((c) => ({
         ...c,
         productCount: countMap[c.id] || 0,
       }));
@@ -119,6 +146,11 @@ export default function CategoriesPage() {
     setDeleteError(null);
     try {
       const supabase = createClient();
+      if (isComboPackCategoryName(deleteTarget.name)) {
+        throw new Error(
+          `"${deleteTarget.name}" is a permanent system category for Combo Packs and cannot be removed.`
+        );
+      }
       if (deleteTarget.productCount > 0) {
         throw new Error(
           `Cannot delete "${deleteTarget.name}" while ${deleteTarget.productCount} active product(s) use it. Archive or reassign those products first.`
@@ -280,16 +312,25 @@ export default function CategoriesPage() {
                     >
                       View Products
                     </Link>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDeleteError(null);
-                        setDeleteTarget(cat);
-                      }}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-3 h-3" /> Remove
-                    </button>
+                    {isComboPackCategoryName(cat.name) ? (
+                      <span
+                        title="Permanent category required for Combo Packs"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/[0.06] text-[11px] font-medium text-[#111214]"
+                      >
+                        <Lock className="w-3 h-3" /> Permanent
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeleteError(null);
+                          setDeleteTarget(cat);
+                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3 h-3" /> Remove
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

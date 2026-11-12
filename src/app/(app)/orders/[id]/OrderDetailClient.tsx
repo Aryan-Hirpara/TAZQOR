@@ -103,25 +103,24 @@ export default function OrderDetailClient({ id }: { id: string }) {
     setConfirmLoading(true);
     setConfirmError(null);
     try {
-      const supabase = createClient();
       if (confirmKind === "delete") {
-        const { data, error } = await supabase
-          .from("orders")
-          .delete()
-          .eq("id", order.id)
-          .select("id");
-
-        if (error) {
-          setConfirmError(error.message);
+        const res = await fetch(
+          `/api/orders/${order.id}?delete_linked_invoices=true`,
+          { method: "DELETE" }
+        );
+        const payload = await res.json().catch(() => null);
+        if (!res.ok || !payload?.success) {
+          setConfirmError(payload?.error || "Failed to delete order.");
           return;
         }
-        if (!data || data.length === 0) {
-          setConfirmError("Only draft orders can be deleted permanently.");
-          return;
-        }
-        toast.success(`Draft order ${order.order_number} removed.`);
+        toast.success(
+          payload.deletedInvoices > 0
+            ? `Order ${order.order_number}, linked bill(s), and stock updated.`
+            : `Order ${order.order_number} permanently deleted.`
+        );
         router.push("/orders");
       } else {
+        const supabase = createClient();
         const { data, error } = await supabase
           .from("orders")
           .update({ status: "cancelled" })
@@ -212,19 +211,7 @@ export default function OrderDetailClient({ id }: { id: string }) {
               )
             )}
 
-            {order.status === "draft" ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setConfirmError(null);
-                  setConfirmKind("delete");
-                }}
-                className="inline-flex items-center gap-1.5 px-4 h-10 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-medium hover:bg-rose-100 cursor-pointer"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Delete Draft</span>
-              </button>
-            ) : (
+            {order.status !== "draft" &&
               order.status !== "cancelled" &&
               !order.linkedInvoice && (
                 <button
@@ -233,13 +220,24 @@ export default function OrderDetailClient({ id }: { id: string }) {
                     setConfirmError(null);
                     setConfirmKind("cancel");
                   }}
-                  className="inline-flex items-center gap-1.5 px-4 h-10 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-medium hover:bg-rose-100 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-4 h-10 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-medium hover:bg-amber-100 cursor-pointer"
                 >
                   <Ban className="w-3.5 h-3.5" />
                   <span>Cancel Order</span>
                 </button>
-              )
-            )}
+              )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmError(null);
+                setConfirmKind("delete");
+              }}
+              className="inline-flex items-center gap-1.5 px-4 h-10 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-medium hover:bg-rose-100 cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete Order</span>
+            </button>
           </div>
         </div>
 
@@ -356,15 +354,17 @@ export default function OrderDetailClient({ id }: { id: string }) {
         open={Boolean(confirmKind)}
         title={
           confirmKind === "delete"
-            ? `Delete draft order ${order.order_number}?`
+            ? `Delete order ${order.order_number}?`
             : `Cancel order ${order.order_number}?`
         }
         description={
           confirmKind === "delete"
-            ? "This draft order will be permanently deleted from your workspace."
+            ? order.linkedInvoice
+              ? `This permanently deletes order ${order.order_number} and its linked bill (${order.linkedInvoice.invoice_number || "Draft"}) from the database and software, and recovers any deducted inventory stock.`
+              : `This permanently deletes order ${order.order_number} from your workspace and database, and recovers any deducted inventory stock.`
             : "This marks the order as cancelled. It will no longer appear as active."
         }
-        confirmLabel={confirmKind === "delete" ? "Delete Draft" : "Cancel Order"}
+        confirmLabel={confirmKind === "delete" ? "Delete Order" : "Cancel Order"}
         loading={confirmLoading}
         error={confirmError}
         onConfirm={handleConfirm}

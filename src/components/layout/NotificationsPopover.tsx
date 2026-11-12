@@ -115,7 +115,7 @@ export function NotificationsPopover({
         const [{ data: batches }, { data: batchStock }] = await Promise.all([
           supabase
             .from("batches")
-            .select("id, batch_number, quantity_received, expiry_date, created_at, product_variants(name, sku, reorder_level, products(name))")
+            .select("id, batch_number, quantity_received, expiry_date, created_at, product_variants(name, sku, products(name))")
             .order("created_at", { ascending: false })
             .limit(3),
           supabase.from("v_stock_on_hand").select("batch_id, quantity_on_hand"),
@@ -130,8 +130,7 @@ export function NotificationsPopover({
           batches.forEach((b: any) => {
             const prodName = (b.product_variants as any)?.products?.name || "Product";
             const qty = qtyMap.has(b.id) ? qtyMap.get(b.id)! : 0;
-            const reorder = Number((b.product_variants as any)?.reorder_level) || 20;
-            const isLow = qty <= reorder;
+            const isLow = qty <= 0;
             items.push({
               id: `notif-batch-${b.id}`,
               category: "inventory",

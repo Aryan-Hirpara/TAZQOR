@@ -161,13 +161,14 @@ export default function CustomersPage() {
         </div>
 
         {/* Filters & Actions Bar */}
-        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-          <div className="flex items-center gap-2 flex-1 max-w-lg">
+        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 max-w-2xl min-w-0">
             {/* Search Input with visible search icon & short placeholder */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+            <div className="relative flex-1 min-w-0 sm:min-w-[180px]">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 z-10 pointer-events-none" />
               <input
-                type="text"
+                type="search"
+                aria-label="Search customer shops"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search shops"
@@ -180,23 +181,23 @@ export default function CustomersPage() {
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
               aria-label="Filter customers by type"
-              wrapperClassName="min-w-[140px]"
-              className="h-10 pl-3.5 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#D7FF00]"
+              wrapperClassName="w-full sm:w-44 shrink-0"
+              className="h-10 py-0 pl-3.5 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#D7FF00]"
             >
               <option value="all">All types</option>
               <option value="grocery">Grocery / Store</option>
               <option value="hotel">Hotel / Restaurant</option>
               <option value="office">Corporate Office</option>
               <option value="pg">PG / Hostel</option>
-              <option value="other">Other</option>
+              <option value="other">Single Customer / Other</option>
             </StyledSelect>
 
             <StyledSelect
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
               aria-label="Filter customers by status"
-              wrapperClassName="min-w-[120px]"
-              className="h-10 pl-3.5 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#D7FF00]"
+              wrapperClassName="w-full sm:w-36 shrink-0"
+              className="h-10 py-0 pl-3.5 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#D7FF00]"
             >
               <option value="active">Active</option>
               <option value="archived">Archived</option>
@@ -293,7 +294,13 @@ export default function CustomersPage() {
                               {c.name}
                             </div>
                             <div className="text-[11px] font-light text-neutral-500 mt-0.5">
-                              {c.shop_name} • <span className="tabular-nums font-normal">{c.customer_code}</span>
+                              {c.shop_name === c.name && c.type === "other" ? "Single Customer" : c.shop_name}
+                              {c.customer_code ? (
+                                <>
+                                  {" • "}
+                                  <span className="tabular-nums font-normal">{c.customer_code}</span>
+                                </>
+                              ) : null}
                             </div>
                           </Link>
                         </td>

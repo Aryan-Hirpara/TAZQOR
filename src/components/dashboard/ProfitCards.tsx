@@ -130,7 +130,7 @@ export function NetProfitCard({
           className="font-normal text-white tracking-tight"
         />
         <span className="text-[11px] sm:text-xs font-light text-neutral-400 mt-0.5 block truncate">
-          Operational net profit
+          {netProfit < 0 ? "Net loss after expenses" : "Operational net profit"}
         </span>
       </div>
     </GlassCard>

@@ -31,6 +31,7 @@ interface VariantOption {
   unit_price: number;
   tax_rate: number;
   stock_on_hand: number;
+  is_combo?: boolean;
 }
 
 interface BillLineItem extends VariantOption {
@@ -102,6 +103,7 @@ function NewInvoiceForm() {
               unit_price: Number(v.selling_price) || 0,
               tax_rate: Number(v.tax_rate) || 18,
               stock_on_hand: Number(v.current_stock) || 0,
+              is_combo: Boolean(v.is_combo),
             });
           }
         }
@@ -362,20 +364,26 @@ function NewInvoiceForm() {
           ? crypto.randomUUID()
           : `inv-${inv.id}-${Date.now()}`;
 
-      const { data: rpcRes, error: rpcErr } = await supabase.rpc("finalize_invoice", {
-        p_invoice_id: inv.id,
-        p_idempotency_key: idempKey,
+      const finRes = await fetch(`/api/invoices/${inv.id}/finalize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idempotency_key: idempKey }),
       });
+      const rpcRes = await finRes.json().catch(() => null);
 
-      if (rpcErr) {
+      if (!finRes.ok || !rpcRes?.success) {
         // Leave as draft so user isn't lost, or inform them cleanly
-        toast.error(`Saved as Draft — Finalization failed: ${rpcErr.message}`);
+        toast.error(
+          `Saved as Draft — Finalization failed: ${
+            rpcRes?.error || `HTTP ${finRes.status}`
+          }`
+        );
         router.push(`/invoices/${inv.id}`);
         return;
       }
 
-      const invNum = (rpcRes as any)?.invoice_number || "Finalized";
-      toast.success(`Invoice ${invNum} finalized and FEFO stock deducted!`);
+      const invNum = rpcRes?.invoice_number || "Finalized";
+      toast.success(`Invoice ${invNum} finalized and inventory deducted!`);
       router.push(`/invoices/${inv.id}`);
     } catch (err: any) {
       toast.error(err?.message || "Failed to create invoice");
@@ -762,7 +770,8 @@ function NewInvoiceForm() {
                               hasStock ? "text-emerald-700" : "text-amber-700"
                             }`}
                           >
-                            {hasStock ? "✓" : "!"} {line.stock_on_hand} in FEFO batches
+                            {hasStock ? "✓" : "!"} {line.stock_on_hand}{" "}
+                            {line.is_combo ? "buildable from combo items" : "in FEFO batches"}
                           </span>
                         </div>
                       </div>

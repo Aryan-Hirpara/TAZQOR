@@ -8,13 +8,28 @@ import {
   Package,
   Tag,
   Trash2,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { formatINR } from "@/lib/formatting/currency";
 import { StyledSelect } from "@/components/ui/StyledSelect";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { getProducts, deleteProduct, deleteProductVariant, Product, ProductVariant } from "@/lib/services/products";
+import {
+  EditProductModal,
+  EditVariantModal,
+  VariantModalState,
+} from "@/components/ui/ProductEditModals";
+import {
+  getProducts,
+  deleteProduct,
+  deleteProductVariant,
+  updateProduct,
+  updateProductVariant,
+  addProductVariant,
+  Product,
+  ProductVariant,
+} from "@/lib/services/products";
 import { createClient } from "@/lib/supabase/client";
 
 const BUSINESS_ID = "00000000-0000-0000-0000-000000000001";
@@ -35,6 +50,11 @@ export default function ProductsPage() {
   const [deleteVariantTarget, setDeleteVariantTarget] = useState<{ productName: string; variant: ProductVariant } | null>(null);
   const [removing, setRemoving] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
+
+  const [editProductTarget, setEditProductTarget] = useState<Product | null>(null);
+  const [variantModalState, setVariantModalState] = useState<VariantModalState | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -66,11 +86,15 @@ export default function ProductsPage() {
     setRemoveError(null);
     const res = await deleteProduct(archiveProductTarget.id);
     if (!res.success) {
-      setRemoveError(res.error || "Failed to archive product");
+      setRemoveError(res.error || "Failed to delete product");
       setRemoving(false);
       return;
     }
-    toast.success(`Product "${archiveProductTarget.name}" archived`);
+    toast.success(
+      res.mode === "deleted"
+        ? `Product "${archiveProductTarget.name}" permanently deleted`
+        : `Product "${archiveProductTarget.name}" archived`
+    );
     setArchiveProductTarget(null);
     setRemoving(false);
     await load();
@@ -89,6 +113,71 @@ export default function ProductsPage() {
     toast.success(`Pack size "${deleteVariantTarget.variant.pack_size || deleteVariantTarget.variant.name}" removed`);
     setDeleteVariantTarget(null);
     setRemoving(false);
+    await load();
+  };
+
+  const handleSaveProductEdit = async (values: {
+    name: string;
+    sku: string;
+    hsn: string;
+    category_id: string;
+    description: string;
+  }) => {
+    if (!editProductTarget) return;
+    setSavingEdit(true);
+    setEditError(null);
+    const res = await updateProduct(editProductTarget.id, values);
+    if (!res.success) {
+      setEditError(res.error || "Failed to update product");
+      setSavingEdit(false);
+      return;
+    }
+    toast.success(`Product "${values.name.trim()}" updated`);
+    setEditProductTarget(null);
+    setSavingEdit(false);
+    await load();
+  };
+
+  const handleSaveVariantModal = async (values: {
+    pack_size: string;
+    name: string;
+    sku: string;
+    cost_price: number;
+    selling_price: number;
+    tax_rate: number;
+    stock_quantity: number;
+  }) => {
+    if (!variantModalState) return;
+    setSavingEdit(true);
+    setEditError(null);
+
+    const res =
+      variantModalState.mode === "edit" && variantModalState.variant
+        ? await updateProductVariant(variantModalState.variant.id, {
+            ...values,
+            stock_quantity: variantModalState.variant.is_combo
+              ? variantModalState.variant.current_stock
+              : values.stock_quantity,
+            current_stock: variantModalState.variant.current_stock,
+          })
+        : await addProductVariant(variantModalState.product.id, {
+            ...values,
+            opening_stock: values.stock_quantity,
+          });
+
+    if (!res.success) {
+      setEditError(res.error || "Failed to save pack size");
+      setSavingEdit(false);
+      return;
+    }
+
+    toast.success(
+      variantModalState.mode === "edit"
+        ? `Pack size "${values.pack_size}" updated`
+        : `Pack size "${values.pack_size}" added to ${variantModalState.product.name}`
+    );
+    setVariantModalState(null);
+    setSavingEdit(false);
     await load();
   };
 
@@ -126,7 +215,7 @@ export default function ProductsPage() {
               <span className="text-xs font-light text-neutral-500 block">
                 Category management
               </span>
-              <p className="text-sm text-neutral-900 font-normal mt-0.5 truncate">Configure catalog categories</p>
+              <p className="text-sm text-neutral-900 font-normal mt-0.5 leading-snug">Configure catalog categories</p>
             </div>
             <Link
               href="/categories"
@@ -138,12 +227,13 @@ export default function ProductsPage() {
         </div>
 
         {/* Filter and Action Bar */}
-        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-          <div className="flex flex-1 items-center gap-2 max-w-lg min-w-0">
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          <div className="flex flex-col sm:flex-row flex-1 items-stretch sm:items-center gap-2.5 max-w-2xl min-w-0">
+            <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 z-10 pointer-events-none" />
               <input
-                type="text"
+                type="search"
+                aria-label="Search products, SKUs, or pack sizes"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search products, SKUs, pack sizes..."
@@ -155,8 +245,8 @@ export default function ProductsPage() {
               aria-label="Filter products by category"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              wrapperClassName="min-w-[150px]"
-              className="h-10 pl-3.5 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm"
+              wrapperClassName="w-full sm:w-48 shrink-0"
+              className="h-10 py-0 pl-3.5 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm"
             >
               <option value="all">All categories</option>
               {categories.map((c) => (
@@ -218,6 +308,23 @@ export default function ProductsPage() {
                           HSN: {product.hsn}
                         </span>
                       )}
+                      {(() => {
+                        const totalStock = product.variants.reduce(
+                          (sum, v) => sum + (v.current_stock || 0),
+                          0
+                        );
+                        return (
+                          <span
+                            className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${
+                              totalStock <= 0
+                                ? "bg-rose-50 text-rose-700 border-rose-200/70"
+                                : "bg-emerald-50 text-emerald-700 border-emerald-200/70"
+                            }`}
+                          >
+                            Total Stock: {totalStock} Units
+                          </span>
+                        );
+                      })()}
                     </div>
                     <h3 className="text-base font-normal text-neutral-900 mt-1 break-words">
                       {product.name}
@@ -229,21 +336,159 @@ export default function ProductsPage() {
                     )}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRemoveError(null);
-                      setArchiveProductTarget(product);
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200/70 text-xs font-medium transition-colors shrink-0 cursor-pointer self-start sm:self-center"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Archive Product</span>
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2 shrink-0 self-start sm:self-center">
+                    {!product.is_combo && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditError(null);
+                          setVariantModalState({ mode: "add", product });
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/80 hover:bg-black text-neutral-800 hover:text-white border border-white/90 text-xs font-medium transition-colors shrink-0 cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add Pack</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditError(null);
+                        setEditProductTarget(product);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/80 hover:bg-black text-neutral-800 hover:text-white border border-white/90 text-xs font-medium transition-colors shrink-0 cursor-pointer"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRemoveError(null);
+                        setArchiveProductTarget(product);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200/70 text-xs font-medium transition-colors shrink-0 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Product</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* Variants & Pack Sizes Table */}
-                <div className="table-wrapper">
+                {/* Variants & Pack Sizes — Mobile Cards */}
+                <div className="md:hidden space-y-2.5">
+                  {product.variants.length === 0 ? (
+                    <div className="py-4 px-4 text-center text-xs text-neutral-500 bg-white/40 rounded-2xl">
+                      No pack size variants left on this product.
+                    </div>
+                  ) : (
+                    product.variants.map((v) => {
+                      const marginAmount = v.selling_price - v.cost_price;
+                      const marginPct =
+                        v.selling_price > 0
+                          ? Math.round((marginAmount / v.selling_price) * 100)
+                          : 0;
+
+                      return (
+                        <div
+                          key={v.id}
+                          className="rounded-2xl bg-white/55 border border-white/80 p-3.5 space-y-3"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 text-sm font-medium text-neutral-900">
+                                <Tag className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                                <span className="truncate">{v.pack_size || v.name}</span>
+                                {v.name && v.pack_size && v.name !== v.pack_size && (
+                                  <span className="text-[11px] text-neutral-500 font-light truncate">
+                                    ({v.name})
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] font-mono text-neutral-500 mt-0.5 break-all">
+                                {v.sku}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditError(null);
+                                setVariantModalState({
+                                  mode: "edit",
+                                  product,
+                                  variant: v,
+                                });
+                              }}
+                              title="Click to edit stock quantity & pricing"
+                              className={`font-medium px-2.5 py-0.5 rounded-full text-[11px] shrink-0 transition-opacity hover:opacity-80 cursor-pointer ${
+                                v.current_stock <= 0
+                                  ? "bg-rose-100 text-rose-800"
+                                  : "bg-white/85 text-neutral-800 border border-white/90"
+                              }`}
+                            >
+                              {v.current_stock} Units
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="bg-white/50 rounded-xl px-2.5 py-1.5">
+                              <span className="text-[10px] text-neutral-500 block">Cost / Sell</span>
+                              <span className="font-medium text-neutral-900">
+                                {formatINR(v.cost_price)} → {formatINR(v.selling_price)}
+                              </span>
+                            </div>
+                            <div className="bg-white/50 rounded-xl px-2.5 py-1.5">
+                              <span className="text-[10px] text-neutral-500 block">
+                                Margin / GST ({v.tax_rate}%)
+                              </span>
+                              <span className="font-medium text-neutral-900">
+                                {marginPct >= 0 ? `+${marginPct}%` : `${marginPct}%`} (
+                                {formatINR(marginAmount)})
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-end gap-2 pt-1 border-t border-black/5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditError(null);
+                                setVariantModalState({
+                                  mode: "edit",
+                                  product,
+                                  variant: v,
+                                });
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-neutral-700 bg-white/85 hover:bg-black hover:text-white border border-black/10 transition-colors cursor-pointer"
+                            >
+                              <Pencil className="w-3 h-3" />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRemoveError(null);
+                                setDeleteVariantTarget({
+                                  productName: product.name,
+                                  variant: v,
+                                });
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-600 hover:text-white transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Remove</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Variants & Pack Sizes Table — Desktop */}
+                <div className="hidden md:block table-wrapper">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-white/40 text-neutral-500 font-normal rounded-xl border-b border-white/50">
                       <tr>
@@ -300,15 +545,34 @@ export default function ProductsPage() {
                                 </span>
                               </td>
                               <td className="py-3 px-4 text-right">
-                                <span
-                                  className={`font-medium px-2.5 py-0.5 rounded-full text-xs ${
-                                    v.current_stock <= v.reorder_level
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditError(null);
+                                    setVariantModalState({
+                                      mode: "edit",
+                                      product,
+                                      variant: v,
+                                    });
+                                  }}
+                                  title={
+                                    v.is_combo
+                                      ? "Auto-calculated from combo items; click to edit pricing"
+                                      : "Click to edit stock quantity & pricing"
+                                  }
+                                  className={`font-medium px-2.5 py-0.5 rounded-full text-xs transition-opacity hover:opacity-80 cursor-pointer ${
+                                    v.current_stock <= 0
                                       ? "bg-rose-100 text-rose-800"
                                       : "bg-white/80 text-neutral-800 border border-white/90"
                                   }`}
                                 >
                                   {v.current_stock} Units
-                                </span>
+                                </button>
+                                {v.is_combo && (
+                                  <span className="block text-[10px] text-neutral-500 mt-0.5">
+                                    Auto from items
+                                  </span>
+                                )}
                               </td>
                               <td className="py-3 px-4 text-center">
                                 <span className="text-[11px] font-light text-neutral-600">
@@ -316,21 +580,39 @@ export default function ProductsPage() {
                                 </span>
                               </td>
                               <td className="py-3 px-4 text-right">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setRemoveError(null);
-                                    setDeleteVariantTarget({
-                                      productName: product.name,
-                                      variant: v,
-                                    });
-                                  }}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                                  title="Remove pack size"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                  <span>Remove</span>
-                                </button>
+                                <div className="inline-flex items-center justify-end gap-1.5 whitespace-nowrap">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditError(null);
+                                      setVariantModalState({
+                                        mode: "edit",
+                                        product,
+                                        variant: v,
+                                      });
+                                    }}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium text-neutral-700 bg-white/75 hover:bg-black hover:text-white border border-white/90 transition-colors cursor-pointer"
+                                    title="Edit pack size"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                    <span>Edit</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setRemoveError(null);
+                                      setDeleteVariantTarget({
+                                        productName: product.name,
+                                        variant: v,
+                                      });
+                                    }}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                    title="Remove pack size"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                    <span>Remove</span>
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );
@@ -345,11 +627,34 @@ export default function ProductsPage() {
         )}
       </div>
 
+      <EditProductModal
+        product={editProductTarget}
+        categories={categories}
+        saving={savingEdit}
+        error={editError}
+        onSave={handleSaveProductEdit}
+        onClose={() => {
+          setEditProductTarget(null);
+          setEditError(null);
+        }}
+      />
+
+      <EditVariantModal
+        state={variantModalState}
+        saving={savingEdit}
+        error={editError}
+        onSave={handleSaveVariantModal}
+        onClose={() => {
+          setVariantModalState(null);
+          setEditError(null);
+        }}
+      />
+
       <ConfirmDialog
         open={Boolean(archiveProductTarget)}
-        title={`Archive product "${archiveProductTarget?.name ?? ""}"?`}
-        description="This removes the product from active catalogs, order pickers, and invoice pickers while preserving historical order and invoice records."
-        confirmLabel="Archive Product"
+        title={`Delete product "${archiveProductTarget?.name ?? ""}"?`}
+        description="Permanently deletes this product, its pack sizes, and uninvoiced stock batches from the database and UI. Products already used in orders or invoices are archived safely to preserve accounting history."
+        confirmLabel="Delete Product"
         tone="danger"
         loading={removing}
         error={removeError}
@@ -363,7 +668,7 @@ export default function ProductsPage() {
       <ConfirmDialog
         open={Boolean(deleteVariantTarget)}
         title={`Remove pack size "${deleteVariantTarget?.variant.pack_size || deleteVariantTarget?.variant.name || ""}"?`}
-        description={`Deletes this variant from ${deleteVariantTarget?.productName ?? "product"}. Variants already used in stock batches, orders, or invoices cannot be deleted.`}
+        description={`Permanently deletes this variant and its uninvoiced stock batches from ${deleteVariantTarget?.productName ?? "product"}. Variants already used in orders or invoices cannot be deleted.`}
         confirmLabel="Remove Pack Size"
         tone="danger"
         loading={removing}

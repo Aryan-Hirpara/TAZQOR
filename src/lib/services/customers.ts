@@ -156,7 +156,10 @@ export async function createCustomer(data: Partial<Customer>): Promise<Customer>
   const insertPayload = {
     business_id: "00000000-0000-0000-0000-000000000001",
     name: data.name || data.shop_name || "Customer",
-    shop_name: data.shop_name || data.name || "",
+    shop_name:
+      data.shop_name !== undefined
+        ? data.shop_name.trim() || null
+        : data.name || null,
     contact_person: data.contact_person || null,
     phone: data.phone || "",
     whatsapp: data.whatsapp || null,

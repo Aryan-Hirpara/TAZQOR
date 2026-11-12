@@ -142,37 +142,27 @@ export default function NewOrderPage() {
 
     setSubmitting(true);
     try {
-      const supabase = createClient();
-      const generatedOrderNumber = "ORD-" + Math.floor(100000 + Math.random() * 900000);
-
-      const { data: insertedOrder, error: orderErr } = await supabase
-        .from("orders")
-        .insert({
-          business_id: "00000000-0000-0000-0000-000000000001",
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           customer_id: customer,
-          order_number: generatedOrderNumber,
           status: targetStatus,
           notes: notes || null,
-        })
-        .select()
-        .single();
+          items: lines.map((l) => ({
+            product_variant_id: l.variant_id,
+            quantity: l.quantity,
+            unit_price: l.unit_price,
+          })),
+        }),
+      });
 
-      if (orderErr || !insertedOrder) {
-        throw new Error(orderErr?.message || "Failed to create order");
+      const payload = await res.json().catch(() => null);
+      if (!res.ok || !payload?.success || !payload?.order) {
+        throw new Error(payload?.error || `Failed to create order (${res.status})`);
       }
 
-      const itemsToInsert = lines.map((l) => ({
-        business_id: "00000000-0000-0000-0000-000000000001",
-        order_id: insertedOrder.id,
-        product_variant_id: l.variant_id,
-        quantity: l.quantity,
-        unit_price: l.unit_price,
-      }));
-
-      const { error: itemsErr } = await supabase.from("order_items").insert(itemsToInsert);
-      if (itemsErr) {
-        throw new Error(itemsErr.message || "Order created but items failed to save");
-      }
+      const generatedOrderNumber = payload.order.order_number;
 
       toast.success(
         targetStatus === "draft"

@@ -21,6 +21,11 @@ import { TopHeader } from "@/components/layout/TopHeader";
 import { StyledSelect } from "@/components/ui/StyledSelect";
 import { formatINR } from "@/lib/formatting/currency";
 import {
+  extractBatchPrefix,
+  formatBatchNumber,
+  formatYearMonthCode,
+} from "@/lib/identifiers/codes";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -60,10 +65,12 @@ export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState<"batches" | "movements">("batches");
   const [batches, setBatches] = useState<BatchItem[]>([]);
   const [movements, setMovements] = useState<StockMovement[]>([]);
-  const [variantsList, setVariantsList] = useState<{ id: string; name: string; prodName: string; cost: number; sku: string }[]>([]);
+  const [variantsList, setVariantsList] = useState<{ id: string; name: string; packSize: string; prodName: string; cost: number; sku: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [receiveStockOpen, setReceiveStockOpen] = useState(false);
   const [adjustStockOpen, setAdjustStockOpen] = useState(false);
+  const [autoBatchMode, setAutoBatchMode] = useState(true);
+  const [submittingReceive, setSubmittingReceive] = useState(false);
 
   // New stock receipt form
   const [receiveForm, setReceiveForm] = useState({
@@ -161,7 +168,7 @@ export default function InventoryPage() {
       // 3. Fetch active variants for stock receipt selection
       const { data: vData } = await supabase
         .from("product_variants")
-        .select("id, name, sku, cost_price, products!inner(name, status)")
+        .select("id, name, pack_size, sku, cost_price, products!inner(name, status)")
         .eq("business_id", BUSINESS_ID)
         .neq("products.status", "archived");
 
@@ -169,6 +176,7 @@ export default function InventoryPage() {
         const vList = vData.map((v: any) => ({
           id: v.id,
           name: v.name,
+          packSize: v.pack_size || v.name || "Standard",
           prodName: v.products?.name || "Product",
           cost: Number(v.cost_price) || 0,
           sku: v.sku || "",
@@ -193,66 +201,93 @@ export default function InventoryPage() {
     loadData();
   }, []);
 
+  // Auto-preview monthly sequential batch number (`STK-[PROD]-[SIZE]-[YYMM]-[XX]`)
+  useEffect(() => {
+    if (!receiveStockOpen || !autoBatchMode || !receiveForm.variant_id) return;
+    let cancelled = false;
+
+    const selectedVariant = variantsList.find((v) => v.id === receiveForm.variant_id);
+    if (selectedVariant) {
+      const localPreview = formatBatchNumber({
+        prefix: extractBatchPrefix({
+          variantSku: selectedVariant.sku,
+          productName: selectedVariant.prodName,
+          packSize: selectedVariant.packSize,
+        }),
+        yearMonth: formatYearMonthCode(receiveForm.mfg_date),
+        sequence: 1,
+      });
+      setReceiveForm((prev) => ({ ...prev, batch_number: localPreview }));
+    }
+
+    (async () => {
+      try {
+        const params = new URLSearchParams({
+          variant_id: receiveForm.variant_id,
+          mfg_date: receiveForm.mfg_date || "",
+        });
+        const res = await fetch(`/api/inventory/batches?${params.toString()}`);
+        const payload = await res.json().catch(() => null);
+        if (!cancelled && res.ok && payload?.success && payload.batchNumber) {
+          setReceiveForm((prev) => ({ ...prev, batch_number: payload.batchNumber }));
+        }
+      } catch {
+        // Keep optimistic preview if offline
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [receiveStockOpen, autoBatchMode, receiveForm.variant_id, receiveForm.mfg_date, variantsList]);
+
   const totalStockUnits = batches.reduce((acc, b) => acc + b.qty_remaining, 0);
   const totalStockValuation = batches.reduce((acc, b) => acc + (b.qty_remaining * b.cost_per_unit), 0);
 
   const handleReceiveStock = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!receiveForm.batch_number) {
+    const variantId = receiveForm.variant_id || (variantsList[0]?.id ?? null);
+    if (!variantId) {
+      toast.error("Please select a product variant");
+      return;
+    }
+    if (!autoBatchMode && !receiveForm.batch_number.trim()) {
       toast.error("Please enter batch number");
       return;
     }
 
+    setSubmittingReceive(true);
     try {
-      const supabase = createClient();
-      const variantId = receiveForm.variant_id || (variantsList[0]?.id ?? null);
-      if (!variantId) {
-        toast.error("Please select a product variant");
-        return;
-      }
-
-      const { data: insertedBatch, error: insErr } = await supabase
-        .from("batches")
-        .insert({
-          business_id: "00000000-0000-0000-0000-000000000001",
-          product_variant_id: variantId,
-          batch_number: receiveForm.batch_number,
+      const res = await fetch("/api/inventory/batches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          variant_id: variantId,
+          batch_number: receiveForm.batch_number.trim(),
+          auto_generate: autoBatchMode,
           manufacturing_date: receiveForm.mfg_date,
           expiry_date: receiveForm.expiry_date,
-          quantity_received: Number(receiveForm.quantity),
+          quantity: Number(receiveForm.quantity),
           cost_per_unit: Number(receiveForm.cost_per_unit),
-        })
-        .select()
-        .single();
+          supplier: receiveForm.supplier,
+        }),
+      });
 
-      if (insErr) {
-        toast.error("Failed to save batch: " + insErr.message);
+      const payload = await res.json().catch(() => null);
+      if (!res.ok || !payload?.success) {
+        toast.error(payload?.error || "Failed to save batch");
         return;
       }
 
-      if (insertedBatch) {
-        const { error: movErr } = await supabase.rpc("receive_stock", {
-          p_business_id: BUSINESS_ID,
-          p_product_variant_id: variantId,
-          p_batch_id: insertedBatch.id,
-          p_quantity: Number(receiveForm.quantity),
-          p_reason: receiveForm.supplier.trim()
-            ? `Supplier receipt: ${receiveForm.supplier.trim()}`
-            : "Stock receipt",
-          p_reference_type: "purchase",
-          p_reference_id: null,
-        });
-        if (movErr) {
-          toast.error("Batch created, but movement logging failed: " + movErr.message);
-          return;
-        }
-      }
-
+      const assignedBatchNumber = payload.batchNumber || receiveForm.batch_number;
       await loadData();
       setReceiveStockOpen(false);
-      toast.success(`Received ${receiveForm.quantity} units for Batch ${receiveForm.batch_number}`);
+      setAutoBatchMode(true);
+      toast.success(`Received ${receiveForm.quantity} units for Batch ${assignedBatchNumber}`);
     } catch (err: any) {
       toast.error("Error receiving stock: " + err.message);
+    } finally {
+      setSubmittingReceive(false);
     }
   };
 
@@ -539,16 +574,37 @@ export default function InventoryPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-normal text-neutral-700 mb-1.5">
-                  Batch Number *
-                </label>
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <label className="block text-xs font-normal text-neutral-700">
+                    Batch Number *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setAutoBatchMode((prev) => !prev)}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium cursor-pointer transition-colors ${
+                      autoBatchMode
+                        ? "bg-black text-[#D4F732]"
+                        : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                    }`}
+                  >
+                    {autoBatchMode ? "Auto Monthly" : "Custom"}
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={receiveForm.batch_number}
-                  onChange={(e) => setReceiveForm({ ...receiveForm, batch_number: e.target.value })}
-                  placeholder="e.g. BATCH-001"
+                  readOnly={autoBatchMode}
+                  onChange={(e) => {
+                    if (autoBatchMode) return;
+                    setReceiveForm({ ...receiveForm, batch_number: e.target.value.toUpperCase() });
+                  }}
+                  placeholder="e.g. STK-DW-250M-2611-01"
                   required
-                  className="w-full h-11 px-4 text-xs font-mono bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
+                  className={`w-full h-11 px-4 text-xs font-mono rounded-full border border-neutral-200/80 focus:outline-none focus:ring-2 focus:ring-[#D4F732] ${
+                    autoBatchMode
+                      ? "bg-neutral-100/90 text-neutral-700 cursor-default"
+                      : "bg-white/60 backdrop-blur-md text-neutral-900"
+                  }`}
                 />
               </div>
 
@@ -622,9 +678,10 @@ export default function InventoryPage() {
             <div className="pt-3 text-right">
               <button
                 type="submit"
-                className="px-6 h-11 rounded-full bg-black text-white text-xs font-normal shadow-sm hover:scale-105 active:scale-95 transition-all"
+                disabled={submittingReceive}
+                className="px-6 h-11 rounded-full bg-black text-white text-xs font-normal shadow-sm hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
               >
-                Post Stock Receipt to Ledger
+                {submittingReceive ? "Posting..." : "Post Stock Receipt to Ledger"}
               </button>
             </div>
           </form>

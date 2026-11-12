@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { TopHeader } from "@/components/layout/TopHeader";
@@ -14,31 +14,48 @@ import { OrderCard } from "@/components/dashboard/OrderCard";
 import { GrossProfitCard, NetProfitCard } from "@/components/dashboard/ProfitCards";
 import { MobilePeriodPills } from "@/components/dashboard/MobilePeriodPills";
 import { createClient } from "@/lib/supabase/client";
+import { RawExpenseDbRow } from "@/lib/expenses/expense-record";
+import {
+  computeDashboardMetrics,
+  DashboardBatchRow,
+  DashboardBatchStockRow,
+  DashboardExpensesSummary,
+  DashboardInventorySummary,
+  DashboardInvoiceRow,
+  DashboardOrderRow,
+  DashboardPeriod,
+  DashboardProductRow,
+  DashboardStockSummaryRow,
+  RecentOrderSummary,
+  summarizeDashboardInventory,
+  summarizeRecentActiveOrders,
+} from "@/lib/dashboard/metrics";
 
 const MONTH_NAMES = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 const TARGET_STORAGE_KEY = "tazqor_monthly_target";
 
-interface RecentOrderSummary {
-  id: string;
-  order_number: string;
-  customer_name: string;
-  itemCount: number;
-  totalAmount: number;
-  status: string;
+interface RawDashboardSnapshot {
+  invoices: DashboardInvoiceRow[];
+  expenses: RawExpenseDbRow[];
+  orders: DashboardOrderRow[];
+  products: DashboardProductRow[];
+  stockSummaries: DashboardStockSummaryRow[];
+  batches: DashboardBatchRow[];
+  batchStockOnHand: DashboardBatchStockRow[];
 }
 
-interface RecentMovementSummary {
-  id: string;
-  batch_number: string;
-  product: string;
-  type: string;
-  quantity: number;
-  valuation: number;
-  notes: string;
-}
+const EMPTY_SNAPSHOT: RawDashboardSnapshot = {
+  invoices: [],
+  expenses: [],
+  orders: [],
+  products: [],
+  stockSummaries: [],
+  batches: [],
+  batchStockOnHand: [],
+};
 
 export default function DashboardPage() {
-  const [period, setPeriod] = useState<"today" | "week" | "month">("month");
+  const [period, setPeriod] = useState<DashboardPeriod>("month");
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("there");
   const [monthlyTarget, setMonthlyTarget] = useState<number>(() => {
@@ -49,27 +66,8 @@ export default function DashboardPage() {
     return 0;
   });
 
-  const [metrics, setMetrics] = useState({
-    monthlySales: 0,
-    previousMonthSales: 0,
-    salesChange: 0,
-    grossProfit: 0,
-    netProfit: 0,
-    averageItems: 0,
-    averageSaleValue: 0,
-    saleChangePct: null as number | null,
-    totalSalesYear: 0,
-    comparisonSalesYear: 0,
-  });
-
-  const [heroMonths, setHeroMonths] = useState<MonthBarData[]>([]);
-  const [particleData, setParticleData] = useState<DottedColumn[]>([]);
-  const [dailyData, setDailyData] = useState<DailyBarItem[]>([]);
-  const [monthlyCurrentYear, setMonthlyCurrentYear] = useState<number[]>(Array(12).fill(0));
-  const [monthlyPrevYear, setMonthlyPrevYear] = useState<number[]>(Array(12).fill(0));
-  const [activeMonthName, setActiveMonthName] = useState(() => MONTH_NAMES[new Date().getMonth()]);
-  const [recentOrders, setRecentOrders] = useState<RecentOrderSummary[]>([]);
-  const [recentMovement, setRecentMovement] = useState<RecentMovementSummary | null>(null);
+  const [snapshot, setSnapshot] = useState<RawDashboardSnapshot>(EMPTY_SNAPSHOT);
+  const [testMetricsOverride, setTestMetricsOverride] = useState<Record<string, unknown> | null>(null);
 
   const handleSaveTarget = useCallback((newTarget: number) => {
     setMonthlyTarget(newTarget);
@@ -79,24 +77,26 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).__TAZQOR_TEST_METRICS__) {
-      setMetrics((prev) => ({
-        ...prev,
-        ...(window as any).__TAZQOR_TEST_METRICS__,
-      }));
+    if (typeof window !== "undefined" && (window as unknown as Record<string, unknown>).__TAZQOR_TEST_METRICS__) {
+      setTestMetricsOverride(
+        (window as unknown as Record<string, Record<string, unknown>>).__TAZQOR_TEST_METRICS__
+      );
     }
 
-    const handleTestMetrics = (e: any) => {
-      if (e.detail) {
-        setMetrics((prev) => ({ ...prev, ...e.detail }));
+    const handleTestMetrics = (e: Event) => {
+      const custom = e as CustomEvent<Record<string, unknown>>;
+      if (custom.detail) {
+        setTestMetricsOverride((prev) => ({ ...(prev || {}), ...custom.detail }));
       }
     };
     window.addEventListener("tazqor:set-test-metrics", handleTestMetrics);
 
+    let cancelled = false;
+
     async function loadLiveDashboardData() {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
         return;
       }
 
@@ -104,8 +104,10 @@ export default function DashboardPage() {
         const supabase = createClient();
 
         // 1. User profile
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user && !cancelled) {
           const { data: profile } = await supabase
             .from("profiles")
             .select("full_name")
@@ -119,285 +121,134 @@ export default function DashboardPage() {
           }
         }
 
-        // 2. Fetch live non-cancelled invoices with items, variant cost & allocated FEFO batch costs
+        // 2. Fetch domain-isolated datasets in parallel:
+        //    - Confirmed invoices (never cancelled or draft)
+        //    - Business expenses (used for Net Profit + Expenses card)
+        //    - Active non-cancelled orders (Orders card)
+        //    - Live physical inventory state (Inventory card — never raw stock_movements audit reasons)
         const [
           { data: allInvoices },
           { data: allExpenses },
           { data: ordersData },
-          { data: movsData },
+          { data: productsData },
+          { data: stockSummariesData },
+          { data: batchesData },
+          { data: batchStockData },
         ] = await Promise.all([
           supabase
             .from("invoices")
             .select(
-              "id, grand_total, subtotal, invoice_date, created_at, status, invoice_items(quantity, line_total, product_variants(cost_price), invoice_item_batches(quantity_allocated, cost_per_unit))"
+              "id, grand_total, subtotal, invoice_date, created_at, status, invoice_items(quantity, line_total, product_variants(cost_price), invoice_item_batches(quantity_allocated, cost_per_unit, batches(cost_per_unit)))"
             )
-            .neq("status", "cancelled"),
-          supabase.from("expenses").select("amount, expense_date, created_at"),
+            .neq("status", "cancelled")
+            .neq("status", "draft"),
+          supabase
+            .from("expenses")
+            .select("id, expense_date, vendor, description, amount, payment_method, receipt_url, created_at"),
           supabase
             .from("orders")
             .select("id, order_number, status, created_at, customers(name, shop_name), order_items(quantity, unit_price)")
             .neq("status", "cancelled")
             .order("created_at", { ascending: false })
-            .limit(4),
+            .limit(5),
           supabase
-            .from("stock_movements")
-            .select("id, movement_type, quantity, reason, notes, product_variant_id, batch_id, product_variants(name, products(name)), batches(batch_number, cost_per_unit)")
-            .order("created_at", { ascending: false })
-            .limit(1),
+            .from("products")
+            .select("id, name, status, image_url, categories(name), product_variants(id, name, pack_size, sku, cost_price)")
+            .neq("status", "archived"),
+          supabase
+            .from("v_stock_summary")
+            .select("product_variant_id, total_quantity_on_hand"),
+          supabase
+            .from("batches")
+            .select("id, product_variant_id, cost_per_unit"),
+          supabase
+            .from("v_stock_on_hand")
+            .select("batch_id, quantity_on_hand"),
         ]);
 
-        if (ordersData) {
-          const ords: RecentOrderSummary[] = ordersData.map((o: any) => {
-            const custName = o.customers?.shop_name || o.customers?.name || "Customer";
-            const items = o.order_items || [];
-            const count = items.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 0), 0);
-            const total = items.reduce(
-              (sum: number, it: any) => sum + (Number(it.quantity) || 0) * (Number(it.unit_price) || 0),
-              0
-            );
-            return {
-              id: o.id,
-              order_number: o.order_number,
-              customer_name: custName,
-              itemCount: count,
-              totalAmount: total,
-              status: o.status || "confirmed",
-            };
-          });
-          setRecentOrders(ords);
-        } else {
-          setRecentOrders([]);
-        }
-
-        if (movsData && movsData.length > 0) {
-          const m = movsData[0] as any;
-          const qty = Math.abs(Number(m.quantity) || 0);
-          const costPerUnit = Number(m.batches?.cost_per_unit) || 0;
-          const prodName = m.product_variants?.products?.name
-            ? `${m.product_variants.products.name} (${m.product_variants.name})`
-            : m.product_variants?.name || "Inventory";
-          const isInbound =
-            m.movement_type === "opening_stock" ||
-            m.movement_type === "purchase_in" ||
-            m.movement_type === "sales_return_in" ||
-            m.movement_type === "adjustment_in";
-
-          setRecentMovement({
-            id: m.id,
-            batch_number: m.batches?.batch_number || "—",
-            product: prodName,
-            type: isInbound ? "Stock In" : "Stock Out",
-            quantity: qty,
-            valuation: qty * costPerUnit,
-            notes: m.reason || m.notes || m.movement_type.replace(/_/g, " "),
-          });
-        } else {
-          setRecentMovement(null);
-        }
-
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonthIdx = now.getMonth();
-        setActiveMonthName(MONTH_NAMES[currentMonthIdx]);
-
-        const invoicesList = (allInvoices || []) as any[];
-        const expensesList = (allExpenses || []) as any[];
-
-        // Annual 12-month series for SalesSplineChart
-        const curYrMonthly = Array(12).fill(0);
-        const prevYrMonthly = Array(12).fill(0);
-        invoicesList.forEach((inv) => {
-          const d = new Date(inv.invoice_date || inv.created_at);
-          const amt = Number(inv.grand_total) || 0;
-          if (d.getFullYear() === currentYear) {
-            curYrMonthly[d.getMonth()] += amt;
-          } else if (d.getFullYear() === currentYear - 1) {
-            prevYrMonthly[d.getMonth()] += amt;
-          }
-        });
-        setMonthlyCurrentYear(curYrMonthly);
-        setMonthlyPrevYear(prevYrMonthly);
-
-        const salesThisYear = curYrMonthly.reduce((a, b) => a + b, 0);
-        const salesPrevYear = prevYrMonthly.reduce((a, b) => a + b, 0);
-
-        // Date helper for period filtering
-        const parseDate = (dateStr?: string, createdStr?: string) => new Date(dateStr || createdStr || 0);
-        const todayStr = now.toISOString().split("T")[0];
-        const yesterdayStr = new Date(now.getTime() - 86400000).toISOString().split("T")[0];
-        const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
-        const fourteenDaysAgo = new Date(now.getTime() - 14 * 86400000);
-        const startOfMonth = new Date(currentYear, currentMonthIdx, 1);
-        const startOfLastMonth = new Date(currentYear, currentMonthIdx - 1, 1);
-        const endOfLastMonth = new Date(currentYear, currentMonthIdx, 0, 23, 59, 59);
-
-        const inPeriod = (dateStr?: string, createdStr?: string, mode: "current" | "prev" = "current") => {
-          const raw = dateStr || createdStr || "";
-          const d = parseDate(dateStr, createdStr);
-          if (period === "today") {
-            return mode === "current" ? raw.startsWith(todayStr) : raw.startsWith(yesterdayStr);
-          }
-          if (period === "week") {
-            return mode === "current" ? d >= sevenDaysAgo : d >= fourteenDaysAgo && d < sevenDaysAgo;
-          }
-          return mode === "current"
-            ? d >= startOfMonth
-            : d >= startOfLastMonth && d <= endOfLastMonth;
-        };
-
-        const periodInvoices = invoicesList.filter((inv) => inPeriod(inv.invoice_date, inv.created_at, "current"));
-        const prevPeriodInvoices = invoicesList.filter((inv) => inPeriod(inv.invoice_date, inv.created_at, "prev"));
-        const periodExpensesList = expensesList.filter((exp) => inPeriod(exp.expense_date, exp.created_at, "current"));
-
-        const periodSales = periodInvoices.reduce((sum, inv) => sum + (Number(inv.grand_total) || 0), 0);
-        const prevPeriodSales = prevPeriodInvoices.reduce((sum, inv) => sum + (Number(inv.grand_total) || 0), 0);
-        const periodExpenses = periodExpensesList.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
-
-        // COGS from invoice_item_batches (real FEFO batch costs) or variant cost_price fallback
-        let periodCOGS = 0;
-        let totalItemsCount = 0;
-        periodInvoices.forEach((inv) => {
-          const items = inv.invoice_items || [];
-          items.forEach((it: any) => {
-            const qty = Number(it.quantity) || 0;
-            totalItemsCount += qty;
-            const batchAllocs = it.invoice_item_batches || [];
-            if (batchAllocs.length > 0) {
-              periodCOGS += batchAllocs.reduce(
-                (s: number, b: any) => s + (Number(b.quantity_allocated) || 0) * (Number(b.cost_per_unit) || 0),
-                0
-              );
-            } else {
-              periodCOGS += qty * (Number(it.product_variants?.cost_price) || 0);
-            }
-          });
-        });
-
-        const avgItems = periodInvoices.length > 0 ? Number((totalItemsCount / periodInvoices.length).toFixed(1)) : 0;
-        const avgSale = periodInvoices.length > 0 ? Math.round(periodSales / periodInvoices.length) : 0;
-        const prevAvgSale = prevPeriodInvoices.length > 0 ? prevPeriodSales / prevPeriodInvoices.length : 0;
-        const saleChangePct =
-          prevAvgSale > 0 ? Number((((avgSale - prevAvgSale) / prevAvgSale) * 100).toFixed(1)) : null;
-
-        const grossProfit = Math.max(0, periodSales - periodCOGS);
-        const netProfit = Math.max(0, grossProfit - periodExpenses);
-
-        // Last 6 months Hero Bars (real revenue & invoice counts)
-        const monthBuckets: { month: string; year: number; mIdx: number; amount: number; count: number }[] = [];
-        for (let i = 5; i >= 0; i--) {
-          const dt = new Date(currentYear, currentMonthIdx - i, 1);
-          monthBuckets.push({
-            month: MONTH_NAMES[dt.getMonth()],
-            year: dt.getFullYear(),
-            mIdx: dt.getMonth(),
-            amount: 0,
-            count: 0,
+        if (!cancelled) {
+          setSnapshot({
+            invoices: (allInvoices || []) as unknown as DashboardInvoiceRow[],
+            expenses: (allExpenses || []) as unknown as RawExpenseDbRow[],
+            orders: (ordersData || []) as unknown as DashboardOrderRow[],
+            products: (productsData || []) as unknown as DashboardProductRow[],
+            stockSummaries: (stockSummariesData || []) as unknown as DashboardStockSummaryRow[],
+            batches: (batchesData || []) as unknown as DashboardBatchRow[],
+            batchStockOnHand: (batchStockData || []) as unknown as DashboardBatchStockRow[],
           });
         }
-        invoicesList.forEach((inv) => {
-          const d = parseDate(inv.invoice_date, inv.created_at);
-          const bucket = monthBuckets.find((b) => b.year === d.getFullYear() && b.mIdx === d.getMonth());
-          if (bucket) {
-            bucket.amount += Number(inv.grand_total) || 0;
-            bucket.count += 1;
-          }
-        });
-        const maxMonthSales = Math.max(0, ...monthBuckets.map((b) => b.amount));
-        setHeroMonths(
-          monthBuckets.map((b, idx) => ({
-            month: b.month,
-            amount: b.amount,
-            orderCount: b.count,
-            heightPct: maxMonthSales > 0 ? Math.round((b.amount / maxMonthSales) * 100) : 0,
-            isActive: idx === monthBuckets.length - 1,
-          }))
-        );
-
-        // Last 5 months Particle Data (real avg items/bill)
-        const particleBuckets: { month: string; year: number; mIdx: number; items: number; invs: number }[] = [];
-        for (let i = 4; i >= 0; i--) {
-          const dt = new Date(currentYear, currentMonthIdx - i, 1);
-          particleBuckets.push({
-            month: MONTH_NAMES[dt.getMonth()],
-            year: dt.getFullYear(),
-            mIdx: dt.getMonth(),
-            items: 0,
-            invs: 0,
-          });
-        }
-        invoicesList.forEach((inv) => {
-          const d = parseDate(inv.invoice_date, inv.created_at);
-          const pb = particleBuckets.find((b) => b.year === d.getFullYear() && b.mIdx === d.getMonth());
-          if (pb) {
-            pb.invs += 1;
-            pb.items += (inv.invoice_items || []).reduce((s: number, it: any) => s + (Number(it.quantity) || 0), 0);
-          }
-        });
-        setParticleData(
-          particleBuckets.map((pb, idx) => {
-            const val = pb.invs > 0 ? Number((pb.items / pb.invs).toFixed(1)) : 0;
-            return {
-              month: pb.month,
-              value: val,
-              invoiceCount: pb.invs,
-              dotsCount: pb.invs === 0 ? 0 : Math.max(3, Math.min(22, Math.round(val * 2))),
-              highlight: idx === particleBuckets.length - 1 && pb.invs > 0,
-            };
-          })
-        );
-
-        // Last 14 days Daily Pill Bars (real sales)
-        const dayBuckets: { key: string; label: string; day: number; amount: number }[] = [];
-        for (let i = 13; i >= 0; i--) {
-          const dt = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-          const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
-          const label = dt.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-          dayBuckets.push({ key, label, day: dt.getDate(), amount: 0 });
-        }
-        invoicesList.forEach((inv) => {
-          const key = (inv.invoice_date || inv.created_at || "").slice(0, 10);
-          const db = dayBuckets.find((b) => b.key === key);
-          if (db) db.amount += Number(inv.grand_total) || 0;
-        });
-        const maxDaySales = Math.max(0, ...dayBuckets.map((b) => b.amount));
-        setDailyData(
-          dayBuckets.map((db, idx) => ({
-            day: idx + 1,
-            label: db.label,
-            amount: db.amount,
-            heightPct: maxDaySales > 0 ? Math.round((db.amount / maxDaySales) * 100) : 0,
-            highlight: maxDaySales > 0 && db.amount === maxDaySales,
-          }))
-        );
-
-        setMetrics({
-          monthlySales: periodSales,
-          previousMonthSales: prevPeriodSales,
-          salesChange: periodSales - prevPeriodSales,
-          grossProfit,
-          netProfit,
-          averageItems: avgItems,
-          averageSaleValue: avgSale,
-          saleChangePct,
-          totalSalesYear: salesThisYear,
-          comparisonSalesYear: salesPrevYear,
-        });
       } catch (err) {
         console.warn("Failed to load dashboard data from Supabase:", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
     loadLiveDashboardData();
 
     return () => {
+      cancelled = true;
       window.removeEventListener("tazqor:set-test-metrics", handleTestMetrics);
     };
-  }, [period]);
+  }, []);
+
+  const computed = useMemo(
+    () =>
+      computeDashboardMetrics({
+        invoices: snapshot.invoices,
+        expenses: snapshot.expenses,
+        period,
+      }),
+    [snapshot.invoices, snapshot.expenses, period]
+  );
+
+  const inventorySummary: DashboardInventorySummary = useMemo(
+    () =>
+      summarizeDashboardInventory({
+        products: snapshot.products,
+        stockSummaries: snapshot.stockSummaries,
+        batches: snapshot.batches,
+        batchStockOnHand: snapshot.batchStockOnHand,
+      }),
+    [snapshot.products, snapshot.stockSummaries, snapshot.batches, snapshot.batchStockOnHand]
+  );
+
+  const recentOrders: RecentOrderSummary[] = useMemo(
+    () => summarizeRecentActiveOrders(snapshot.orders),
+    [snapshot.orders]
+  );
+
+  const metrics = useMemo(
+    () => ({
+      ...computed.metrics,
+      ...(testMetricsOverride || {}),
+    }),
+    [computed.metrics, testMetricsOverride]
+  );
+
+  const heroMonths: MonthBarData[] = computed.heroMonths;
+  const particleData: DottedColumn[] = computed.particleData;
+  const dailyData: DailyBarItem[] = computed.dailyData;
+  const monthlyCurrentYear = computed.monthlyCurrentYear;
+  const monthlyPrevYear = computed.monthlyPrevYear;
+  const activeMonthName = computed.activeMonthName || MONTH_NAMES[new Date().getMonth()];
+  const expensesSummary: DashboardExpensesSummary = computed.expensesSummary;
 
   const targetProgressPct =
-    monthlyTarget > 0 ? Math.min(100, Math.round((metrics.monthlySales / monthlyTarget) * 100)) : 0;
+    monthlyTarget > 0 ? Math.min(100, Math.round((metrics.currentMonthSales / monthlyTarget) * 100)) : 0;
+
+  const periodExpensesTitle =
+    period === "today"
+      ? "Today's Expenses"
+      : period === "week"
+      ? "This Week Expenses"
+      : "This Month Expenses";
+
+  const inventorySubtitle = inventorySummary.topProduct
+    ? `${inventorySummary.activeSkuCount} SKUs • Top: ${inventorySummary.topProduct.name} (${inventorySummary.topProduct.units})`
+    : inventorySummary.activeSkuCount > 0
+    ? `${inventorySummary.activeSkuCount} SKUs • Out of stock`
+    : "Add stock in Inventory";
 
   return (
     <div className="min-h-0 flex-1 flex flex-col pb-4 lg:pb-0">
@@ -431,10 +282,10 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* 3. Sales Target Bar: Cols 1-12, Row 3 */}
+        {/* 3. Sales Target Bar: Cols 1-12, Row 3 (always tracks monthly progress) */}
         <div className="bento-target min-w-0 min-h-0">
           <TargetProgressBar
-            currentSales={metrics.monthlySales}
+            currentSales={metrics.currentMonthSales}
             targetSales={monthlyTarget}
             progressPct={targetProgressPct}
             onTargetSave={handleSaveTarget}
@@ -451,51 +302,55 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* 5. Stock Movement / Transfer Card: Cols 13-16, Row 3 */}
+        {/* 5. Live Inventory Stock Card: Cols 13-16, Row 3 */}
         <div className="bento-transfer min-w-0 min-h-0">
           <OrderCard
-            type={recentMovement ? "Inventory" : "Transfer"}
-            title={recentMovement ? recentMovement.notes : "No recent movements"}
-            subtitle={recentMovement ? recentMovement.product : "Warehouse"}
-            amount={recentMovement ? recentMovement.valuation : 0}
-            status={recentMovement ? recentMovement.type : "Empty"}
+            type="Inventory"
+            title={inventorySummary.totalUnits > 0 ? "Stock on Hand" : "No Inventory Stock"}
+            subtitle={inventorySubtitle}
+            amount={inventorySummary.totalValuation}
+            status={inventorySummary.totalUnits > 0 ? "IN STOCK" : "EMPTY"}
             countLabel={{
-              count: recentMovement ? recentMovement.quantity : 0,
-              word: "units",
+              count: inventorySummary.totalUnits,
+              word: inventorySummary.totalUnits === 1 ? "unit" : "units",
             }}
             href="/inventory"
           />
         </div>
 
-        {/* 6. Recent Order Card 1: Cols 13-16, Row 4 */}
+        {/* 6. Active Orders Card: Cols 13-16, Row 4 */}
         <div className="bento-po-1 min-w-0 min-h-0">
           <OrderCard
             type="Order"
-            title={recentOrders[0] ? `#${recentOrders[0].order_number}` : "No orders yet"}
-            subtitle={recentOrders[0] ? recentOrders[0].customer_name : "Create your first order"}
+            title={recentOrders[0] ? `#${recentOrders[0].order_number}` : "No active orders"}
+            subtitle={recentOrders[0] ? recentOrders[0].customer_name : "All orders clear"}
             amount={recentOrders[0] ? recentOrders[0].totalAmount : 0}
-            status={recentOrders[0] ? recentOrders[0].status.toUpperCase() : "—"}
-            countLabel={{
-              count: recentOrders[0] ? recentOrders[0].itemCount : 0,
-              word: "units",
-            }}
+            status={recentOrders[0] ? recentOrders[0].status.toUpperCase() : "CLEAR"}
+            countLabel={
+              recentOrders[0]
+                ? {
+                    count: recentOrders[0].itemCount,
+                    word: recentOrders[0].itemCount === 1 ? "unit" : "units",
+                  }
+                : { count: 0, word: "orders" }
+            }
             href={recentOrders[0] ? `/orders/${recentOrders[0].id}` : "/orders/new"}
           />
         </div>
 
-        {/* 7. Recent Order Card 2: Cols 13-16, Row 5 */}
+        {/* 7. Period Expenses Card: Cols 13-16, Row 5 */}
         <div className="bento-po-2 min-w-0 min-h-0">
           <OrderCard
-            type="Order"
-            title={recentOrders[1] ? `#${recentOrders[1].order_number}` : "No recent order"}
-            subtitle={recentOrders[1] ? recentOrders[1].customer_name : "—"}
-            amount={recentOrders[1] ? recentOrders[1].totalAmount : 0}
-            status={recentOrders[1] ? recentOrders[1].status.toUpperCase() : "—"}
+            type="Expenses"
+            title={periodExpensesTitle}
+            subtitle={expensesSummary.count > 0 ? expensesSummary.latestLabel : "No expenses recorded"}
+            amount={expensesSummary.totalAmount}
+            status={expensesSummary.count > 0 ? "RECORDED" : "NONE"}
             countLabel={{
-              count: recentOrders[1] ? recentOrders[1].itemCount : 0,
-              word: "units",
+              count: expensesSummary.count,
+              word: expensesSummary.count === 1 ? "bill" : "bills",
             }}
-            href={recentOrders[1] ? `/orders/${recentOrders[1].id}` : "/orders"}
+            href="/expenses"
           />
         </div>
 
@@ -532,9 +387,7 @@ export default function DashboardPage() {
           />
         </div>
       </div>
-      {loading && (
-        <span className="sr-only">Loading dashboard metrics</span>
-      )}
+      {loading && <span className="sr-only">Loading dashboard metrics</span>}
     </div>
   );
 }

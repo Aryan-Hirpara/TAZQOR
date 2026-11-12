@@ -89,31 +89,29 @@ export default function InvoicesPage() {
     loadInvoices();
   }, [loadInvoices]);
 
-  const handleDeleteDraft = async () => {
+  const handleDeleteInvoice = async () => {
     if (!draftToDelete) return;
     setDeleting(true);
     setDeleteError(null);
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("invoices")
-        .delete()
-        .eq("id", draftToDelete.id)
-        .select("id");
+      const res = await fetch(`/api/invoices/${draftToDelete.id}`, {
+        method: "DELETE",
+      });
+      const payload = await res.json().catch(() => null);
 
-      if (error) {
-        setDeleteError(error.message);
+      if (!res.ok || !payload?.success) {
+        setDeleteError(payload?.error || "Failed to delete invoice.");
         return;
       }
-      if (!data || data.length === 0) {
-        setDeleteError("Only draft invoices can be deleted. Cancel finalized invoices instead.");
-        return;
-      }
-      toast.success("Draft invoice deleted.");
+      toast.success(
+        payload.stockMovementsRemoved > 0
+          ? `Bill ${draftToDelete.invoice_number} deleted and stock recovered.`
+          : `Bill ${draftToDelete.invoice_number} deleted permanently.`
+      );
       setDraftToDelete(null);
       await loadInvoices();
     } catch (err: any) {
-      setDeleteError(err?.message || "Failed to delete draft invoice");
+      setDeleteError(err?.message || "Failed to delete invoice");
     } finally {
       setDeleting(false);
     }
@@ -196,7 +194,7 @@ export default function InvoicesPage() {
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 max-w-2xl min-w-0">
             <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 z-10 pointer-events-none" />
               <input
                 type="text"
                 value={search}
@@ -343,20 +341,19 @@ export default function InvoicesPage() {
 
                         <td className="py-4 px-6 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            {inv.status === "draft" && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setDeleteError(null);
-                                  setDraftToDelete(inv);
-                                }}
-                                aria-label="Delete draft invoice"
-                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 text-xs font-medium hover:bg-rose-100 border border-rose-200 transition-all cursor-pointer"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                                <span>Delete</span>
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDeleteError(null);
+                                setDraftToDelete(inv);
+                              }}
+                              aria-label={`Delete invoice ${inv.invoice_number}`}
+                              title="Delete Bill"
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 text-xs font-medium hover:bg-rose-100 border border-rose-200 transition-all cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete</span>
+                            </button>
                             <Link
                               href={`/invoices/${inv.id}`}
                               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/60 text-neutral-800 text-xs font-light hover:bg-black hover:text-white border border-white/70 transition-all"
@@ -445,18 +442,17 @@ export default function InvoicesPage() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {inv.status === "draft" && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setDeleteError(null);
-                              setDraftToDelete(inv);
-                            }}
-                            className="inline-flex items-center justify-center px-3 min-h-[40px] rounded-full bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200"
-                          >
-                            Delete
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeleteError(null);
+                            setDraftToDelete(inv);
+                          }}
+                          aria-label={`Delete invoice ${inv.invoice_number}`}
+                          className="inline-flex items-center justify-center px-3 min-h-[40px] rounded-full bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200"
+                        >
+                          Delete
+                        </button>
                         <Link
                           href={`/invoices/${inv.id}`}
                           className="inline-flex items-center justify-center gap-1 px-4 min-h-[40px] rounded-full bg-black text-white text-xs font-normal"
@@ -476,12 +472,12 @@ export default function InvoicesPage() {
 
       <ConfirmDialog
         open={Boolean(draftToDelete)}
-        title={`Delete draft invoice?`}
-        description="This draft invoice and its line items will be permanently removed."
-        confirmLabel="Delete Draft"
+        title={`Delete bill ${draftToDelete?.invoice_number || ""}?`}
+        description="This permanently deletes this bill from the software and database, removes its ledger impact, and recovers any deducted inventory stock automatically."
+        confirmLabel="Delete Bill"
         loading={deleting}
         error={deleteError}
-        onConfirm={handleDeleteDraft}
+        onConfirm={handleDeleteInvoice}
         onClose={() => !deleting && setDraftToDelete(null)}
       />
     </div>

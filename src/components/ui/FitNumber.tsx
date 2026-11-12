@@ -59,9 +59,11 @@ export function FitNumber({
     return () => observer.disconnect();
   }, [value, maxFontSize, minFontSize]);
 
-  const strVal = String(value);
-  const hasRupee = isCurrency !== false && (strVal.startsWith("₹") || strVal.includes("₹"));
-  const digits = hasRupee ? strVal.replace(/^₹\s*/, "") : strVal;
+  const strVal = String(value).trim();
+  const isNegative = strVal.startsWith("-");
+  const unsignedVal = isNegative ? strVal.slice(1).trim() : strVal;
+  const hasRupee = isCurrency !== false && unsignedVal.includes("₹");
+  const digits = hasRupee ? unsignedVal.replace(/₹\s*/g, "").trim() : unsignedVal;
 
   return (
     <div
@@ -75,11 +77,11 @@ export function FitNumber({
       >
         {hasRupee ? (
           <>
-            <span className="font-light text-[0.88em] mr-1">₹</span>
+            <span className="font-light text-[0.88em] mr-1">{isNegative ? "-₹" : "₹"}</span>
             <span className="font-semibold">{digits}</span>
           </>
         ) : (
-          <span className="font-semibold">{strVal}</span>
+          <span className="font-semibold">{isNegative ? `-${digits}` : digits}</span>
         )}
       </span>
     </div>

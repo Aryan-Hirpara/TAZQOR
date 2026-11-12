@@ -48,12 +48,13 @@ export default function StoreMapPage() {
 
       <div className="space-y-6 pt-2">
         {/* Controls Bar */}
-        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-          <div className="flex flex-1 items-center gap-2 max-w-lg">
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          <div className="flex flex-col sm:flex-row flex-1 items-stretch sm:items-center gap-2.5 max-w-2xl min-w-0">
+            <div className="relative flex-1 min-w-0 sm:min-w-[180px]">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 z-10 pointer-events-none" />
               <input
-                type="text"
+                type="search"
+                aria-label="Search store locations"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search shops or city..."
@@ -65,8 +66,8 @@ export default function StoreMapPage() {
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
               aria-label="Filter stores by type"
-              wrapperClassName="min-w-[130px]"
-              className="h-10 pl-3.5 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm"
+              wrapperClassName="w-full sm:w-44 shrink-0"
+              className="h-10 py-0 pl-3.5 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm"
             >
               <option value="all">All Types</option>
               <option value="grocery">Grocery</option>

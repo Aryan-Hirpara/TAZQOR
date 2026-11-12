@@ -685,8 +685,10 @@ export type Database = {
           created_at: string
           description: string | null
           expense_date: string
+          expense_name: string | null
           id: string
           is_demo: boolean
+          paid_by: string
           payment_method: string | null
           receipt_url: string | null
           updated_at: string
@@ -699,8 +701,10 @@ export type Database = {
           created_at?: string
           description?: string | null
           expense_date?: string
+          expense_name?: string | null
           id?: string
           is_demo?: boolean
+          paid_by?: string
           payment_method?: string | null
           receipt_url?: string | null
           updated_at?: string
@@ -713,8 +717,10 @@ export type Database = {
           created_at?: string
           description?: string | null
           expense_date?: string
+          expense_name?: string | null
           id?: string
           is_demo?: boolean
+          paid_by?: string
           payment_method?: string | null
           receipt_url?: string | null
           updated_at?: string
