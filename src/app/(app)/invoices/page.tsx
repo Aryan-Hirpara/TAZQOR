@@ -8,6 +8,7 @@ import {
   Search,
   ChevronRight,
   Trash2,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
@@ -18,6 +19,7 @@ import { FitNumber } from "@/components/ui/FitNumber";
 import { createClient } from "@/lib/supabase/client";
 import { StyledSelect } from "@/components/ui/StyledSelect";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { MarkPaidModal } from "@/components/invoices/MarkPaidModal";
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
@@ -29,6 +31,7 @@ export default function InvoicesPage() {
   const [draftToDelete, setDraftToDelete] = useState<InvoiceRecord | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [invoiceToPay, setInvoiceToPay] = useState<InvoiceRecord | null>(null);
 
   const loadInvoices = useCallback(async () => {
     setLoading(true);
@@ -122,7 +125,14 @@ export default function InvoicesPage() {
       inv.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
       inv.customer_name.toLowerCase().includes(search.toLowerCase());
     const matchMode = selectedMode === "all" || inv.mode === selectedMode;
-    const matchStatus = selectedStatus === "all" || inv.status === selectedStatus;
+    const matchStatus =
+      selectedStatus === "all"
+        ? true
+        : selectedStatus === "paid"
+        ? inv.status === "finalized" && inv.outstanding <= 0
+        : selectedStatus === "unpaid"
+        ? inv.status === "finalized" && inv.outstanding > 0
+        : inv.status === selectedStatus;
     return matchSearch && matchMode && matchStatus;
   });
 
@@ -224,6 +234,8 @@ export default function InvoicesPage() {
               className="h-10 py-0 text-xs bg-white/75 border-white/80 text-neutral-800"
             >
               <option value="all">All statuses</option>
+              <option value="paid">Paid</option>
+              <option value="unpaid">Unpaid / Partial</option>
               <option value="finalized">Finalized</option>
               <option value="draft">Draft</option>
               <option value="cancelled">Cancelled</option>
@@ -341,6 +353,18 @@ export default function InvoicesPage() {
 
                         <td className="py-4 px-6 text-right">
                           <div className="flex items-center justify-end gap-2">
+                            {inv.status === "finalized" && inv.outstanding > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setInvoiceToPay(inv)}
+                                aria-label={`Mark invoice ${inv.invoice_number} as paid`}
+                                title="Mark Bill as Paid"
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold hover:bg-emerald-100 border border-emerald-200 transition-all cursor-pointer"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Mark Paid</span>
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => {
@@ -442,6 +466,16 @@ export default function InvoicesPage() {
                       </div>
 
                       <div className="flex items-center gap-2">
+                        {inv.status === "finalized" && inv.outstanding > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setInvoiceToPay(inv)}
+                            aria-label={`Mark invoice ${inv.invoice_number} as paid`}
+                            className="inline-flex items-center justify-center px-3 min-h-[40px] rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200"
+                          >
+                            Mark Paid
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => {
@@ -479,6 +513,23 @@ export default function InvoicesPage() {
         error={deleteError}
         onConfirm={handleDeleteInvoice}
         onClose={() => !deleting && setDraftToDelete(null)}
+      />
+
+      <MarkPaidModal
+        open={Boolean(invoiceToPay)}
+        invoice={
+          invoiceToPay
+            ? {
+                id: invoiceToPay.id,
+                invoice_number: invoiceToPay.invoice_number,
+                customer_name: invoiceToPay.customer_name,
+                grand_total: invoiceToPay.grand_total,
+                outstanding: invoiceToPay.outstanding,
+              }
+            : null
+        }
+        onClose={() => setInvoiceToPay(null)}
+        onSuccess={loadInvoices}
       />
     </div>
   );

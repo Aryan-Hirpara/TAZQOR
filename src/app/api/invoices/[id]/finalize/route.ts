@@ -5,6 +5,12 @@ import {
   expandComboStockDeductions,
   parseComboRecipe,
 } from "@/lib/products/combo-pack";
+import {
+  getTodayIsoDate,
+  ParsedInvoicePayment,
+  parseInvoicePaymentInput,
+  settleInvoiceWithPayment,
+} from "@/lib/invoices/payment-settlement";
 
 interface BatchStockRow {
   batch_id: string;
@@ -79,6 +85,55 @@ export async function POST(
       );
     }
 
+    const parsedPayment = parseInvoicePaymentInput(body?.payment, {
+      defaultDate:
+        typeof invoice.invoice_date === "string" && invoice.invoice_date
+          ? invoice.invoice_date
+          : getTodayIsoDate(),
+      maxAmount: Number(invoice.grand_total) || 0,
+      requirePositiveWhenPresent: false,
+    });
+    if (parsedPayment.error) {
+      return NextResponse.json(
+        { success: false, error: parsedPayment.error },
+        { status: 400 }
+      );
+    }
+
+    const applyOptionalPayment = async (
+      finalizedPayload: Record<string, unknown>,
+      payment: ParsedInvoicePayment | null
+    ) => {
+      if (!payment) {
+        return NextResponse.json({ success: true, ...finalizedPayload });
+      }
+      const settlement = await settleInvoiceWithPayment({
+        db: auth.db,
+        businessId,
+        invoiceId,
+        customerId: invoice.customer_id,
+        payment,
+      });
+      if (!settlement.ok) {
+        return NextResponse.json(
+          {
+            success: false,
+            ...finalizedPayload,
+            payment_recorded: false,
+            error: `Invoice was finalized, but recording payment failed: ${settlement.error}`,
+          },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json({
+        success: true,
+        ...finalizedPayload,
+        payment_recorded: true,
+        payment_id: settlement.paymentId,
+        paid_amount: settlement.amount,
+      });
+    };
+
     const { data: items, error: itemsErr } = await auth.db
       .from("invoice_items")
       .select("id, product_variant_id, quantity, description")
@@ -148,10 +203,10 @@ export async function POST(
           { status: 400 }
         );
       }
-      return NextResponse.json({
-        success: true,
-        ...(typeof rpcRes === "object" && rpcRes ? rpcRes : {}),
-      });
+      return applyOptionalPayment(
+        typeof rpcRes === "object" && rpcRes ? (rpcRes as Record<string, unknown>) : {},
+        parsedPayment.payment
+      );
     }
 
     // Combo pack path: check GST settings if mode === 'gst'
@@ -444,12 +499,14 @@ export async function POST(
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      status: "finalized",
-      invoice_id: invoiceId,
-      invoice_number: invNumber,
-    });
+    return applyOptionalPayment(
+      {
+        status: "finalized",
+        invoice_id: invoiceId,
+        invoice_number: invNumber,
+      },
+      parsedPayment.payment
+    );
   } catch (err: any) {
     return NextResponse.json(
       { success: false, error: err?.message || "Failed to finalize invoice" },

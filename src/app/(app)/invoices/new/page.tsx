@@ -21,6 +21,10 @@ import { getCustomers, Customer } from "@/lib/services/customers";
 import { getProducts } from "@/lib/services/products";
 import { createClient } from "@/lib/supabase/client";
 import { StyledSelect } from "@/components/ui/StyledSelect";
+import {
+  PAYMENT_METHOD_OPTIONS,
+  PaymentMethod,
+} from "@/lib/invoices/payment-settlement";
 
 interface VariantOption {
   variant_id: string;
@@ -71,6 +75,10 @@ function NewInvoiceForm() {
   const [isInterState, setIsInterState] = useState(false);
   const [roundOffEnabled, setRoundOffEnabled] = useState(true);
   const [notes, setNotes] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState<"unpaid" | "paid">("unpaid");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [paymentAmountOverride, setPaymentAmountOverride] = useState<string | null>(null);
+  const [paymentReference, setPaymentReference] = useState("");
   const [lines, setLines] = useState<BillLineItem[]>([]);
 
   useEffect(() => {
@@ -364,26 +372,72 @@ function NewInvoiceForm() {
           ? crypto.randomUUID()
           : `inv-${inv.id}-${Date.now()}`;
 
+      let paymentPayload:
+        | {
+            status: "paid";
+            method: PaymentMethod;
+            amount: number;
+            payment_date: string;
+            reference: string | null;
+            idempotency_key: string;
+          }
+        | undefined;
+
+      if (paymentStatus === "paid" && invoiceTotals.grandTotal > 0) {
+        const parsedAmt =
+          paymentAmountOverride !== null && paymentAmountOverride.trim() !== ""
+            ? Number(paymentAmountOverride)
+            : invoiceTotals.grandTotal;
+        if (!Number.isFinite(parsedAmt) || parsedAmt <= 0) {
+          toast.error("Enter a valid positive payment amount or switch to Unpaid.");
+          setSubmitting(false);
+          return;
+        }
+        if (parsedAmt > invoiceTotals.grandTotal + 0.001) {
+          toast.error(
+            `Received amount cannot exceed Grand Total (${formatINR(invoiceTotals.grandTotal)}).`
+          );
+          setSubmitting(false);
+          return;
+        }
+        paymentPayload = {
+          status: "paid",
+          method: paymentMethod,
+          amount: Math.round(parsedAmt * 100) / 100,
+          payment_date: invoiceDate,
+          reference: paymentReference.trim() || null,
+          idempotency_key: `${idempKey}-pay`,
+        };
+      }
+
       const finRes = await fetch(`/api/invoices/${inv.id}/finalize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idempotency_key: idempKey }),
+        body: JSON.stringify({
+          idempotency_key: idempKey,
+          ...(paymentPayload ? { payment: paymentPayload } : {}),
+        }),
       });
       const rpcRes = await finRes.json().catch(() => null);
 
       if (!finRes.ok || !rpcRes?.success) {
-        // Leave as draft so user isn't lost, or inform them cleanly
-        toast.error(
-          `Saved as Draft — Finalization failed: ${
-            rpcRes?.error || `HTTP ${finRes.status}`
-          }`
-        );
+        const errPrefix =
+          rpcRes?.payment_recorded === false
+            ? "Invoice finalized, but payment was not saved"
+            : "Saved as Draft — Finalization failed";
+        toast.error(`${errPrefix}: ${rpcRes?.error || `HTTP ${finRes.status}`}`);
         router.push(`/invoices/${inv.id}`);
         return;
       }
 
       const invNum = rpcRes?.invoice_number || "Finalized";
-      toast.success(`Invoice ${invNum} finalized and inventory deducted!`);
+      if (rpcRes?.payment_recorded) {
+        toast.success(
+          `Invoice ${invNum} finalized (${formatINR(Number(rpcRes.paid_amount) || 0)} Paid) & stock deducted!`
+        );
+      } else {
+        toast.success(`Invoice ${invNum} finalized and inventory deducted!`);
+      }
       router.push(`/invoices/${inv.id}`);
     } catch (err: any) {
       toast.error(err?.message || "Failed to create invoice");
@@ -782,17 +836,138 @@ function NewInvoiceForm() {
 
               {/* Totals Summary */}
               <div className="pt-6 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-start gap-6">
-                <div className="w-full sm:max-w-md space-y-2">
-                  <label className="block text-xs font-normal text-neutral-700">
-                    Invoice Terms &amp; Notes
-                  </label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Payment terms or delivery notes (optional)"
-                    rows={2}
-                    className="w-full p-3.5 text-xs bg-white/75 rounded-2xl border border-neutral-200/80 text-neutral-900"
-                  />
+                <div className="w-full sm:max-w-md space-y-4">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-normal text-neutral-700">
+                      Invoice Terms &amp; Notes
+                    </label>
+                    <textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Payment terms or delivery notes (optional)"
+                      rows={2}
+                      className="w-full p-3.5 text-xs bg-white/75 rounded-2xl border border-neutral-200/80 text-neutral-900"
+                    />
+                  </div>
+
+                  {/* Payment Status on Finalization */}
+                  <div className="rounded-2xl bg-neutral-50/90 border border-neutral-200/80 p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-neutral-800">
+                        Payment Status
+                      </span>
+                      <span className="text-[11px] text-neutral-500">
+                        Applied when finalized
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentStatus("unpaid")}
+                        className={`h-9 px-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                          paymentStatus === "unpaid"
+                            ? "bg-[#0A0A0A] text-white border-[#0A0A0A] shadow-xs"
+                            : "bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-100"
+                        }`}
+                      >
+                        Unpaid (On Credit)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPaymentStatus("paid");
+                          setPaymentAmountOverride(null);
+                        }}
+                        className={`h-9 px-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                          paymentStatus === "paid"
+                            ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                            : "bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-100"
+                        }`}
+                      >
+                        Paid (Settled Now)
+                      </button>
+                    </div>
+
+                    {paymentStatus === "paid" && (
+                      <div className="space-y-3 pt-1">
+                        <div className="space-y-1.5">
+                          <span className="block text-[11px] font-medium text-neutral-600">
+                            Payment Method
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {PAYMENT_METHOD_OPTIONS.map((opt) => (
+                              <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => setPaymentMethod(opt.value)}
+                                className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all cursor-pointer ${
+                                  paymentMethod === opt.value
+                                    ? "bg-[#0A0A0A] text-white border-[#0A0A0A]"
+                                    : "bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-100"
+                                }`}
+                              >
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <label
+                                htmlFor="new-bill-paid-amount"
+                                className="text-[11px] font-medium text-neutral-600"
+                              >
+                                Amount Received (₹)
+                              </label>
+                              {paymentAmountOverride !== null && (
+                                <button
+                                  type="button"
+                                  onClick={() => setPaymentAmountOverride(null)}
+                                  className="text-[10px] font-semibold text-emerald-700 hover:underline cursor-pointer"
+                                >
+                                  Reset Full
+                                </button>
+                              )}
+                            </div>
+                            <input
+                              id="new-bill-paid-amount"
+                              type="number"
+                              step="0.01"
+                              min="0.01"
+                              max={Math.max(0.01, invoiceTotals.grandTotal)}
+                              value={
+                                paymentAmountOverride !== null
+                                  ? paymentAmountOverride
+                                  : invoiceTotals.grandTotal.toFixed(2)
+                              }
+                              onChange={(e) => setPaymentAmountOverride(e.target.value)}
+                              className="w-full h-9 px-3 text-xs bg-white rounded-xl border border-neutral-200 text-neutral-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#D7FF00]"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label
+                              htmlFor="new-bill-payment-ref"
+                              className="text-[11px] font-medium text-neutral-600"
+                            >
+                              Payment Ref (optional)
+                            </label>
+                            <input
+                              id="new-bill-payment-ref"
+                              type="text"
+                              value={paymentReference}
+                              onChange={(e) => setPaymentReference(e.target.value)}
+                              placeholder="UPI / Cheque / Cash note"
+                              className="w-full h-9 px-3 text-xs bg-white rounded-xl border border-neutral-200 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#D7FF00]"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="w-full sm:w-72 bg-white/70 p-4 rounded-2xl border border-white/80 space-y-2.5 text-xs">
@@ -879,7 +1054,15 @@ function NewInvoiceForm() {
                   className="px-8 h-11 rounded-full bg-black text-white text-xs sm:text-sm font-normal flex items-center justify-center gap-2 hover:bg-neutral-800 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
                 >
                   <FileText className="w-4 h-4 text-[#D7FF00]" />
-                  <span>{submitting ? "Finalizing & Deducting Stock..." : "Finalize & Issue Stock"}</span>
+                  <span>
+                    {submitting
+                      ? paymentStatus === "paid"
+                        ? "Finalizing & Recording Payment..."
+                        : "Finalizing & Deducting Stock..."
+                      : paymentStatus === "paid"
+                      ? "Finalize & Mark Paid"
+                      : "Finalize & Issue Stock"}
+                  </span>
                 </button>
               </div>
             </div>

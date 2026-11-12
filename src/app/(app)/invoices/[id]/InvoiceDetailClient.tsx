@@ -25,6 +25,7 @@ import { formatINR } from "@/lib/formatting/currency";
 import { TazqorLogo } from "@/components/brand/TazqorLogo";
 import { createClient } from "@/lib/supabase/client";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { MarkPaidModal } from "@/components/invoices/MarkPaidModal";
 import {
   DEFAULT_INVOICE_TERMS,
   formatBillCustomerBlock,
@@ -54,6 +55,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
   const [confirmKind, setConfirmKind] = useState<"cancel" | "delete" | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
@@ -587,6 +589,17 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
                 </button>
               )}
 
+              {invoice.status === "finalized" && invoice.outstanding > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setMarkPaidOpen(true)}
+                  className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-all cursor-pointer"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Mark Paid</span>
+                </button>
+              )}
+
               {invoice.status === "finalized" && (
                 <button
                   type="button"
@@ -827,6 +840,18 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
               <p className="text-gray-500 text-[11px]">
                 Paid: {formatINR(invoice.paid_amount)} / Total: {formatINR(invoice.grand_total)}
               </p>
+              {invoice.status === "finalized" && invoice.outstanding > 0 && (
+                <div className="pt-1 print:hidden">
+                  <button
+                    type="button"
+                    onClick={() => setMarkPaidOpen(true)}
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span>Mark as Paid</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1063,6 +1088,23 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
         error={confirmError}
         onConfirm={handleConfirmModal}
         onClose={() => !confirmLoading && setConfirmKind(null)}
+      />
+
+      <MarkPaidModal
+        open={markPaidOpen}
+        invoice={
+          invoice
+            ? {
+                id: invoice.id,
+                invoice_number: invoice.invoice_number,
+                customer_name: invoice.customer?.name || "Customer",
+                grand_total: invoice.grand_total,
+                outstanding: invoice.outstanding,
+              }
+            : null
+        }
+        onClose={() => setMarkPaidOpen(false)}
+        onSuccess={loadInvoice}
       />
     </div>
   );
