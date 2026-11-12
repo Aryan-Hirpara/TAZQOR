@@ -64,8 +64,10 @@ export function MessagesPopover({
 
   // App Password setup modal / banner state
   const [showConfig, setShowConfig] = useState(false);
+  const [connectEmail, setConnectEmail] = useState("");
   const [appPasswordInput, setAppPasswordInput] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
+  const [mailboxEmail, setMailboxEmail] = useState("");
 
   // Fetch inbox from API
   const fetchInbox = async () => {
@@ -77,6 +79,10 @@ export function MessagesPopover({
         setMessages(data.messages);
         setIsLive(Boolean(data.isLive));
         setRequiresAppPassword(Boolean(data.requiresAppPassword));
+        if (data.email) {
+          setMailboxEmail(data.email);
+          setConnectEmail((prev) => prev || data.email);
+        }
         const unread = data.messages.filter((m: MailMessage) => m.unread).length;
         onUnreadCountChange?.(unread);
       }
@@ -180,7 +186,10 @@ export function MessagesPopover({
   // Connect Google App Password
   const handleConnectAppPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!appPasswordInput.trim()) return;
+    if (!appPasswordInput.trim() || !connectEmail.trim()) {
+      toast.error("Please enter both your email address and Google App Password.");
+      return;
+    }
 
     setIsConnecting(true);
     try {
@@ -188,14 +197,15 @@ export function MessagesPopover({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: "tazqor@gmail.com",
+          email: connectEmail.trim(),
           appPassword: appPasswordInput.trim(),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to connect to Gmail");
 
-      toast.success("Connected to live Gmail inbox tazqor@gmail.com!");
+      toast.success(`Connected to live Gmail inbox ${connectEmail.trim()}!`);
+      setMailboxEmail(connectEmail.trim());
       setShowConfig(false);
       setAppPasswordInput("");
       fetchInbox();
@@ -265,7 +275,7 @@ export function MessagesPopover({
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate leading-none">
-                  tazqor@gmail.com
+                  {mailboxEmail || "Business Inbox"}
                 </h3>
                 {isLive ? (
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
@@ -328,10 +338,10 @@ export function MessagesPopover({
             <div className="flex items-start justify-between gap-2">
               <div className="space-y-1">
                 <p className="font-semibold text-amber-900 dark:text-amber-200">
-                  Connect Live Gmail (tazqor@gmail.com)
+                  Connect Live Gmail Mailbox
                 </p>
                 <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80 leading-relaxed font-light">
-                  Enter your Google 16-character App Password.
+                  Enter your Gmail address and Google 16-character App Password.
                 </p>
               </div>
               <a
@@ -345,21 +355,31 @@ export function MessagesPopover({
               </a>
             </div>
 
-            <form onSubmit={handleConnectAppPassword} className="mt-2.5 flex items-center gap-2">
+            <form onSubmit={handleConnectAppPassword} className="mt-2.5 space-y-2">
               <input
-                type="password"
-                value={appPasswordInput}
-                onChange={(e) => setAppPasswordInput(e.target.value)}
-                placeholder="e.g. abcd efgh ijkl mnop"
-                className="flex-1 h-8 px-2.5 rounded-xl bg-white dark:bg-neutral-800 border border-amber-300 dark:border-amber-700 text-xs text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-black"
+                type="email"
+                required
+                value={connectEmail}
+                onChange={(e) => setConnectEmail(e.target.value)}
+                placeholder="your-business@gmail.com"
+                className="w-full h-8 px-2.5 rounded-xl bg-white dark:bg-neutral-800 border border-amber-300 dark:border-amber-700 text-xs text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-black"
               />
-              <button
-                type="submit"
-                disabled={!appPasswordInput.trim() || isConnecting}
-                className="h-8 px-3 rounded-xl bg-black text-[#D7FF00] font-semibold text-xs disabled:opacity-50 hover:bg-black/90 active:scale-95 transition-all shrink-0 cursor-pointer"
-              >
-                {isConnecting ? "Connecting..." : "Connect"}
-              </button>
+              <div className="flex items-center gap-2">
+                <input
+                  type="password"
+                  value={appPasswordInput}
+                  onChange={(e) => setAppPasswordInput(e.target.value)}
+                  placeholder="16-char Google App Password"
+                  className="flex-1 h-8 px-2.5 rounded-xl bg-white dark:bg-neutral-800 border border-amber-300 dark:border-amber-700 text-xs text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-black"
+                />
+                <button
+                  type="submit"
+                  disabled={!connectEmail.trim() || !appPasswordInput.trim() || isConnecting}
+                  className="h-8 px-3 rounded-xl bg-black text-[#D7FF00] font-semibold text-xs disabled:opacity-50 hover:bg-black/90 active:scale-95 transition-all shrink-0 cursor-pointer"
+                >
+                  {isConnecting ? "Connecting..." : "Connect"}
+                </button>
+              </div>
             </form>
           </div>
         )}
@@ -369,7 +389,7 @@ export function MessagesPopover({
           <div className="flex-1 p-4 flex flex-col space-y-3 overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-neutral-100 dark:border-neutral-800">
               <h4 className="text-xs font-semibold text-neutral-900 dark:text-neutral-100">
-                New Email from tazqor@gmail.com
+                New Email{mailboxEmail ? ` from ${mailboxEmail}` : ""}
               </h4>
               <button
                 type="button"
@@ -556,7 +576,7 @@ export function MessagesPopover({
               {loading ? (
                 <div className="py-16 text-center text-xs text-neutral-400 flex flex-col items-center justify-center gap-2">
                   <RefreshCw className="w-5 h-5 animate-spin text-neutral-600" />
-                  <span>Fetching emails from tazqor@gmail.com...</span>
+                  <span>{mailboxEmail ? `Fetching emails from ${mailboxEmail}...` : "Fetching inbox..."}</span>
                 </div>
               ) : filtered.length === 0 ? (
                 <div className="py-16 text-center text-xs text-neutral-400">

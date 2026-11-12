@@ -1,23 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CalendarCheck, MapPin, Save, Sparkles } from "lucide-react";
+import { ArrowLeft, MapPin, Save } from "lucide-react";
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
+import { StyledSelect } from "@/components/ui/StyledSelect";
+import { getCustomers, Customer } from "@/lib/services/customers";
 import { createClient } from "@/lib/supabase/client";
+
+const BUSINESS_ID = "00000000-0000-0000-0000-000000000001";
 
 export default function NewVisitPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [loadingCustomers, setLoadingCustomers] = useState(true);
+  const [customers, setCustomers] = useState<Customer[]>([]);
 
-  const [customer, setCustomer] = useState("c1-shreeji");
-  const [visitDate, setVisitDate] = useState("2026-02-16");
+  const [customer, setCustomer] = useState("");
+  const [visitDate, setVisitDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [outcome, setOutcome] = useState("");
-  const [nextFollowUp, setNextFollowUp] = useState("2026-02-23");
+  const [nextFollowUp, setNextFollowUp] = useState("");
   const [gpsCaptured, setGpsCaptured] = useState(false);
   const [coords, setCoords] = useState<{ lat?: number; lng?: number }>({});
+
+  useEffect(() => {
+    async function loadCusts() {
+      setLoadingCustomers(true);
+      try {
+        const list = await getCustomers({ status: "active" });
+        setCustomers(list);
+        if (list.length > 0) {
+          setCustomer(list[0].id);
+        }
+      } catch (e) {
+        console.warn("Could not load customers", e);
+      } finally {
+        setLoadingCustomers(false);
+      }
+    }
+    loadCusts();
+  }, []);
 
   const handleCaptureGps = () => {
     if (!navigator.geolocation) {
@@ -39,6 +63,10 @@ export default function NewVisitPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!customer) {
+      toast.error("Please add or select a customer first");
+      return;
+    }
     if (!outcome.trim()) {
       toast.error("Please enter visit outcome and notes");
       return;
@@ -47,27 +75,39 @@ export default function NewVisitPage() {
     setSubmitting(true);
     try {
       const supabase = createClient();
-      let customerId = customer;
-      // If customer is a demo slug like "c1-shreeji", lookup or fallback to real UUID
-      if (customer.startsWith("c1") || !customer.includes("-")) {
-        const { data: c } = await supabase.from("customers").select("id").limit(1);
-        if (c && c[0]) customerId = c[0].id;
-      }
-
-      const { error } = await supabase.from("customer_visits").insert({
-        business_id: "00000000-0000-0000-0000-000000000001",
-        customer_id: customerId,
-        visit_date: visitDate,
-        outcome: outcome,
-        notes: outcome,
-      });
+      const { data: visitRow, error } = await supabase
+        .from("customer_visits")
+        .insert({
+          business_id: BUSINESS_ID,
+          customer_id: customer,
+          visit_date: visitDate || new Date().toISOString().split("T")[0],
+          outcome: outcome.trim(),
+          notes: outcome.trim(),
+          gps_lat: coords.lat ?? null,
+          gps_lng: coords.lng ?? null,
+        })
+        .select("id")
+        .single();
 
       if (error) throw error;
 
-      toast.success("Visit log and follow-up scheduled and synced to Supabase!");
+      if (nextFollowUp && visitRow) {
+        const { error: fuErr } = await supabase.from("follow_ups").insert({
+          business_id: BUSINESS_ID,
+          customer_id: customer,
+          visit_id: visitRow.id,
+          scheduled_for: new Date(`${nextFollowUp}T09:00:00`).toISOString(),
+          notes: outcome.trim(),
+        });
+        if (fuErr) {
+          console.warn("Follow-up scheduling warning:", fuErr.message);
+        }
+      }
+
+      toast.success("Visit log saved to Supabase!");
       router.push("/visits");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to save visit log");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to save visit log");
     } finally {
       setSubmitting(false);
     }
@@ -98,24 +138,40 @@ export default function NewVisitPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
+            <div className="min-w-0">
               <label className="block text-xs font-light text-neutral-600 mb-1.5">
                 Customer Store *
               </label>
-              <select
+              <StyledSelect
                 aria-label="Customer Store"
                 value={customer}
                 onChange={(e) => setCustomer(e.target.value)}
-                className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
+                disabled={loadingCustomers || customers.length === 0}
+                className="w-full h-10 pl-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
               >
-                <option value="c1-shreeji">Shreeji Supermarket (Haresh Patel)</option>
-                <option value="c2-pride-hotel">Hotel Pride Plaza (Housekeeping)</option>
-                <option value="c3-apex-cowork">Apex Co-Working (Neha Shah)</option>
-                <option value="c4-radhe-pg">Radhe Krishna PG (Mahesh Bhai)</option>
-              </select>
+                {loadingCustomers ? (
+                  <option value="">Loading customers...</option>
+                ) : customers.length === 0 ? (
+                  <option value="">No active customers found</option>
+                ) : (
+                  customers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.shop_name} {c.contact_person ? `(${c.contact_person})` : ""}
+                    </option>
+                  ))
+                )}
+              </StyledSelect>
+              {!loadingCustomers && customers.length === 0 && (
+                <p className="text-[11px] text-neutral-500 mt-1">
+                  <Link href="/customers/new" className="underline text-neutral-900">
+                    Add a customer
+                  </Link>{" "}
+                  before logging a visit.
+                </p>
+              )}
             </div>
 
-            <div>
+            <div className="min-w-0">
               <label className="block text-xs font-light text-neutral-600 mb-1.5">
                 Visit Date *
               </label>
@@ -123,11 +179,12 @@ export default function NewVisitPage() {
                 type="date"
                 value={visitDate}
                 onChange={(e) => setVisitDate(e.target.value)}
+                required
                 className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
               />
             </div>
 
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 min-w-0">
               <label className="block text-xs font-light text-neutral-600 mb-1.5">
                 Visit Discussion & Outcome *
               </label>
@@ -141,7 +198,7 @@ export default function NewVisitPage() {
               />
             </div>
 
-            <div>
+            <div className="min-w-0">
               <label className="block text-xs font-light text-neutral-600 mb-1.5">
                 Next Follow-up Date
               </label>
@@ -154,7 +211,7 @@ export default function NewVisitPage() {
             </div>
 
             {/* GPS Verification */}
-            <div className="flex flex-col justify-end">
+            <div className="flex flex-col justify-end min-w-0">
               <button
                 type="button"
                 onClick={handleCaptureGps}
@@ -173,11 +230,11 @@ export default function NewVisitPage() {
           <div className="pt-2 flex justify-end">
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !customer}
               className="w-full sm:w-auto px-8 h-11 rounded-full bg-black text-white text-xs sm:text-sm font-normal flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-50 cursor-pointer"
             >
               <Save className="w-4 h-4 text-[#E0FE52]" />
-              <span>{submitting ? "Logging Visit..." : "Save Visit & Schedule Follow-up"}</span>
+              <span>{submitting ? "Logging Visit..." : "Save Visit Log"}</span>
             </button>
           </div>
         </form>
@@ -185,4 +242,3 @@ export default function NewVisitPage() {
     </div>
   );
 }
-

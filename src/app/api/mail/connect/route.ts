@@ -5,7 +5,14 @@ import { testGmailCredentials } from "@/lib/mail/gmail";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email = "tazqor@gmail.com", appPassword } = await request.json();
+    const { email, appPassword } = await request.json();
+
+    if (!email || typeof email !== "string" || !email.trim()) {
+      return NextResponse.json(
+        { error: "Please provide a valid email address." },
+        { status: 400 }
+      );
+    }
 
     if (!appPassword || typeof appPassword !== "string" || appPassword.trim().length < 8) {
       return NextResponse.json(

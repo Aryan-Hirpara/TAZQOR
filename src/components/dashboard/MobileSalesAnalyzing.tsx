@@ -11,14 +11,18 @@ interface MobileSalesAnalyzingProps {
   netProfit?: number;
   grossMarginPct?: number;
   netMarginPct?: number;
+  dispatchedCount?: number;
+  deliveredCount?: number;
   initialMode?: "dark" | "light";
 }
 
 export function MobileSalesAnalyzing({
-  grossProfit = 177349.5,
-  netProfit = 142875.0,
-  grossMarginPct = 53.5,
-  netMarginPct = 43.1,
+  grossProfit = 0,
+  netProfit = 0,
+  grossMarginPct = 0,
+  netMarginPct = 0,
+  dispatchedCount = 0,
+  deliveredCount = 0,
   initialMode = "dark",
 }: MobileSalesAnalyzingProps) {
   const [mode, setMode] = useState<"dark" | "light">(initialMode);
@@ -88,11 +92,11 @@ export function MobileSalesAnalyzing({
           }`}
         >
           <span className={`text-[11px] font-light ${isDark ? "text-neutral-400" : "text-black/55"}`}>
-            Purchase orders
+            Orders dispatched
           </span>
           <div className="mt-2 flex items-baseline gap-1.5">
             <span className="text-2xl sm:text-3xl font-semibold tracking-tight">
-              48
+              {dispatchedCount}
             </span>
             <span className={`text-xs font-light ${isDark ? "text-neutral-400" : "text-black/55"}`}>
               dispatched
@@ -109,11 +113,11 @@ export function MobileSalesAnalyzing({
           }`}
         >
           <span className={`text-[11px] font-light ${isDark ? "text-neutral-400" : "text-black/55"}`}>
-            Purchase orders
+            Orders delivered
           </span>
           <div className="mt-2 flex items-baseline gap-1.5">
             <span className="text-2xl sm:text-3xl font-semibold tracking-tight">
-              12
+              {deliveredCount}
             </span>
             <span className={`text-xs font-light ${isDark ? "text-neutral-400" : "text-black/55"}`}>
               delivered

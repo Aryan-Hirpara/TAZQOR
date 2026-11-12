@@ -16,16 +16,19 @@ import {
   X,
 } from "lucide-react";
 import { TopHeader } from "@/components/layout/TopHeader";
+import { StyledSelect } from "@/components/ui/StyledSelect";
 import { formatINR } from "@/lib/formatting/currency";
 import { formatDate } from "@/lib/formatting/dates";
 import { createClient } from "@/lib/supabase/client";
+
+const BUSINESS_ID = "00000000-0000-0000-0000-000000000001";
 
 interface PaymentRecord {
   id: string;
   customer_name: string;
   amount: number;
   payment_date: string;
-  method: 'cash' | 'upi' | 'bank_transfer' | 'cheque';
+  method: "cash" | "upi" | "bank_transfer" | "cheque" | "other";
   reference: string;
   allocated_to: string;
   advance: number;
@@ -33,6 +36,9 @@ interface PaymentRecord {
 
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [totalAdvances, setTotalAdvances] = useState(0);
+  const [businessName, setBusinessName] = useState("");
+  const [businessEmail, setBusinessEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedMethod, setSelectedMethod] = useState("all");
@@ -43,23 +49,57 @@ export default function PaymentsPage() {
       try {
         setLoading(true);
         const supabase = createClient();
-        const { data, error } = await supabase
-          .from("payments")
-          .select("*, customers(name, shop_name)")
-          .order("payment_date", { ascending: false });
+        const [{ data, error }, { data: balData }, { data: settingsData }] = await Promise.all([
+          supabase
+            .from("payments")
+            .select("*, customers(name, shop_name), payment_allocations(amount_allocated, invoices(invoice_number))")
+            .eq("business_id", BUSINESS_ID)
+            .order("payment_date", { ascending: false }),
+          supabase
+            .from("v_customer_balances")
+            .select("advance")
+            .eq("business_id", BUSINESS_ID),
+          supabase
+            .from("business_settings")
+            .select("legal_name, email")
+            .eq("business_id", BUSINESS_ID)
+            .maybeSingle(),
+        ]);
+
+        if (balData) {
+          const advSum = balData.reduce((sum: number, row: { advance?: number }) => sum + (Number(row.advance) || 0), 0);
+          setTotalAdvances(advSum);
+        }
+
+        if (settingsData) {
+          setBusinessName(settingsData.legal_name || "");
+          setBusinessEmail(settingsData.email || "");
+        }
 
         if (!error && data) {
           const mapped: PaymentRecord[] = data.map((p: any) => {
             const custName = p.customers?.shop_name || p.customers?.name || "Customer";
+            const allocs = (p.payment_allocations || []) as Array<{ amount_allocated: number; invoices?: { invoice_number?: string } }>;
+            const allocLabels = allocs
+              .map((a) => a.invoices?.invoice_number)
+              .filter(Boolean);
+            const allocatedTotal = allocs.reduce((s, a) => s + (Number(a.amount_allocated) || 0), 0);
+            const amt = Number(p.amount) || 0;
+            const adv = Math.max(0, amt - allocatedTotal);
             return {
               id: p.id,
               customer_name: custName,
-              amount: Number(p.amount) || 0,
+              amount: amt,
               payment_date: p.payment_date || new Date().toISOString().split("T")[0],
               method: (p.method as PaymentRecord["method"]) || "upi",
-              reference: p.reference || "RECEIPT-LIVE",
-              allocated_to: p.notes || "Against Open Invoices",
-              advance: 0,
+              reference: p.reference || "—",
+              allocated_to:
+                allocLabels.length > 0
+                  ? allocLabels.join(", ")
+                  : adv > 0
+                  ? p.notes || "On-account advance"
+                  : p.notes || "Unallocated",
+              advance: adv,
             };
           });
 
@@ -83,7 +123,11 @@ export default function PaymentsPage() {
     return matchSearch && matchMethod;
   });
 
-  const totalCollected = payments.reduce((acc, p) => acc + p.amount, 0);
+  const now = new Date();
+  const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const totalCollected = payments
+    .filter((p) => p.payment_date.startsWith(monthPrefix))
+    .reduce((acc, p) => acc + p.amount, 0);
 
   const handlePrintReceipt = (p: PaymentRecord) => {
     setPrintPayment(p);
@@ -147,7 +191,7 @@ export default function PaymentsPage() {
               Total customer advances
             </span>
             <div className="text-2xl sm:text-3xl font-semibold text-neutral-900 mt-1 tracking-tight">
-              ₹1,500.00
+              {formatINR(totalAdvances)}
             </div>
             <p className="text-[10px] sm:text-[11px] font-light text-neutral-500 mt-0.5 truncate">Unallocated payments held on account</p>
           </div>
@@ -182,18 +226,19 @@ export default function PaymentsPage() {
               />
             </div>
 
-            <select
+            <StyledSelect
               aria-label="Filter payment method"
               value={selectedMethod}
               onChange={(e) => setSelectedMethod(e.target.value)}
-              className="h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm"
+              wrapperClassName="min-w-[140px]"
+              className="h-10 pl-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm"
             >
               <option value="all">All Methods</option>
               <option value="upi">UPI</option>
               <option value="bank_transfer">Bank Transfer / NEFT</option>
               <option value="cash">Cash</option>
               <option value="cheque">Cheque</option>
-            </select>
+            </StyledSelect>
           </div>
 
           <Link
@@ -207,7 +252,7 @@ export default function PaymentsPage() {
 
         {/* Payments Table */}
         <div className="bg-white/55 backdrop-blur-xl rounded-[28px] border border-white/65 overflow-hidden shadow-none">
-          <div className="overflow-x-auto">
+          <div className="table-wrapper">
             <table className="w-full text-left text-xs">
               <thead className="bg-white/40 border-b border-white/60 text-neutral-500 font-normal">
                 <tr>
@@ -221,7 +266,20 @@ export default function PaymentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/50">
-                {filteredPayments.map((p) => (
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-xs text-neutral-500">
+                      Loading payments...
+                    </td>
+                  </tr>
+                ) : filteredPayments.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-xs text-neutral-500">
+                      No payments recorded yet.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredPayments.map((p) => (
                   <tr key={p.id} className="hover:bg-white/40 transition-colors">
                     <td className="py-4 px-6 font-mono font-medium text-neutral-900">
                       {p.id.length > 12 ? `RCPT-${p.id.slice(0, 6).toUpperCase()}` : p.id}
@@ -262,7 +320,8 @@ export default function PaymentsPage() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                ))
+                )}
               </tbody>
             </table>
           </div>
@@ -273,7 +332,7 @@ export default function PaymentsPage() {
       {printPayment && (
         <div id="receipt-print-area" style={{ position: "absolute", left: "-9999px", top: 0 }}>
           <div className="r-header">
-            <h1>TAZQOR</h1>
+            <h1>{businessName || "TAZQOR"}</h1>
             <p>Payment Receipt</p>
           </div>
           <div className="r-amount">
@@ -288,7 +347,9 @@ export default function PaymentsPage() {
           <div className="r-row"><span>Allocated To</span><span>{printPayment.allocated_to}</span></div>
           <div className="r-footer">
             <p>Thank you for your payment!</p>
-            <p>TAZQOR Business — tazqor@gmail.com</p>
+            {(businessName || businessEmail) && (
+              <p>{[businessName, businessEmail].filter(Boolean).join(" — ")}</p>
+            )}
           </div>
         </div>
       )}

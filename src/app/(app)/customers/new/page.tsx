@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Sparkles, MapPin, Phone, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
+import { StyledSelect } from "@/components/ui/StyledSelect";
 import { createCustomer } from "@/lib/services/customers";
 
 export default function NewCustomerPage() {
@@ -24,10 +25,10 @@ export default function NewCustomerPage() {
     type: "grocery",
     billing_address: "",
     delivery_address: "",
-    city: "Ahmedabad",
-    district: "Ahmedabad",
-    state: "Gujarat",
-    pin: "380015",
+    city: "",
+    district: "",
+    state: "",
+    pin: "",
     lat: "",
     lng: "",
     notes: "",
@@ -150,7 +151,7 @@ export default function NewCustomerPage() {
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="e.g. Shreeji Supermarket"
+                placeholder="Enter shop or company name"
                 required
                 className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
               />
@@ -173,11 +174,11 @@ export default function NewCustomerPage() {
               <label className="block text-xs font-light text-neutral-600 mb-1.5">
                 Customer Type
               </label>
-              <select
+              <StyledSelect
                 aria-label="Customer Type"
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
-                className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
+                className="w-full h-10 pl-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
               >
                 <option value="grocery">Grocery / Provision Store</option>
                 <option value="hotel">Hotel / Restaurant</option>
@@ -185,7 +186,7 @@ export default function NewCustomerPage() {
                 <option value="pg">PG / Hostel / School</option>
                 <option value="mall">Mall / Commercial Complex</option>
                 <option value="other">Other Outlet</option>
-              </select>
+              </StyledSelect>
             </div>
           </div>
 
@@ -334,7 +335,7 @@ export default function NewCustomerPage() {
               <div>
                 <span className="text-xs font-normal text-neutral-900 block">GPS Coordinates for Store Map</span>
                 <span className="text-[11px] font-light text-neutral-500">
-                  Latitude: {form.lat || "23.0225 (Ahmedabad default)"} • Longitude: {form.lng || "72.5714 (Ahmedabad default)"}
+                  Latitude: {form.lat || "Not captured"} • Longitude: {form.lng || "Not captured"}
                 </span>
               </div>
               <button
@@ -348,17 +349,23 @@ export default function NewCustomerPage() {
             </div>
 
             {/* Google Maps Pin Location Preview */}
-            <div className="rounded-2xl overflow-hidden border border-white/70 h-48 bg-neutral-100 relative">
-              <iframe
-                title="Google Maps Location Preview"
-                src={`https://www.google.com/maps?q=${form.lat || 23.0225},${form.lng || 72.5714}&z=14&output=embed`}
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            </div>
+            {form.lat && form.lng ? (
+              <div className="rounded-2xl overflow-hidden border border-white/70 h-48 bg-neutral-100 relative">
+                <iframe
+                  title="Google Maps Location Preview"
+                  src={`https://www.google.com/maps?q=${form.lat},${form.lng}&z=14&output=embed`}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-black/15 h-32 bg-white/30 flex items-center justify-center text-xs text-neutral-500 font-light">
+                Click Capture GPS to preview the store pin on the map
+              </div>
+            )}
           </div>
 
           <div className="pt-4">

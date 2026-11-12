@@ -18,6 +18,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { TopHeader } from "@/components/layout/TopHeader";
+import { StyledSelect } from "@/components/ui/StyledSelect";
 import { formatINR } from "@/lib/formatting/currency";
 import { getCustomers, Customer } from "@/lib/services/customers";
 
@@ -60,18 +61,19 @@ export default function StoreMapPage() {
               />
             </div>
 
-            <select
+            <StyledSelect
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
               aria-label="Filter stores by type"
-              className="h-10 px-3.5 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm"
+              wrapperClassName="min-w-[130px]"
+              className="h-10 pl-3.5 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#E0FE52] shadow-sm"
             >
               <option value="all">All Types</option>
               <option value="grocery">Grocery</option>
               <option value="hotel">Hotel</option>
               <option value="office">Office</option>
               <option value="pg">PG</option>
-            </select>
+            </StyledSelect>
           </div>
 
           {/* Map vs List Toggle */}
@@ -104,46 +106,61 @@ export default function StoreMapPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             {/* Interactive Map Canvas Container */}
             <div className="lg:col-span-8 bg-white/55 backdrop-blur-xl rounded-[28px] border border-white/65 shadow-sm flex flex-col justify-between min-h-[520px] relative overflow-hidden">
-              {/* Real Google Map iframe */}
-              <div className="absolute inset-0 bg-[#E8ECEF]">
-                <iframe
-                  title="Google Maps Gujarat Stores"
-                  src={`https://www.google.com/maps?q=${selectedCustomer?.lat || 23.0225},${selectedCustomer?.lng || 72.5714}&z=13&output=embed`}
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  className="w-full h-full"
-                />
+              {selectedCustomer?.lat && selectedCustomer?.lng ? (
+                <div className="absolute inset-0 bg-[#E8ECEF]">
+                  <iframe
+                    title="Customer Location Map"
+                    src={`https://www.google.com/maps?q=${selectedCustomer.lat},${selectedCustomer.lng}&z=13&output=embed`}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    className="w-full h-full"
+                  />
 
-                {/* Store Selector Strip overlaid on Map */}
-                <div className="absolute top-4 left-4 right-4 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none pointer-events-auto">
-                  {mapPins.map((c) => {
-                    const isSelected = selectedCustomer?.id === c.id;
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => setSelectedCustomer(c)}
-                        className={`px-3.5 py-1.5 rounded-full flex items-center gap-2 shadow-md transition-all shrink-0 cursor-pointer text-xs ${
-                          isSelected
-                            ? "bg-black text-[#E0FE52] font-normal scale-105"
-                            : "bg-white/95 backdrop-blur-md text-neutral-800 font-light hover:bg-white"
-                        }`}
-                      >
-                        <MapPin className="w-3.5 h-3.5 fill-current" />
-                        <span>{c.shop_name || c.name}</span>
-                        <span className="text-[10px] opacity-70">({c.city})</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                  {/* Store Selector Strip overlaid on Map */}
+                  <div className="absolute top-4 left-4 right-4 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none pointer-events-auto">
+                    {mapPins.map((c) => {
+                      const isSelected = selectedCustomer?.id === c.id;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => setSelectedCustomer(c)}
+                          className={`px-3.5 py-1.5 rounded-full flex items-center gap-2 shadow-md transition-all shrink-0 cursor-pointer text-xs ${
+                            isSelected
+                              ? "bg-black text-[#E0FE52] font-normal scale-105"
+                              : "bg-white/95 backdrop-blur-md text-neutral-800 font-light hover:bg-white"
+                          }`}
+                        >
+                          <MapPin className="w-3.5 h-3.5 fill-current" />
+                          <span>{c.shop_name || c.name}</span>
+                          {c.city && <span className="text-[10px] opacity-70">({c.city})</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
 
-                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3.5 py-1.5 rounded-full text-[10px] text-neutral-700 font-mono shadow-sm border border-white/80 pointer-events-none">
-                  Google Maps • {mapPins.length} Stores in Gujarat Live
+                  <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3.5 py-1.5 rounded-full text-[10px] text-neutral-700 font-mono shadow-sm border border-white/80 pointer-events-none">
+                    {mapPins.length} Store Location{mapPins.length === 1 ? "" : "s"} Mapped
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                  <MapPin className="w-10 h-10 text-neutral-300 mb-3" />
+                  <h3 className="text-sm font-medium text-neutral-900">No GPS locations mapped yet</h3>
+                  <p className="text-xs font-light text-neutral-500 mt-1 max-w-sm">
+                    Add GPS coordinates when creating or editing a customer profile to see stores pinned on the map.
+                  </p>
+                  <Link
+                    href="/customers/new"
+                    className="mt-4 px-5 py-2.5 rounded-full bg-black text-white text-xs font-normal hover:bg-neutral-800 transition-colors"
+                  >
+                    Add Customer with GPS
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Selected Store Detail Card */}

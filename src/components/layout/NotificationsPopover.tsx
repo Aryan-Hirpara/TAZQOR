@@ -48,6 +48,7 @@ export function NotificationsPopover({
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | "unread" | "alerts">("all");
+  const [businessEmail, setBusinessEmail] = useState("");
 
   useEffect(() => {
     async function loadRealNotifications() {
@@ -55,49 +56,88 @@ export function NotificationsPopover({
         const supabase = createClient();
         const items: NotificationItem[] = [];
 
-        // 1. Fetch pending / unpaid invoices
-        const { data: invoices } = await supabase
-          .from("invoices")
-          .select("id, invoice_number, grand_total, status, due_date, created_at, customers(name, shop_name)")
-          .neq("status", "cancelled")
-          .order("created_at", { ascending: false })
-          .limit(4);
+        const [{ data: settingsData }, { data: invoices }, { data: outstandingRows }] = await Promise.all([
+          supabase.from("business_settings").select("email").maybeSingle(),
+          supabase
+            .from("invoices")
+            .select("id, invoice_number, grand_total, status, due_date, created_at, customers(name, shop_name)")
+            .neq("status", "cancelled")
+            .order("created_at", { ascending: false })
+            .limit(4),
+          supabase
+            .from("v_invoice_outstanding")
+            .select("invoice_id, outstanding, is_overdue"),
+        ]);
+
+        if (settingsData?.email) {
+          setBusinessEmail(settingsData.email);
+        }
+
+        const outMap = new Map<string, { outstanding: number; is_overdue: boolean }>();
+        for (const r of outstandingRows || []) {
+          outMap.set(r.invoice_id, {
+            outstanding: Number(r.outstanding) || 0,
+            is_overdue: Boolean(r.is_overdue),
+          });
+        }
 
         if (invoices) {
           invoices.forEach((inv: any) => {
             const custName = inv.customers?.shop_name || inv.customers?.name || "Customer";
-            const isPaid = inv.status === "paid";
+            const out = outMap.get(inv.id);
+            const isDraft = inv.status === "draft";
+            const outstanding = out ? out.outstanding : Number(inv.grand_total) || 0;
+            const isSettled = !isDraft && outstanding <= 0;
             items.push({
               id: `notif-inv-${inv.id}`,
               category: "billing",
-              type: isPaid ? "success" : "alert",
-              title: isPaid ? `Invoice Paid: ${custName}` : `Pending Balance: ${custName}`,
-              message: `Invoice ${inv.invoice_number} for ${formatINR(Number(inv.grand_total) || 0)} is ${inv.status}.`,
+              type: isSettled ? "success" : "alert",
+              title: isDraft
+                ? `Draft Invoice: ${custName}`
+                : isSettled
+                ? `Invoice Settled: ${custName}`
+                : out?.is_overdue
+                ? `Overdue Balance: ${custName}`
+                : `Pending Balance: ${custName}`,
+              message: isDraft
+                ? `Draft bill ${inv.invoice_number || "pending"} for ${formatINR(Number(inv.grand_total) || 0)}.`
+                : isSettled
+                ? `Invoice ${inv.invoice_number} for ${formatINR(Number(inv.grand_total) || 0)} is paid in full.`
+                : `Invoice ${inv.invoice_number} has ${formatINR(outstanding)} outstanding.`,
               time: formatRelativeTime(inv.created_at),
               link: `/invoices/${inv.id}`,
-              unread: !isPaid,
+              unread: !isSettled && !isDraft,
             });
           });
         }
 
-        // 2. Fetch live batches
-        const { data: batches } = await supabase
-          .from("batches")
-          .select("id, batch_number, quantity_received, expiry_date, created_at, product_variants(name, sku, products(name))")
-          .order("created_at", { ascending: false })
-          .limit(3);
+        // 2. Fetch live batches with actual stock on hand
+        const [{ data: batches }, { data: batchStock }] = await Promise.all([
+          supabase
+            .from("batches")
+            .select("id, batch_number, quantity_received, expiry_date, created_at, product_variants(name, sku, reorder_level, products(name))")
+            .order("created_at", { ascending: false })
+            .limit(3),
+          supabase.from("v_stock_on_hand").select("batch_id, quantity_on_hand"),
+        ]);
+
+        const qtyMap = new Map<string, number>();
+        for (const s of batchStock || []) {
+          if (s.batch_id) qtyMap.set(s.batch_id, Number(s.quantity_on_hand) || 0);
+        }
 
         if (batches) {
           batches.forEach((b: any) => {
             const prodName = (b.product_variants as any)?.products?.name || "Product";
-            const qty = Number(b.quantity_received) || 0;
-            const isLow = qty <= 20;
+            const qty = qtyMap.has(b.id) ? qtyMap.get(b.id)! : 0;
+            const reorder = Number((b.product_variants as any)?.reorder_level) || 20;
+            const isLow = qty <= reorder;
             items.push({
               id: `notif-batch-${b.id}`,
               category: "inventory",
               type: isLow ? "warning" : "info",
               title: isLow ? `Low Stock: ${prodName}` : `Batch Active: ${b.batch_number}`,
-              message: `${qty} units in batch ${b.batch_number}. Expiry: ${b.expiry_date || "N/A"}.`,
+              message: `${qty} units on hand in batch ${b.batch_number}. Expiry: ${b.expiry_date || "N/A"}.`,
               time: formatRelativeTime(b.created_at),
               link: "/inventory",
               unread: isLow,
@@ -312,7 +352,13 @@ export function NotificationsPopover({
         {/* Real-time Push & Email Notifications Bar */}
         <div className="px-4 py-2 bg-neutral-50 border-b border-neutral-100 flex items-center justify-between text-[11px]">
           <span className="text-neutral-600 font-light truncate">
-            📧 Email alerts: <strong className="font-normal text-neutral-900">tazqor@gmail.com</strong>
+            {businessEmail ? (
+              <>
+                Email alerts: <strong className="font-normal text-neutral-900">{businessEmail}</strong>
+              </>
+            ) : (
+              "Live workspace activity feed"
+            )}
           </span>
           {typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted" && (
             <button

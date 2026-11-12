@@ -15,6 +15,9 @@ import { cn } from "@/lib/utils";
 import { MoreLauncherSheet } from "./MoreLauncherSheet";
 import { NotificationsPopover } from "./NotificationsPopover";
 import { TazqorLogo } from "@/components/brand/TazqorLogo";
+import { createClient } from "@/lib/supabase/client";
+
+const BUSINESS_ID = "00000000-0000-0000-0000-000000000001";
 
 interface TopHeaderProps {
   title?: string;
@@ -36,8 +39,24 @@ export function TopHeader({
   const [launcherOpen, setLauncherOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [unreadNotifsCount, setUnreadNotifsCount] = useState(0);
-  const [outletMenuOpen, setOutletMenuOpen] = useState(false);
-  const [selectedOutlet, setSelectedOutlet] = useState("All Outlets");
+  const [businessName, setBusinessName] = useState("Workspace");
+
+  useEffect(() => {
+    let active = true;
+    createClient()
+      .from("business_settings")
+      .select("legal_name")
+      .eq("business_id", BUSINESS_ID)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active && data?.legal_name) {
+          setBusinessName(data.legal_name);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const isHome = pathname === "/dashboard" || pathname === "/";
 
@@ -118,42 +137,15 @@ export function TopHeader({
             </div>
           )}
 
-          {/* Right: "All Outlets" outlined pill + round black grid button (NO search bar, NO big title, NO shadows) */}
-          <div className="flex items-center gap-2.5">
-            {/* Outlined Pill */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setOutletMenuOpen(!outletMenuOpen)}
-                className="flex items-center gap-1.5 px-4 h-[38px] bg-white/40 backdrop-blur-md rounded-full border border-white/70 text-xs sm:text-sm font-light text-neutral-800 hover:bg-white/70 transition-all cursor-pointer"
-              >
-                <span>{selectedOutlet}</span>
-                <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />
-              </button>
-
-              {outletMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white/95 backdrop-blur-xl rounded-[20px] border border-white py-1 z-50">
-                  {["All Outlets", "Central Warehouse", "Ahmedabad Retail", "Surat Hub"].map(
-                    (outlet) => (
-                      <button
-                        key={outlet}
-                        type="button"
-                        onClick={() => {
-                          setSelectedOutlet(outlet);
-                          setOutletMenuOpen(false);
-                        }}
-                        className={cn(
-                          "w-full text-left px-4 py-2 text-xs font-light hover:bg-neutral-100 transition-colors cursor-pointer",
-                          selectedOutlet === outlet ? "font-normal text-black bg-neutral-50" : "text-neutral-600"
-                        )}
-                      >
-                        {outlet}
-                      </button>
-                    )
-                  )}
-                </div>
-              )}
-            </div>
+          {/* Right: Live Business Settings pill + round black grid button */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <Link
+              href="/settings"
+              className="flex items-center gap-1.5 px-4 h-[38px] max-w-[200px] bg-white/40 backdrop-blur-md rounded-full border border-white/70 text-xs sm:text-sm font-light text-neutral-800 hover:bg-white/70 transition-all cursor-pointer"
+              title="Business Profile & Settings"
+            >
+              <span className="truncate">{businessName}</span>
+            </Link>
 
             {/* Round black 3x3 grid button (Launcher trigger) */}
             <button

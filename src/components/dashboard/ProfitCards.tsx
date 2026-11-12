@@ -14,8 +14,8 @@ interface ProfitCardsProps {
 }
 
 export function GrossProfitCard({
-  grossProfit = 177349.5,
-  grossMarginPct = 53.5,
+  grossProfit = 0,
+  grossMarginPct = 0,
 }: {
   grossProfit?: number;
   grossMarginPct?: number;
@@ -23,7 +23,7 @@ export function GrossProfitCard({
   return (
     <GlassCard
       variant="lime"
-      className="h-full p-5 sm:p-6 lg:p-7 flex flex-col justify-between relative select-none min-w-0 notch-bottom-right overflow-hidden"
+      className="h-full p-4 sm:p-5 lg:p-6 flex flex-col justify-between relative select-none min-w-0 notch-bottom-right overflow-hidden"
     >
       {/* Decorative Concentric Circle Line Art: pointer-events: none, aria-hidden, z-0, opacity <= 0.12 */}
       <svg
@@ -60,7 +60,7 @@ export function GrossProfitCard({
       </div>
 
       {/* Bottom Row: Amount via FitNumber and Subtext (NO drop shadows) */}
-      <div className="relative z-10 pt-3">
+      <div className="relative z-10 pt-3 pr-10 min-w-0">
         <FitNumber
           value={formatINR(grossProfit)}
           minFontSize={15}
@@ -76,8 +76,8 @@ export function GrossProfitCard({
 }
 
 export function NetProfitCard({
-  netProfit = 142875.0,
-  netMarginPct = 43.1,
+  netProfit = 0,
+  netMarginPct = 0,
 }: {
   netProfit?: number;
   netMarginPct?: number;
@@ -138,10 +138,10 @@ export function NetProfitCard({
 }
 
 export function ProfitCards({
-  grossProfit = 177349.5,
-  netProfit = 142875.0,
-  grossMarginPct = 53.5,
-  netMarginPct = 43.1,
+  grossProfit = 0,
+  netProfit = 0,
+  grossMarginPct = 0,
+  netMarginPct = 0,
 }: ProfitCardsProps) {
   return (
     <div className="h-full flex flex-col gap-2 min-w-0 relative">

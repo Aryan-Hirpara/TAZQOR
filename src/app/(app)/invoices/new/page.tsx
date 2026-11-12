@@ -1,146 +1,194 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Plus,
   Trash2,
   FileText,
-  AlertTriangle,
   CheckCircle2,
   ShieldAlert,
-  Sparkles,
-  Printer,
-  Receipt,
+  Save,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { calculateInvoice, LineItemCalculationInput } from "@/lib/calculations/money";
-import { formatDocumentNumber } from "@/lib/calculations/financialYear";
 import { formatINR } from "@/lib/formatting/currency";
 import { getCustomers, Customer } from "@/lib/services/customers";
+import { getProducts } from "@/lib/services/products";
 import { createClient } from "@/lib/supabase/client";
+import { StyledSelect } from "@/components/ui/StyledSelect";
 
-interface BillLineItem {
+interface VariantOption {
   variant_id: string;
   name: string;
   pack_size: string;
   sku: string;
   hsn: string;
-  quantity: number;
   unit_price: number;
-  discount_percent: number;
   tax_rate: number;
   stock_on_hand: number;
 }
 
-const AVAILABLE_VARIANTS: BillLineItem[] = [
-  {
-    variant_id: "v-phn-1l",
-    name: "TAZQOR Phenyl",
-    pack_size: "1 Litre Bottle",
-    sku: "TC-PHN-01-1L",
-    hsn: "3402",
-    quantity: 1,
-    unit_price: 90,
-    discount_percent: 0,
-    tax_rate: 18,
-    stock_on_hand: 50,
-  },
-  {
-    variant_id: "v-tlt-500m",
-    name: "TAZQOR Toilet Cleaner",
-    pack_size: "500 mL Bottle",
-    sku: "TC-TLT-01-500M",
-    hsn: "3402",
-    quantity: 1,
-    unit_price: 80,
-    discount_percent: 0,
-    tax_rate: 18,
-    stock_on_hand: 40,
-  },
-  {
-    variant_id: "v-hnd-250m",
-    name: "TAZQOR Hand Wash",
-    pack_size: "250 mL Pump Dispenser",
-    sku: "TC-HND-01-250M",
-    hsn: "3401",
-    quantity: 1,
-    unit_price: 75,
-    discount_percent: 0,
-    tax_rate: 18,
-    stock_on_hand: 60,
-  },
-  {
-    variant_id: "v-dsh-250m",
-    name: "TAZQOR Dish Wash",
-    pack_size: "250 mL Bottle",
-    sku: "TC-DSH-01-250M",
-    hsn: "3402",
-    quantity: 1,
-    unit_price: 65,
-    discount_percent: 0,
-    tax_rate: 18,
-    stock_on_hand: 45,
-  },
-];
+interface BillLineItem extends VariantOption {
+  quantity: number;
+  discount_percent: number;
+}
 
-export default function NewInvoicePage() {
+function getDefaultDates() {
+  const today = new Date();
+  const due = new Date(today.getTime() + 15 * 86400000);
+  return {
+    today: today.toISOString().split("T")[0],
+    due: due.toISOString().split("T")[0],
+  };
+}
+
+function NewInvoiceForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialOrderId = searchParams.get("order_id");
+
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [customerList, setCustomerList] = useState<Customer[]>([]);
+  const [variants, setVariants] = useState<VariantOption[]>([]);
   const [pendingOrders, setPendingOrders] = useState<any[]>([]);
+  const [sourceOrderId, setSourceOrderId] = useState<string | null>(initialOrderId);
 
-  // Business GST state (configured in settings)
-  const isGstEligible = true; // In production read from business_settings
+  const [gstEligible, setGstEligible] = useState(false);
+  const [businessState, setBusinessState] = useState("Gujarat");
+  const [mode, setMode] = useState<"gst" | "non_gst">("non_gst");
+  const [customer, setCustomer] = useState("");
 
-  const [mode, setMode] = useState<"gst" | "non_gst">("gst");
-  const [customer, setCustomer] = useState("c1-shreeji");
-  const [invoiceDate, setInvoiceDate] = useState("2026-02-16");
-  const [dueDate, setDueDate] = useState("2026-03-02");
+  const defaults = useMemo(() => getDefaultDates(), []);
+  const [invoiceDate, setInvoiceDate] = useState(defaults.today);
+  const [dueDate, setDueDate] = useState(defaults.due);
   const [isInterState, setIsInterState] = useState(false);
   const [roundOffEnabled, setRoundOffEnabled] = useState(true);
-  const [notes, setNotes] = useState("Goods once sold will not be taken back without batch seal.");
+  const [notes, setNotes] = useState("");
+  const [lines, setLines] = useState<BillLineItem[]>([]);
 
   useEffect(() => {
-    async function loadCusts() {
-      try {
-        const custs = await getCustomers();
-        if (custs && custs.length > 0) {
-          setCustomerList(custs);
-          setCustomer(custs[0].id);
-        }
-      } catch (e) {
-        console.warn("Could not load customers for invoice form", e);
-      }
-    }
-    loadCusts();
-  }, []);
-
-  // Fetch pending customer orders when customer selection changes
-  useEffect(() => {
-    async function fetchOrdersForCustomer() {
-      if (!customer) return;
+    async function loadInitialData() {
+      setLoading(true);
       try {
         const supabase = createClient();
-        let resolvedId = customer;
-        if (customer.startsWith("c1") || customer.length < 32) {
-          const { data: c } = await supabase.from("customers").select("id").limit(1);
-          if (c && c[0]) resolvedId = c[0].id;
+        const [custs, prods, { data: settings }] = await Promise.all([
+          getCustomers(),
+          getProducts(),
+          supabase
+            .from("business_settings")
+            .select("gst_enabled, gst_confirmed, gstin, state, round_off_enabled")
+            .eq("business_id", "00000000-0000-0000-0000-000000000001")
+            .maybeSingle(),
+        ]);
+
+        setCustomerList(custs);
+
+        const flatVariants: VariantOption[] = [];
+        for (const p of prods) {
+          if (p.status !== "active") continue;
+          for (const v of p.variants) {
+            flatVariants.push({
+              variant_id: v.id,
+              name: p.name,
+              pack_size: v.pack_size || v.name || "Standard",
+              sku: v.sku || p.sku || "",
+              hsn: p.hsn || "",
+              unit_price: Number(v.selling_price) || 0,
+              tax_rate: Number(v.tax_rate) || 18,
+              stock_on_hand: Number(v.current_stock) || 0,
+            });
+          }
         }
+        setVariants(flatVariants);
+
+        const isGstReady = Boolean(
+          settings?.gst_enabled &&
+            settings?.gst_confirmed &&
+            settings?.gstin &&
+            settings.gstin.trim().length === 15
+        );
+        setGstEligible(isGstReady);
+        setMode(isGstReady ? "gst" : "non_gst");
+        if (settings?.state) setBusinessState(settings.state);
+        if (typeof settings?.round_off_enabled === "boolean") {
+          setRoundOffEnabled(settings.round_off_enabled);
+        }
+
+        // If ?order_id=... is provided, prefill customer & order items directly
+        if (initialOrderId) {
+          const { data: ord } = await supabase
+            .from("orders")
+            .select("id, order_number, customer_id, order_items(*)")
+            .eq("id", initialOrderId)
+            .maybeSingle();
+
+          if (ord) {
+            setCustomer(ord.customer_id);
+            setSourceOrderId(ord.id);
+            const loadedLines: BillLineItem[] = (ord.order_items || [])
+              .map((it: any) => {
+                const matched = flatVariants.find((v) => v.variant_id === it.product_variant_id);
+                if (!matched) return null;
+                return {
+                  ...matched,
+                  quantity: Number(it.quantity) || 1,
+                  unit_price: Number(it.unit_price) || matched.unit_price,
+                  discount_percent: 0,
+                };
+              })
+              .filter(Boolean) as BillLineItem[];
+            if (loadedLines.length > 0) {
+              setLines(loadedLines);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+
+        if (custs.length > 0) {
+          setCustomer(custs[0].id);
+        }
+        if (flatVariants.length > 0) {
+          setLines([
+            {
+              ...flatVariants[0],
+              quantity: 1,
+              discount_percent: 0,
+            },
+          ]);
+        }
+      } catch (e) {
+        console.warn("Could not load invoice form data:", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadInitialData();
+  }, [initialOrderId]);
+
+  useEffect(() => {
+    async function fetchOrdersForCustomer() {
+      if (!customer) {
+        setPendingOrders([]);
+        return;
+      }
+      try {
+        const supabase = createClient();
         const { data: ords } = await supabase
           .from("orders")
           .select("id, order_number, created_at, status, order_items(id, quantity, unit_price, product_variant_id)")
-          .eq("customer_id", resolvedId)
+          .eq("customer_id", customer)
+          .neq("status", "cancelled")
           .order("created_at", { ascending: false })
           .limit(3);
-        if (ords && ords.length > 0) {
-          setPendingOrders(ords);
-        } else {
-          setPendingOrders([]);
-        }
+
+        setPendingOrders(ords || []);
       } catch (e) {
         console.warn("Could not load orders for customer", e);
       }
@@ -148,56 +196,51 @@ export default function NewInvoicePage() {
     fetchOrdersForCustomer();
   }, [customer]);
 
-  const [lines, setLines] = useState<BillLineItem[]>([
-    { ...AVAILABLE_VARIANTS[0], quantity: 10, discount_percent: 5 },
-    { ...AVAILABLE_VARIANTS[1], quantity: 4, discount_percent: 0 },
-  ]);
-
   const handleLoadOrder = (ord: any) => {
     const items = ord.order_items || [];
     if (items.length === 0) {
       toast.error("This order has no line items.");
       return;
     }
-    const newLines: BillLineItem[] = items.map((it: any, i: number) => {
-      const defaultVariant = AVAILABLE_VARIANTS[i % AVAILABLE_VARIANTS.length];
-      return {
-        ...defaultVariant,
-        quantity: Number(it.quantity) || 1,
-        unit_price: Number(it.unit_price) || defaultVariant.unit_price,
-        discount_percent: 0,
-      };
-    });
+    const newLines: BillLineItem[] = items
+      .map((it: any) => {
+        const matched = variants.find((v) => v.variant_id === it.product_variant_id);
+        if (!matched) return null;
+        return {
+          ...matched,
+          quantity: Number(it.quantity) || 1,
+          unit_price: Number(it.unit_price) || matched.unit_price,
+          discount_percent: 0,
+        };
+      })
+      .filter(Boolean) as BillLineItem[];
+
+    if (newLines.length === 0) {
+      toast.error("Products from this order are no longer active in catalog.");
+      return;
+    }
+    setSourceOrderId(ord.id);
     setLines(newLines);
-    toast.success(`Loaded ${newLines.length} item(s) from Order ${ord.order_number}!`);
+    toast.success(`Loaded ${newLines.length} item(s) from Order ${ord.order_number}`);
   };
 
   const handleProductChange = (idx: number, variantId: string) => {
-    const match = AVAILABLE_VARIANTS.find((v) => v.variant_id === variantId);
-    if (match) {
-      const copy = [...lines];
-      copy[idx] = {
-        ...copy[idx],
-        variant_id: match.variant_id,
-        name: match.name,
-        pack_size: match.pack_size,
-        sku: match.sku,
-        hsn: match.hsn,
-        unit_price: match.unit_price,
-        tax_rate: match.tax_rate,
-        stock_on_hand: match.stock_on_hand,
-      };
-      setLines(copy);
-    }
+    const match = variants.find((v) => v.variant_id === variantId);
+    if (!match) return;
+    const copy = [...lines];
+    copy[idx] = {
+      ...copy[idx],
+      ...match,
+    };
+    setLines(copy);
   };
 
-  // Recalculate invoice totals accurately using the money calculation engine
   const calculationInputs: LineItemCalculationInput[] = useMemo(() => {
     return lines.map((l) => ({
       quantity: l.quantity,
       unitPrice: l.unit_price,
       discountPercent: l.discount_percent,
-      taxRatePercent: mode === "gst" ? l.tax_rate : 0, // Non-GST bills have zero tax
+      taxRatePercent: mode === "gst" ? l.tax_rate : 0,
       isTaxInclusive: false,
       isInterState,
     }));
@@ -208,7 +251,11 @@ export default function NewInvoicePage() {
   }, [calculationInputs, roundOffEnabled]);
 
   const addLine = () => {
-    const nextVariant = AVAILABLE_VARIANTS[lines.length % AVAILABLE_VARIANTS.length] || AVAILABLE_VARIANTS[0];
+    if (variants.length === 0) {
+      toast.error("Add a product first before adding invoice items");
+      return;
+    }
+    const nextVariant = variants[lines.length % variants.length];
     setLines([...lines, { ...nextVariant, quantity: 1, discount_percent: 0 }]);
   };
 
@@ -220,78 +267,125 @@ export default function NewInvoicePage() {
     setLines(lines.filter((_, i) => i !== idx));
   };
 
-  const handleFinalize = async () => {
-    // Check stock for all lines
-    for (const l of lines) {
-      if (l.quantity > l.stock_on_hand) {
-        toast.error(`Cannot finalize invoice: Shortage of stock for ${l.name} (${l.pack_size}). Required: ${l.quantity}, On hand: ${l.stock_on_hand}`);
+  const submitInvoice = async (action: "draft" | "finalize") => {
+    if (!customer) {
+      toast.error("Please select a customer");
+      return;
+    }
+    if (lines.length === 0 || lines.some((l) => !l.variant_id || l.quantity <= 0)) {
+      toast.error("Please add at least one valid product line with quantity > 0");
+      return;
+    }
+
+    if (action === "finalize") {
+      if (mode === "gst" && !gstEligible) {
+        toast.error("Configure a 15-character GSTIN and confirm GST eligibility in Settings before finalizing a GST Tax Invoice.");
         return;
+      }
+      for (const l of lines) {
+        if (l.quantity > l.stock_on_hand) {
+          toast.error(
+            `Insufficient stock for ${l.name} (${l.pack_size}). Required: ${l.quantity}, On hand: ${l.stock_on_hand}`
+          );
+          return;
+        }
       }
     }
 
     setSubmitting(true);
     try {
       const supabase = createClient();
-
-      // Continuous sequential numbering from live database invoices count
-      const { count } = await supabase.from("invoices").select("id", { count: "exact", head: true });
-      const nextSeq = (count || 0) + 1;
-      const generatedNumber = `${mode === "gst" ? "INV" : "BILL"}/2026-27/${String(nextSeq).padStart(4, "0")}`;
-      let resolvedCustomerId = customer;
-      if (customer.startsWith("c1") || !customer.includes("-") || customer.length < 32) {
-        const { data: c } = await supabase.from("customers").select("id").limit(1);
-        if (c && c[0]) resolvedCustomerId = c[0].id;
-      }
+      const selectedCust = customerList.find((c) => c.id === customer);
+      const placeOfSupply = selectedCust?.state || businessState || null;
 
       const { data: inv, error: invErr } = await supabase
         .from("invoices")
         .insert({
           business_id: "00000000-0000-0000-0000-000000000001",
-          customer_id: resolvedCustomerId,
-          mode: mode,
-          invoice_number: generatedNumber,
-          invoice_date: invoiceDate || new Date().toISOString().split("T")[0],
+          customer_id: customer,
+          order_id: sourceOrderId || null,
+          mode,
+          place_of_supply: placeOfSupply,
+          invoice_date: invoiceDate || defaults.today,
           due_date: dueDate || null,
           subtotal: invoiceTotals.subtotal,
-          tax_total: invoiceTotals.taxTotal,
           discount_total: invoiceTotals.discountTotal,
+          tax_total: invoiceTotals.taxTotal,
           round_off: invoiceTotals.roundOff,
           grand_total: invoiceTotals.grandTotal,
-          status: "finalized",
+          status: "draft",
           notes: notes || null,
         })
         .select()
         .single();
 
-      if (invErr) {
-        console.warn("Supabase invoice insert notice:", invErr.message);
-      } else if (inv) {
-        const itemsToInsert = lines.map((l) => ({
-          business_id: "00000000-0000-0000-0000-000000000001",
-          invoice_id: inv.id,
-          description: `${l.name} (${l.pack_size})`,
-          quantity: l.quantity,
-          unit_price: l.unit_price,
-          tax_rate: mode === "gst" ? l.tax_rate : 0,
-          discount_percent: l.discount_percent,
-          line_subtotal: l.quantity * l.unit_price,
-          line_tax: mode === "gst" ? (l.quantity * l.unit_price * l.tax_rate) / 100 : 0,
-          line_total: l.quantity * l.unit_price * (1 + (mode === "gst" ? l.tax_rate / 100 : 0)),
-        }));
-        await supabase.from("invoice_items").insert(itemsToInsert);
+      if (invErr || !inv) {
+        throw new Error(invErr?.message || "Failed to save invoice");
       }
 
-      toast.success(`Invoice ${generatedNumber} finalized and FEFO stock deducted!`);
-      router.push("/invoices");
-    } catch {
-      toast.error("Failed to finalize invoice");
+      const itemsToInsert = lines.map((l, idx) => {
+        const calc = invoiceTotals.items[idx];
+        return {
+          business_id: "00000000-0000-0000-0000-000000000001",
+          invoice_id: inv.id,
+          product_variant_id: l.variant_id,
+          description: `${l.name} (${l.pack_size})`,
+          sku_snapshot: l.sku || null,
+          hsn_snapshot: l.hsn || null,
+          quantity: l.quantity,
+          unit_price: l.unit_price,
+          discount_percent: l.discount_percent,
+          tax_rate: mode === "gst" ? l.tax_rate : 0,
+          cgst_rate: calc?.cgstRate || 0,
+          sgst_rate: calc?.sgstRate || 0,
+          igst_rate: calc?.igstRate || 0,
+          line_subtotal: calc?.lineSubtotal || 0,
+          line_tax: calc?.taxAmount || 0,
+          line_total: calc?.lineTotal || 0,
+        };
+      });
+
+      const { error: itemsErr } = await supabase.from("invoice_items").insert(itemsToInsert);
+      if (itemsErr) {
+        await supabase.from("invoices").delete().eq("id", inv.id);
+        throw new Error(itemsErr.message || "Failed to insert invoice line items");
+      }
+
+      if (action === "draft") {
+        toast.success("Draft invoice saved!");
+        router.push(`/invoices/${inv.id}`);
+        return;
+      }
+
+      const idempKey =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `inv-${inv.id}-${Date.now()}`;
+
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc("finalize_invoice", {
+        p_invoice_id: inv.id,
+        p_idempotency_key: idempKey,
+      });
+
+      if (rpcErr) {
+        // Leave as draft so user isn't lost, or inform them cleanly
+        toast.error(`Saved as Draft — Finalization failed: ${rpcErr.message}`);
+        router.push(`/invoices/${inv.id}`);
+        return;
+      }
+
+      const invNum = (rpcRes as any)?.invoice_number || "Finalized";
+      toast.success(`Invoice ${invNum} finalized and FEFO stock deducted!`);
+      router.push(`/invoices/${inv.id}`);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to create invoice");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-12">
       <TopHeader
         title={mode === "gst" ? "Generate GST Tax Invoice" : "Generate Non-GST Bill of Supply"}
         subtitle="Transactional document generator with automated FEFO batch allocation"
@@ -308,376 +402,491 @@ export default function NewInvoicePage() {
           </Link>
         </div>
 
-        {/* GST Mode Selector & Security Gate Banner */}
-        <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 border border-white/65 shadow-none space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/40">
-            <div>
-              <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
-                Billing Mode
-              </span>
-              <h2 className="text-base font-normal text-neutral-900 mt-0.5">
-                Choose Document Type
-              </h2>
-            </div>
-
-            <div className="flex items-center gap-1.5 p-1 bg-white/65 backdrop-blur-md rounded-full border border-white/70 shadow-sm">
-              <button
-                type="button"
-                onClick={() => setMode("gst")}
-                className={`px-4 py-2 text-xs rounded-full transition-all cursor-pointer ${
-                  mode === "gst"
-                    ? "bg-black text-white font-normal shadow-sm"
-                    : "text-neutral-700 hover:text-black font-light"
-                }`}
-              >
-                GST Tax Invoice
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode("non_gst")}
-                className={`px-4 py-2 text-xs rounded-full transition-all cursor-pointer ${
-                  mode === "non_gst"
-                    ? "bg-black text-white font-normal shadow-sm"
-                    : "text-neutral-700 hover:text-black font-light"
-                }`}
-              >
-                Non-GST Bill / Receipt
-              </button>
-            </div>
+        {loading ? (
+          <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-10 text-center border border-white/65 text-xs text-neutral-500">
+            Loading invoice settings, customers, and inventory...
           </div>
+        ) : (
+          <>
+            {/* GST Mode Selector & Customer Details */}
+            <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 border border-white/65 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/40">
+                <div>
+                  <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
+                    Billing Mode
+                  </span>
+                  <h2 className="text-base font-normal text-neutral-900 mt-0.5">
+                    Choose Document Type
+                  </h2>
+                </div>
 
-          {/* Mode Info Callout */}
-          {mode === "gst" ? (
-            <div className="p-3.5 rounded-2xl bg-white/60 border border-white/80 text-xs text-neutral-800 flex items-start gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-medium text-neutral-900">GST Tax Invoice Mode Active:</span> In compliance with GST laws,
-                item HSN codes, taxable values, and {isInterState ? "IGST (18%)" : "CGST (9%) + SGST (9%)"} split will be printed.
+                <div className="flex items-center gap-1.5 p-1 bg-white/65 backdrop-blur-md rounded-full border border-white/70">
+                  <button
+                    type="button"
+                    onClick={() => setMode("gst")}
+                    className={`px-4 py-2 text-xs rounded-full transition-all cursor-pointer ${
+                      mode === "gst"
+                        ? "bg-black text-white font-normal"
+                        : "text-neutral-700 hover:text-black font-light"
+                    }`}
+                  >
+                    GST Tax Invoice
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode("non_gst")}
+                    className={`px-4 py-2 text-xs rounded-full transition-all cursor-pointer ${
+                      mode === "non_gst"
+                        ? "bg-black text-white font-normal"
+                        : "text-neutral-700 hover:text-black font-light"
+                    }`}
+                  >
+                    Non-GST Bill / Receipt
+                  </button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="p-3.5 rounded-2xl bg-white/60 border border-white/80 text-xs text-neutral-800 flex items-start gap-2.5">
-              <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-medium text-neutral-900">Non-GST Bill of Supply Mode:</span> Tax claims, GSTIN and &quot;Tax Invoice&quot; wording
-                will NOT appear on this bill as mandated by law.
-              </div>
-            </div>
-          )}
 
-          {/* Customer, Dates & Place of Supply */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-            <div>
-              <label className="block text-xs font-light text-neutral-600 mb-1.5">
-                Customer Account *
-              </label>
-              <select
-                aria-label="Customer Account"
-                value={customer}
-                onChange={(e) => setCustomer(e.target.value)}
-                className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
-              >
-                {customerList.length > 0 ? (
-                  customerList.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.shop_name} ({c.city})
-                    </option>
-                  ))
-                ) : (
-                  <>
-                    <option value="c1-shreeji">Shreeji Supermarket (Ahmedabad)</option>
-                    <option value="c2-pride-hotel">Hotel Pride Plaza (Ahmedabad)</option>
-                    <option value="c3-apex-cowork">Apex Co-Working (Gandhinagar)</option>
-                    <option value="c4-radhe-pg">Radhe Krishna PG (Ahmedabad)</option>
-                  </>
-                )}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-light text-neutral-600 mb-1.5">
-                Invoice Date *
-              </label>
-              <input
-                type="date"
-                value={invoiceDate}
-                onChange={(e) => setInvoiceDate(e.target.value)}
-                className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-light text-neutral-600 mb-1.5">
-                Payment Due Date
-              </label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full h-10 px-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
-              />
-            </div>
-          </div>
-
-          {/* Pending Order Pre-loader Banner */}
-          {pendingOrders.length > 0 && (
-            <div className="p-4 rounded-2xl bg-[#E0FE52]/25 border border-[#E0FE52]/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div>
-                <span className="text-xs font-medium text-neutral-950 block">
-                  Customer has confirmed Order ({pendingOrders[0].order_number}) with {pendingOrders[0].order_items?.length || 0} item(s)
-                </span>
-                <span className="text-[11px] text-neutral-700 font-light">
-                  Directly load customer booked items to create this invoice, or add items manually below.
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleLoadOrder(pendingOrders[0])}
-                className="px-4 py-2 rounded-full bg-black text-white text-xs font-normal hover:scale-105 active:scale-95 transition-all shadow-sm shrink-0 cursor-pointer"
-              >
-                Load Order Items
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Invoice Line Items */}
-        <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 shadow-none space-y-4">
-          <div className="flex items-center justify-between border-b border-white/40 pb-3">
-            <div>
-              <h2 className="text-base font-normal text-neutral-900">Line Items & Calculations</h2>
-              <p className="text-xs font-light text-neutral-500">Live batch allocation check per line</p>
-            </div>
-            <button
-              type="button"
-              onClick={addLine}
-              className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5 text-[#E0FE52]" />
-              <span>Add Item</span>
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {lines.map((line, idx) => {
-              const res = invoiceTotals.items[idx];
-              return (
-                <div
-                  key={idx}
-                  className="p-4 rounded-2xl bg-white/60 border border-white/70 space-y-3"
-                >
-                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                    <div className="sm:col-span-4">
-                      <label className="block text-[11px] font-normal text-neutral-700 mb-1">
-                        Select Product & Variant *
-                      </label>
-                      <select
-                        aria-label="Select Product & Variant"
-                        value={line.variant_id}
-                        onChange={(e) => handleProductChange(idx, e.target.value)}
-                        className="w-full h-10 px-3 text-xs bg-white/80 rounded-xl border border-neutral-200/70 font-normal text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#E0FE52]"
-                      >
-                        {AVAILABLE_VARIANTS.map((v) => (
-                          <option key={v.variant_id} value={v.variant_id}>
-                            {v.name} — {v.pack_size} (₹{v.unit_price})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-normal text-neutral-700 mb-1">
-                        Qty (Units)
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={line.quantity}
-                        onChange={(e) => {
-                          const copy = [...lines];
-                          copy[idx].quantity = Number(e.target.value);
-                          setLines(copy);
-                        }}
-                        className="w-full h-10 px-3 text-xs bg-white/80 rounded-xl border border-neutral-200/70 text-neutral-900"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-normal text-neutral-700 mb-1">
-                        Price (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={line.unit_price}
-                        onChange={(e) => {
-                          const copy = [...lines];
-                          copy[idx].unit_price = Number(e.target.value);
-                          setLines(copy);
-                        }}
-                        className="w-full h-10 px-3 text-xs bg-white/80 rounded-xl border border-neutral-200/70 text-neutral-900"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-normal text-neutral-700 mb-1">
-                        Disc %
-                      </label>
-                      <input
-                        type="number"
-                        value={line.discount_percent}
-                        onChange={(e) => {
-                          const copy = [...lines];
-                          copy[idx].discount_percent = Number(e.target.value);
-                          setLines(copy);
-                        }}
-                        className="w-full h-10 px-3 text-xs bg-white/80 rounded-xl border border-neutral-200/70 text-neutral-900"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2 flex items-center justify-end gap-2">
-                      <div className="text-right">
-                        <span className="block text-[10px] text-neutral-600">Total</span>
-                        <span className="text-xs font-semibold text-neutral-900">
-                          {formatINR(res?.lineTotal || 0)}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeLine(idx)}
-                        className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-rose-500 hover:text-rose-700"
-                        title="Remove line"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+              {mode === "gst" ? (
+                gstEligible ? (
+                  <div className="p-3.5 rounded-2xl bg-white/60 border border-white/80 text-xs text-neutral-800 flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-medium text-neutral-900">GST Tax Invoice Mode Active:</span>{" "}
+                      HSN codes, taxable values, and {isInterState ? "IGST" : "CGST + SGST"} split will be recorded.
                     </div>
                   </div>
-
-                  {/* Tax Breakdown Strip (for GST mode) */}
-                  {mode === "gst" && res && (
-                    <div className="flex flex-wrap items-center gap-4 text-[11px] pt-2 border-t border-neutral-200/60 text-neutral-600 font-light">
-                      <span>HSN: <strong className="font-mono text-neutral-800 font-normal">{line.hsn}</strong></span>
-                      <span>Taxable Base: <strong className="font-normal text-neutral-800">{formatINR(res.lineSubtotal)}</strong></span>
-                      {!isInterState ? (
-                        <>
-                          <span>CGST (9%): <strong className="font-normal text-neutral-800">{formatINR(res.cgstAmount)}</strong></span>
-                          <span>SGST (9%): <strong className="font-normal text-neutral-800">{formatINR(res.sgstAmount)}</strong></span>
-                        </>
-                      ) : (
-                        <span>IGST (18%): <strong className="font-normal text-neutral-800">{formatINR(res.igstAmount)}</strong></span>
-                      )}
-                      <span className="ml-auto text-emerald-700 text-[10px] font-normal">
-                        ✓ {line.stock_on_hand} in FEFO batches
+                ) : (
+                  <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200 text-xs text-amber-900 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-start gap-2.5">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <span>
+                        GSTIN &amp; GST confirmation are not completed in Settings yet. Finalizing a GST invoice requires valid GST setup.
                       </span>
                     </div>
-                  )}
+                    <Link
+                      href="/settings"
+                      className="px-3.5 py-1.5 rounded-full bg-black text-white text-[11px] font-medium shrink-0"
+                    >
+                      Configure in Settings
+                    </Link>
+                  </div>
+                )
+              ) : (
+                <div className="p-3.5 rounded-2xl bg-white/60 border border-white/80 text-xs text-neutral-800 flex items-start gap-2.5">
+                  <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-medium text-neutral-900">Non-GST Bill of Supply Mode:</span>{" "}
+                    Tax claims, GSTIN, and &quot;Tax Invoice&quot; wording will not appear on this bill.
+                  </div>
                 </div>
-              );
-            })}
-          </div>
+              )}
 
-          {/* Totals Summary Calculation Breakdown */}
-          <div className="pt-6 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-start gap-6">
-            <div className="w-full sm:max-w-md space-y-2">
-              <label className="block text-xs font-normal text-neutral-700">
-                Invoice Terms & Notes
-              </label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                className="w-full p-3.5 text-xs bg-white/60 backdrop-blur-md rounded-2xl border border-neutral-200/80 text-neutral-900"
-              />
-            </div>
+              {customerList.length === 0 ? (
+                <div className="p-4 rounded-2xl bg-amber-50/90 border border-amber-200 text-xs text-amber-900 flex flex-wrap items-center justify-between gap-3">
+                  <span>No active customers found. Add a customer to create an invoice.</span>
+                  <Link
+                    href="/customers/new"
+                    className="px-4 py-2 rounded-full bg-black text-white text-xs font-medium"
+                  >
+                    + Add Customer
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                  <div className="min-w-0">
+                    <label className="block text-xs font-light text-neutral-600 mb-1.5">
+                      Customer Account *
+                    </label>
+                    <StyledSelect
+                      aria-label="Customer Account"
+                      value={customer}
+                      onChange={(e) => setCustomer(e.target.value)}
+                      className="h-10 py-0 text-xs bg-white/80 border-white/80"
+                    >
+                      {customerList.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.shop_name} {c.city ? `(${c.city})` : ""}
+                        </option>
+                      ))}
+                    </StyledSelect>
+                  </div>
 
-            <div className="w-full sm:w-72 bg-white/60 backdrop-blur-md p-4 rounded-2xl border border-white/70 space-y-2.5 text-xs">
-              <div className="flex justify-between text-neutral-600">
-                <span>Taxable Subtotal:</span>
-                <span className="font-semibold text-neutral-900">{formatINR(invoiceTotals.subtotal)}</span>
-              </div>
+                  <div className="min-w-0">
+                    <label className="block text-xs font-light text-neutral-600 mb-1.5">
+                      Invoice Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={invoiceDate}
+                      onChange={(e) => setInvoiceDate(e.target.value)}
+                      className="w-full h-10 px-4 text-xs bg-white/80 rounded-full border border-white/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D7FF00]"
+                    />
+                  </div>
 
-              {invoiceTotals.discountTotal > 0 && (
-                <div className="flex justify-between text-emerald-700">
-                  <span>Total Discount:</span>
-                  <span className="font-semibold">-{formatINR(invoiceTotals.discountTotal)}</span>
+                  <div className="min-w-0">
+                    <label className="block text-xs font-light text-neutral-600 mb-1.5">
+                      Payment Due Date
+                    </label>
+                    <input
+                      type="date"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                      className="w-full h-10 px-4 text-xs bg-white/80 rounded-full border border-white/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D7FF00]"
+                    />
+                  </div>
                 </div>
               )}
 
               {mode === "gst" && (
-                <>
-                  <div className="flex justify-between text-gray-600">
-                    <span>CGST:</span>
-                    <span className="font-semibold text-gray-900">{formatINR(invoiceTotals.cgstTotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>SGST:</span>
-                    <span className="font-semibold text-gray-900">{formatINR(invoiceTotals.sgstTotal)}</span>
-                  </div>
-                </>
-              )}
-
-              {roundOffEnabled && (
-                <div className="flex justify-between text-gray-500 text-[11px]">
-                  <span>Round off:</span>
-                  <span>{invoiceTotals.roundOff >= 0 ? `+${invoiceTotals.roundOff.toFixed(2)}` : invoiceTotals.roundOff.toFixed(2)}</span>
+                <div className="flex flex-wrap items-center gap-4 pt-1 text-xs text-neutral-700">
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isInterState}
+                      onChange={(e) => setIsInterState(e.target.checked)}
+                      className="rounded accent-black"
+                    />
+                    <span>Inter-State Supply (Apply IGST instead of CGST + SGST)</span>
+                  </label>
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={roundOffEnabled}
+                      onChange={(e) => setRoundOffEnabled(e.target.checked)}
+                      className="rounded accent-black"
+                    />
+                    <span>Auto Round-off Total</span>
+                  </label>
                 </div>
               )}
 
-              <div className="pt-2.5 border-t border-neutral-200/60 flex justify-between items-baseline">
-                <span className="font-normal text-xs sm:text-sm text-neutral-600">Grand Total:</span>
-                <span className="text-xl sm:text-2xl font-semibold text-neutral-900 tracking-tight">
-                  {formatINR(invoiceTotals.grandTotal)}
-                </span>
+              {/* Single Pending Order Pre-loader Banner */}
+              {pendingOrders.length > 0 && (
+                <div className="p-4 rounded-2xl bg-[#D7FF00]/25 border border-[#D7FF00]/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="text-xs font-medium text-neutral-950 block">
+                      Customer has recent Order ({pendingOrders[0].order_number}) with{" "}
+                      {pendingOrders[0].order_items?.length || 0} item(s)
+                    </span>
+                    <span className="text-[11px] text-neutral-700 font-light">
+                      Load booked order items into this bill or enter line items manually below.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleLoadOrder(pendingOrders[0])}
+                    className="px-4 py-2 rounded-full bg-black text-white text-xs font-normal hover:scale-105 active:scale-95 transition-all shrink-0 cursor-pointer"
+                  >
+                    Load Order Items
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Invoice Line Items */}
+            <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 space-y-4">
+              <div className="flex items-center justify-between border-b border-white/40 pb-3 gap-2">
+                <div>
+                  <h2 className="text-base font-normal text-neutral-900">Line Items &amp; Calculations</h2>
+                  <p className="text-xs font-light text-neutral-500">
+                    Live batch stock check per pack size
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addLine}
+                  disabled={variants.length === 0}
+                  className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-white/75 text-neutral-800 text-xs font-medium border border-white/80 hover:bg-black hover:text-white transition-all cursor-pointer disabled:opacity-40 shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Item</span>
+                </button>
+              </div>
+
+              {variants.length === 0 ? (
+                <div className="p-6 rounded-2xl bg-white/50 border border-white/70 text-center space-y-3">
+                  <p className="text-xs text-neutral-600">
+                    No active products in catalog yet.
+                  </p>
+                  <Link
+                    href="/products/new"
+                    className="inline-flex items-center px-4 py-2 rounded-full bg-black text-white text-xs font-medium"
+                  >
+                    + Add Product
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {lines.map((line, idx) => {
+                    const res = invoiceTotals.items[idx];
+                    const hasStock = line.quantity <= line.stock_on_hand;
+                    return (
+                      <div
+                        key={idx}
+                        className="p-4 rounded-2xl bg-white/65 border border-white/80 space-y-3"
+                      >
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                          <div className="sm:col-span-5 min-w-0">
+                            <label className="block text-[11px] font-normal text-neutral-700 mb-1">
+                              Select Product &amp; Variant *
+                            </label>
+                            <StyledSelect
+                              aria-label="Select Product & Variant"
+                              value={line.variant_id}
+                              onChange={(e) => handleProductChange(idx, e.target.value)}
+                              className="h-10 py-0 text-xs bg-white/95 border-neutral-200"
+                            >
+                              {variants.map((v) => (
+                                <option key={v.variant_id} value={v.variant_id}>
+                                  {v.name} — {v.pack_size} ({formatINR(v.unit_price)})
+                                </option>
+                              ))}
+                            </StyledSelect>
+                          </div>
+
+                          <div className="sm:col-span-2 min-w-0">
+                            <label className="block text-[11px] font-normal text-neutral-700 mb-1">
+                              Qty (Units)
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              step="any"
+                              value={line.quantity}
+                              onChange={(e) => {
+                                const copy = [...lines];
+                                copy[idx].quantity = Number(e.target.value);
+                                setLines(copy);
+                              }}
+                              className="w-full h-10 px-3 text-xs bg-white/95 rounded-full border border-neutral-200 text-neutral-900"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-2 min-w-0">
+                            <label className="block text-[11px] font-normal text-neutral-700 mb-1">
+                              Price (₹)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={line.unit_price}
+                              onChange={(e) => {
+                                const copy = [...lines];
+                                copy[idx].unit_price = Number(e.target.value);
+                                setLines(copy);
+                              }}
+                              className="w-full h-10 px-3 text-xs bg-white/95 rounded-full border border-neutral-200 text-neutral-900"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-1 min-w-0">
+                            <label className="block text-[11px] font-normal text-neutral-700 mb-1">
+                              Disc %
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="any"
+                              value={line.discount_percent}
+                              onChange={(e) => {
+                                const copy = [...lines];
+                                copy[idx].discount_percent = Number(e.target.value);
+                                setLines(copy);
+                              }}
+                              className="w-full h-10 px-2 text-xs bg-white/95 rounded-full border border-neutral-200 text-neutral-900 text-center"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-2 flex items-center justify-end gap-2 min-w-0">
+                            <div className="text-right min-w-0">
+                              <span className="block text-[10px] text-neutral-600">Total</span>
+                              <span className="text-xs font-semibold text-neutral-900 truncate block">
+                                {formatINR(res?.lineTotal || 0)}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeLine(idx)}
+                              aria-label="Remove line"
+                              className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center text-rose-500 hover:text-rose-700 rounded-full hover:bg-rose-50 cursor-pointer shrink-0"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-4 text-[11px] pt-2 border-t border-neutral-200/60 text-neutral-600 font-light">
+                          {mode === "gst" && res && (
+                            <>
+                              <span>
+                                HSN:{" "}
+                                <strong className="font-mono text-neutral-800 font-normal">
+                                  {line.hsn || "—"}
+                                </strong>
+                              </span>
+                              <span>
+                                Taxable:{" "}
+                                <strong className="font-normal text-neutral-800">
+                                  {formatINR(res.lineSubtotal)}
+                                </strong>
+                              </span>
+                              {!isInterState ? (
+                                <>
+                                  <span>
+                                    CGST ({res.cgstRate}%):{" "}
+                                    <strong className="font-normal text-neutral-800">
+                                      {formatINR(res.cgstAmount)}
+                                    </strong>
+                                  </span>
+                                  <span>
+                                    SGST ({res.sgstRate}%):{" "}
+                                    <strong className="font-normal text-neutral-800">
+                                      {formatINR(res.sgstAmount)}
+                                    </strong>
+                                  </span>
+                                </>
+                              ) : (
+                                <span>
+                                  IGST ({res.igstRate}%):{" "}
+                                  <strong className="font-normal text-neutral-800">
+                                    {formatINR(res.igstAmount)}
+                                  </strong>
+                                </span>
+                              )}
+                            </>
+                          )}
+                          <span
+                            className={`ml-auto text-[10px] font-medium ${
+                              hasStock ? "text-emerald-700" : "text-amber-700"
+                            }`}
+                          >
+                            {hasStock ? "✓" : "!"} {line.stock_on_hand} in FEFO batches
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Totals Summary */}
+              <div className="pt-6 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-start gap-6">
+                <div className="w-full sm:max-w-md space-y-2">
+                  <label className="block text-xs font-normal text-neutral-700">
+                    Invoice Terms &amp; Notes
+                  </label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Payment terms or delivery notes (optional)"
+                    rows={2}
+                    className="w-full p-3.5 text-xs bg-white/75 rounded-2xl border border-neutral-200/80 text-neutral-900"
+                  />
+                </div>
+
+                <div className="w-full sm:w-72 bg-white/70 p-4 rounded-2xl border border-white/80 space-y-2.5 text-xs">
+                  <div className="flex justify-between text-neutral-600">
+                    <span>Taxable Subtotal:</span>
+                    <span className="font-semibold text-neutral-900">
+                      {formatINR(invoiceTotals.subtotal)}
+                    </span>
+                  </div>
+
+                  {invoiceTotals.discountTotal > 0 && (
+                    <div className="flex justify-between text-emerald-700">
+                      <span>Total Discount:</span>
+                      <span className="font-semibold">
+                        -{formatINR(invoiceTotals.discountTotal)}
+                      </span>
+                    </div>
+                  )}
+
+                  {mode === "gst" && (
+                    !isInterState ? (
+                      <>
+                        <div className="flex justify-between text-gray-600">
+                          <span>CGST:</span>
+                          <span className="font-semibold text-gray-900">
+                            {formatINR(invoiceTotals.cgstTotal)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-gray-600">
+                          <span>SGST:</span>
+                          <span className="font-semibold text-gray-900">
+                            {formatINR(invoiceTotals.sgstTotal)}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex justify-between text-gray-600">
+                        <span>IGST:</span>
+                        <span className="font-semibold text-gray-900">
+                          {formatINR(invoiceTotals.igstTotal)}
+                        </span>
+                      </div>
+                    )
+                  )}
+
+                  {roundOffEnabled && (
+                    <div className="flex justify-between text-gray-500 text-[11px]">
+                      <span>Round off:</span>
+                      <span>
+                        {invoiceTotals.roundOff >= 0
+                          ? `+${invoiceTotals.roundOff.toFixed(2)}`
+                          : invoiceTotals.roundOff.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="pt-2.5 border-t border-neutral-200/60 flex justify-between items-baseline">
+                    <span className="font-normal text-xs sm:text-sm text-neutral-600">
+                      Grand Total:
+                    </span>
+                    <span className="text-xl sm:text-2xl font-semibold text-neutral-900 tracking-tight">
+                      {formatINR(invoiceTotals.grandTotal)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-4 border-t border-neutral-100 flex flex-wrap items-center justify-end gap-3">
+                <button
+                  type="button"
+                  disabled={submitting || !customer || lines.length === 0}
+                  onClick={() => void submitInvoice("draft")}
+                  className="px-6 h-11 rounded-full bg-white/80 text-neutral-800 border border-black/10 text-xs font-medium flex items-center gap-2 hover:bg-white transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save as Draft</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => void submitInvoice("finalize")}
+                  disabled={submitting || !customer || lines.length === 0}
+                  className="px-8 h-11 rounded-full bg-black text-white text-xs sm:text-sm font-normal flex items-center justify-center gap-2 hover:bg-neutral-800 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <FileText className="w-4 h-4 text-[#D7FF00]" />
+                  <span>{submitting ? "Finalizing & Deducting Stock..." : "Finalize & Issue Stock"}</span>
+                </button>
               </div>
             </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="pt-4 border-t border-neutral-100 flex flex-wrap items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                toast.success("Draft saved successfully");
-                router.push("/invoices");
-              }}
-              className="px-6 h-11 rounded-full bg-white/70 text-neutral-800 border border-white/80 text-xs font-normal hover:bg-white hover:text-black transition-all shadow-sm"
-            >
-              Save as Draft
-            </button>
-
-            <button
-              type="button"
-              onClick={handleFinalize}
-              disabled={submitting}
-              className="px-8 h-11 rounded-full bg-black text-white text-xs sm:text-sm font-normal flex items-center justify-center gap-2 hover:bg-neutral-800 active:scale-95 transition-all shadow-sm disabled:opacity-50"
-            >
-              <FileText className="w-4 h-4 text-[#D4F732]" />
-              <span>{submitting ? "Finalizing & Deducting Stock..." : "Finalize & Issue Stock"}</span>
-            </button>
-          </div>
-
-          {/* Pending Order Pre-loader Banner */}
-          {pendingOrders.length > 0 && (
-            <div className="p-4 rounded-2xl bg-[#E0FE52]/25 border border-[#E0FE52]/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div>
-                <span className="text-xs font-medium text-neutral-950 block">
-                  Customer has confirmed Order ({pendingOrders[0].order_number}) with {pendingOrders[0].order_items?.length || 0} item(s)
-                </span>
-                <span className="text-[11px] text-neutral-700 font-light">
-                  Directly load customer booked items to create this invoice, or add items manually below.
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleLoadOrder(pendingOrders[0])}
-                className="px-4 py-2 rounded-full bg-black text-white text-xs font-normal hover:scale-105 active:scale-95 transition-all shadow-sm shrink-0 cursor-pointer"
-              >
-                Load Order Items
-              </button>
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
+export default function NewInvoicePage() {
+  return (
+    <Suspense
+      fallback={<div className="p-10 text-center text-xs text-neutral-500">Loading invoice form...</div>}
+    >
+      <NewInvoiceForm />
+    </Suspense>
+  );
+}

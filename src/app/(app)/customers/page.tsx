@@ -18,13 +18,15 @@ import {
   Home,
   RefreshCw,
   AlertCircle,
-  ChevronDown,
+  Trash2,
 } from "lucide-react";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { formatINR } from "@/lib/formatting/currency";
-import { formatDate } from "@/lib/formatting/dates";
-import { getCustomers, Customer } from "@/lib/services/customers";
+import { getCustomers, deleteCustomer, Customer } from "@/lib/services/customers";
 import { FitNumber } from "@/components/ui/FitNumber";
+import { StyledSelect } from "@/components/ui/StyledSelect";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { toast } from "sonner";
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -33,6 +35,9 @@ export default function CustomersPage() {
   const [selectedStatus, setSelectedStatus] = useState("active");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<Customer | null>(null);
+  const [archiving, setArchiving] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,6 +67,22 @@ export default function CustomersPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const handleConfirmArchive = async () => {
+    if (!archiveTarget) return;
+    setArchiving(true);
+    setArchiveError(null);
+    const res = await deleteCustomer(archiveTarget.id);
+    if (!res.success) {
+      setArchiveError(res.error || "Failed to archive customer");
+      setArchiving(false);
+      return;
+    }
+    toast.success(`Customer "${archiveTarget.shop_name || archiveTarget.name}" archived`);
+    setArchiveTarget(null);
+    setArchiving(false);
+    await load();
+  };
 
   const totalOutstanding = customers.reduce((sum, c) => sum + (c.outstanding || 0), 0);
 
@@ -154,23 +175,32 @@ export default function CustomersPage() {
               />
             </div>
 
-            {/* Custom styled select that never clips */}
-            <div className="relative">
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                aria-label="Filter customers by type"
-                className="appearance-none h-10 pl-3.5 pr-8 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#D7FF00] shadow-none cursor-pointer"
-              >
-                <option value="all">All types</option>
-                <option value="grocery">Grocery / Store</option>
-                <option value="hotel">Hotel / Restaurant</option>
-                <option value="office">Corporate Office</option>
-                <option value="pg">PG / Hostel</option>
-                <option value="other">Other</option>
-              </select>
-              <ChevronDown className="w-3.5 h-3.5 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
+            {/* Custom styled selects that never clip */}
+            <StyledSelect
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              aria-label="Filter customers by type"
+              wrapperClassName="min-w-[140px]"
+              className="h-10 pl-3.5 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#D7FF00]"
+            >
+              <option value="all">All types</option>
+              <option value="grocery">Grocery / Store</option>
+              <option value="hotel">Hotel / Restaurant</option>
+              <option value="office">Corporate Office</option>
+              <option value="pg">PG / Hostel</option>
+              <option value="other">Other</option>
+            </StyledSelect>
+
+            <StyledSelect
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              aria-label="Filter customers by status"
+              wrapperClassName="min-w-[120px]"
+              className="h-10 pl-3.5 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#D7FF00]"
+            >
+              <option value="active">Active</option>
+              <option value="archived">Archived</option>
+            </StyledSelect>
           </div>
 
           <Link
@@ -239,7 +269,7 @@ export default function CustomersPage() {
         ) : (
           <>
             {/* Desktop Table View */}
-            <div className="hidden md:block bg-white/55 backdrop-blur-xl rounded-[28px] border border-white/65 overflow-x-auto shadow-none">
+            <div className="hidden md:block bg-white/55 backdrop-blur-xl rounded-[28px] border border-white/65 table-wrapper shadow-none">
               <table className="w-full text-left text-xs">
                 <thead className="bg-white/40 border-b border-white/60 text-neutral-500 font-normal">
                   <tr>
@@ -330,13 +360,29 @@ export default function CustomersPage() {
                             >
                               <MessageCircle className="w-3.5 h-3.5" />
                             </a>
-                            <a
-                              href={`mailto:${c.email || "tazqor@gmail.com"}?subject=${encodeURIComponent(`TAZQOR Business - ${c.shop_name || c.name}`)}`}
-                              title="Send Email"
-                              className="w-8 h-8 rounded-full bg-blue-50 hover:bg-blue-600 hover:text-white flex items-center justify-center text-blue-700 transition-all border border-blue-200/60"
-                            >
-                              <Mail className="w-3.5 h-3.5" />
-                            </a>
+                            {c.email && (
+                              <a
+                                href={`mailto:${c.email}?subject=${encodeURIComponent(`Business - ${c.shop_name || c.name}`)}`}
+                                title="Send Email"
+                                className="w-8 h-8 rounded-full bg-blue-50 hover:bg-blue-600 hover:text-white flex items-center justify-center text-blue-700 transition-all border border-blue-200/60"
+                              >
+                                <Mail className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                            {c.status !== "archived" && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setArchiveError(null);
+                                  setArchiveTarget(c);
+                                }}
+                                title="Archive Customer"
+                                aria-label={`Archive ${c.shop_name || c.name}`}
+                                className="w-8 h-8 rounded-full bg-rose-50 hover:bg-rose-600 hover:text-white flex items-center justify-center text-rose-600 transition-all border border-rose-200/60 cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                             <Link
                               href={`/customers/${c.id}`}
                               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/60 text-neutral-800 text-xs font-light hover:bg-black hover:text-white border border-white/70 transition-all shadow-none ml-1"
@@ -420,13 +466,29 @@ export default function CustomersPage() {
                         >
                           <MessageCircle className="w-3.5 h-3.5" />
                         </a>
-                        <a
-                          href={`mailto:${c.email || "tazqor@gmail.com"}?subject=${encodeURIComponent(`TAZQOR Business - ${c.shop_name || c.name}`)}`}
-                          className="w-9 h-9 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200/60 active:scale-95"
-                          title="Mail"
-                        >
-                          <Mail className="w-3.5 h-3.5" />
-                        </a>
+                        {c.email && (
+                          <a
+                            href={`mailto:${c.email}?subject=${encodeURIComponent(`Business - ${c.shop_name || c.name}`)}`}
+                            className="w-9 h-9 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200/60 active:scale-95"
+                            title="Mail"
+                          >
+                            <Mail className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        {c.status !== "archived" && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setArchiveError(null);
+                              setArchiveTarget(c);
+                            }}
+                            className="w-9 h-9 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-200/60 active:scale-95 cursor-pointer"
+                            title="Archive Customer"
+                            aria-label={`Archive ${c.shop_name || c.name}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
 
                       <Link
@@ -444,6 +506,21 @@ export default function CustomersPage() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={Boolean(archiveTarget)}
+        title={`Archive "${archiveTarget?.shop_name || archiveTarget?.name || "customer"}"?`}
+        description="Archived customers are hidden from active customer lists and new order/invoice dropdowns while preserving historical invoices and ledger statements."
+        confirmLabel="Archive Customer"
+        tone="danger"
+        loading={archiving}
+        error={archiveError}
+        onConfirm={handleConfirmArchive}
+        onClose={() => {
+          setArchiveTarget(null);
+          setArchiveError(null);
+        }}
+      />
     </div>
   );
 }

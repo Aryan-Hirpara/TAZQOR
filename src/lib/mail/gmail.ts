@@ -18,7 +18,7 @@ export interface MailMessage {
 }
 
 export function getMailConfig() {
-  const user = process.env.MAIL_USER || "tazqor@gmail.com";
+  const user = process.env.MAIL_USER || "";
   const pass = process.env.MAIL_PASS || "";
   const host = process.env.MAIL_IMAP_HOST || "imap.gmail.com";
   const port = Number(process.env.MAIL_IMAP_PORT) || 993;

@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
-import { formatINR, formatQuantity } from "@/lib/formatting/currency";
+import { StyledSelect } from "@/components/ui/StyledSelect";
+import { formatINR } from "@/lib/formatting/currency";
 import {
   Dialog,
   DialogContent,
@@ -27,8 +28,11 @@ import {
 } from "@/components/ui/dialog";
 import { createClient } from "@/lib/supabase/client";
 
+const BUSINESS_ID = "00000000-0000-0000-0000-000000000001";
+
 interface BatchItem {
   id: string;
+  product_variant_id: string;
   batch_number: string;
   product_name: string;
   variant_name: string;
@@ -45,7 +49,7 @@ interface StockMovement {
   id: string;
   date: string;
   product: string;
-  type: 'purchase_in' | 'sale_out' | 'sales_return_in' | 'damage_out' | 'expiry_out' | 'adjustment_in' | 'opening_stock';
+  type: 'purchase_in' | 'sale_out' | 'sales_return_in' | 'damage_out' | 'expiry_out' | 'adjustment_in' | 'adjustment_out' | 'opening_stock';
   quantity: number;
   batch_number: string;
   reason: string;
@@ -58,7 +62,6 @@ export default function InventoryPage() {
   const [movements, setMovements] = useState<StockMovement[]>([]);
   const [variantsList, setVariantsList] = useState<{ id: string; name: string; prodName: string; cost: number; sku: string }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
   const [receiveStockOpen, setReceiveStockOpen] = useState(false);
   const [adjustStockOpen, setAdjustStockOpen] = useState(false);
 
@@ -69,8 +72,8 @@ export default function InventoryPage() {
     mfg_date: new Date().toISOString().split("T")[0],
     expiry_date: new Date(Date.now() + 730 * 86400000).toISOString().split("T")[0],
     quantity: 50,
-    cost_per_unit: 280,
-    supplier: "TAZQOR Factory Plant 1",
+    cost_per_unit: 0,
+    supplier: "",
   });
 
   // Adjust stock form
@@ -86,27 +89,40 @@ export default function InventoryPage() {
       setLoading(true);
       const supabase = createClient();
 
-      // 1. Fetch live batches
-      const { data: bData, error: bErr } = await supabase
-        .from("batches")
-        .select("id, batch_number, manufacturing_date, expiry_date, quantity_received, cost_per_unit, product_variant_id, product_variants(name, sku, cost_price, products(name))")
-        .order("created_at", { ascending: false });
+      const [{ data: bData, error: bErr }, { data: stockBalData }] = await Promise.all([
+        supabase
+          .from("batches")
+          .select("id, batch_number, manufacturing_date, expiry_date, quantity_received, cost_per_unit, product_variant_id, product_variants(name, sku, cost_price, products(name))")
+          .eq("business_id", BUSINESS_ID)
+          .order("expiry_date", { ascending: true }),
+        supabase
+          .from("v_stock_on_hand")
+          .select("batch_id, quantity_on_hand")
+          .eq("business_id", BUSINESS_ID),
+      ]);
+
+      const onHandMap = new Map<string, number>();
+      for (const row of stockBalData || []) {
+        if (row.batch_id) onHandMap.set(row.batch_id, Number(row.quantity_on_hand) || 0);
+      }
 
       if (!bErr && bData) {
         const mapped: BatchItem[] = bData.map((b: any) => {
           const pv = b.product_variants;
-          const prod = pv?.products?.name || "TAZQOR Cleaning Product";
+          const prod = pv?.products?.name || "Product";
           const varN = pv?.name || "Standard";
+          const remaining = onHandMap.has(b.id) ? onHandMap.get(b.id)! : 0;
           return {
             id: b.id,
+            product_variant_id: b.product_variant_id,
             batch_number: b.batch_number,
             product_name: prod,
             variant_name: varN,
-            sku: pv?.sku || "TC-01",
-            mfg_date: b.manufacturing_date || "2026-01-01",
-            expiry_date: b.expiry_date || "2028-01-01",
+            sku: pv?.sku || "—",
+            mfg_date: b.manufacturing_date || "—",
+            expiry_date: b.expiry_date || "—",
             qty_received: Number(b.quantity_received) || 0,
-            qty_remaining: Number(b.quantity_received) || 0,
+            qty_remaining: remaining,
             cost_per_unit: Number(b.cost_per_unit) || Number(pv?.cost_price) || 0,
           };
         });
@@ -120,20 +136,21 @@ export default function InventoryPage() {
       const { data: mData, error: mErr } = await supabase
         .from("stock_movements")
         .select("id, created_at, movement_type, quantity, reason, notes, product_variants(name, sku, products(name)), batches(batch_number)")
+        .eq("business_id", BUSINESS_ID)
         .order("created_at", { ascending: false });
 
       if (!mErr && mData) {
         const mappedMovs: StockMovement[] = mData.map((m: any) => {
           const b = m.batches;
           const pv = m.product_variants;
-          const prodDesc = pv?.products?.name ? `${pv.products.name} (${pv.name})` : "General Product";
+          const prodDesc = pv?.products?.name ? `${pv.products.name} (${pv.name})` : "Product";
           return {
             id: m.id,
             date: m.created_at ? new Date(m.created_at).toISOString().replace("T", " ").substring(0, 16) : "Recent",
             product: prodDesc,
             type: m.movement_type || "purchase_in",
             quantity: Number(m.quantity) || 0,
-            batch_number: b?.batch_number || "BATCH",
+            batch_number: b?.batch_number || "—",
             reason: m.reason || m.notes || "Recorded movement",
             ref_doc: b?.batch_number ? `Batch ${b.batch_number}` : "GRN",
           };
@@ -141,25 +158,27 @@ export default function InventoryPage() {
         setMovements(mappedMovs);
       }
 
-      // 3. Fetch variants for stock receipt selection
+      // 3. Fetch active variants for stock receipt selection
       const { data: vData } = await supabase
         .from("product_variants")
-        .select("id, name, sku, cost_price, products(name)");
+        .select("id, name, sku, cost_price, products!inner(name, status)")
+        .eq("business_id", BUSINESS_ID)
+        .neq("products.status", "archived");
 
-      if (vData && vData.length > 0) {
+      if (vData) {
         const vList = vData.map((v: any) => ({
           id: v.id,
           name: v.name,
           prodName: v.products?.name || "Product",
-          cost: Number(v.cost_price) || 280,
+          cost: Number(v.cost_price) || 0,
           sku: v.sku || "",
         }));
         setVariantsList(vList);
         if (vList[0]) {
           setReceiveForm((prev) => ({
             ...prev,
-            variant_id: vList[0].id,
-            cost_per_unit: vList[0].cost,
+            variant_id: prev.variant_id || vList[0].id,
+            cost_per_unit: prev.variant_id ? prev.cost_per_unit : vList[0].cost,
           }));
         }
       }
@@ -212,15 +231,21 @@ export default function InventoryPage() {
       }
 
       if (insertedBatch) {
-        await supabase.from("stock_movements").insert({
-          business_id: "00000000-0000-0000-0000-000000000001",
-          batch_id: insertedBatch.id,
-          product_variant_id: variantId,
-          movement_type: "purchase_in",
-          quantity: Number(receiveForm.quantity),
-          reason: "Supplier receipt: " + receiveForm.supplier,
-          notes: "GRN-" + Math.floor(1000 + Math.random() * 9000),
+        const { error: movErr } = await supabase.rpc("receive_stock", {
+          p_business_id: BUSINESS_ID,
+          p_product_variant_id: variantId,
+          p_batch_id: insertedBatch.id,
+          p_quantity: Number(receiveForm.quantity),
+          p_reason: receiveForm.supplier.trim()
+            ? `Supplier receipt: ${receiveForm.supplier.trim()}`
+            : "Stock receipt",
+          p_reference_type: "purchase",
+          p_reference_id: null,
         });
+        if (movErr) {
+          toast.error("Batch created, but movement logging failed: " + movErr.message);
+          return;
+        }
       }
 
       await loadData();
@@ -249,14 +274,16 @@ export default function InventoryPage() {
 
     try {
       const supabase = createClient();
-      await supabase.from("stock_movements").insert({
-        business_id: "00000000-0000-0000-0000-000000000001",
-        batch_id: targetBatch.id,
-        movement_type: adjustForm.type,
-        quantity: qty,
-        reason: adjustForm.reason || "Manual Stock Adjustment",
-        notes: "ADJ-" + Math.floor(100 + Math.random() * 900),
+      const { error: adjErr } = await supabase.rpc("adjust_stock", {
+        p_business_id: BUSINESS_ID,
+        p_product_variant_id: targetBatch.product_variant_id,
+        p_batch_id: targetBatch.id,
+        p_movement_type: adjustForm.type,
+        p_quantity: qty,
+        p_reason: adjustForm.reason || "Manual Stock Adjustment",
+        p_actor_id: null,
       });
+      if (adjErr) throw adjErr;
 
       await loadData();
       setAdjustStockOpen(false);
@@ -373,7 +400,7 @@ export default function InventoryPage() {
               </span>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="table-wrapper">
               <table className="w-full text-left text-xs">
                 <thead className="bg-white/40 border-b border-white/60 text-neutral-500 font-normal">
                   <tr>
@@ -427,7 +454,7 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="table-wrapper">
               <table className="w-full text-left text-xs">
                 <thead className="bg-white/40 border-b border-white/60 text-neutral-500 font-normal">
                   <tr>
@@ -485,7 +512,7 @@ export default function InventoryPage() {
               <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                 Product Variant
               </label>
-              <select
+              <StyledSelect
                 aria-label="Product Variant"
                 value={receiveForm.variant_id}
                 onChange={(e) => {
@@ -496,14 +523,18 @@ export default function InventoryPage() {
                     cost_per_unit: sel ? sel.cost : receiveForm.cost_per_unit,
                   });
                 }}
-                className="w-full h-11 px-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
+                className="w-full h-11 pl-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
               >
-                {variantsList.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.prodName} - {v.name} ({v.sku})
-                  </option>
-                ))}
-              </select>
+                {variantsList.length === 0 ? (
+                  <option value="">No product variants found</option>
+                ) : (
+                  variantsList.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.prodName} - {v.name} ({v.sku})
+                    </option>
+                  ))
+                )}
+              </StyledSelect>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -515,7 +546,7 @@ export default function InventoryPage() {
                   type="text"
                   value={receiveForm.batch_number}
                   onChange={(e) => setReceiveForm({ ...receiveForm, batch_number: e.target.value })}
-                  placeholder="e.g. B-FLR-2026-03"
+                  placeholder="e.g. BATCH-001"
                   required
                   className="w-full h-11 px-4 text-xs font-mono bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
                 />
@@ -614,18 +645,22 @@ export default function InventoryPage() {
               <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                 Select Batch
               </label>
-              <select
+              <StyledSelect
                 aria-label="Select Batch"
                 value={adjustForm.batch_id}
                 onChange={(e) => setAdjustForm({ ...adjustForm, batch_id: e.target.value })}
-                className="w-full h-11 px-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
+                className="w-full h-11 pl-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
               >
-                {batches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.batch_number} ({b.product_name} - {b.qty_remaining} on hand)
-                  </option>
-                ))}
-              </select>
+                {batches.length === 0 ? (
+                  <option value="">No batches available</option>
+                ) : (
+                  batches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.batch_number} ({b.product_name} - {b.qty_remaining} on hand)
+                    </option>
+                  ))
+                )}
+              </StyledSelect>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -633,17 +668,17 @@ export default function InventoryPage() {
                 <label className="block text-xs font-normal text-neutral-700 mb-1.5">
                   Adjustment Type
                 </label>
-                <select
+                <StyledSelect
                   aria-label="Adjustment Type"
                   value={adjustForm.type}
                   onChange={(e) => setAdjustForm({ ...adjustForm, type: e.target.value })}
-                  className="w-full h-11 px-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
+                  className="w-full h-11 pl-4 text-xs bg-white/60 backdrop-blur-md rounded-full border border-neutral-200/80 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#D4F732]"
                 >
                   <option value="damage_out">Damaged / Leaked (-)</option>
                   <option value="expiry_out">Expired (-)</option>
                   <option value="adjustment_out">Missing / Shrinkage (-)</option>
                   <option value="adjustment_in">Audit Surplus (+)</option>
-                </select>
+                </StyledSelect>
               </div>
 
               <div>

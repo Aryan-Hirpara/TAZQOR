@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { TopHeader } from "@/components/layout/TopHeader";
@@ -8,10 +8,15 @@ import { HeroMonthBars, MonthBarData } from "@/components/dashboard/HeroMonthBar
 import { TopRightMetricsCard } from "@/components/dashboard/TopRightMetricsCard";
 import { TargetProgressBar } from "@/components/dashboard/TargetProgressBar";
 import { SalesSplineChart } from "@/components/charts/SalesSplineChart";
+import { DottedColumn } from "@/components/charts/DottedParticleChart";
+import { DailyBarItem } from "@/components/charts/DailyPillBarChart";
 import { OrderCard } from "@/components/dashboard/OrderCard";
 import { GrossProfitCard, NetProfitCard } from "@/components/dashboard/ProfitCards";
 import { MobilePeriodPills } from "@/components/dashboard/MobilePeriodPills";
 import { createClient } from "@/lib/supabase/client";
+
+const MONTH_NAMES = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+const TARGET_STORAGE_KEY = "tazqor_monthly_target";
 
 interface RecentOrderSummary {
   id: string;
@@ -30,36 +35,50 @@ interface RecentMovementSummary {
   quantity: number;
   valuation: number;
   notes: string;
-  ref_doc: string;
 }
 
 export default function DashboardPage() {
   const [period, setPeriod] = useState<"today" | "week" | "month">("month");
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("there");
+  const [monthlyTarget, setMonthlyTarget] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const saved = Number(window.localStorage.getItem(TARGET_STORAGE_KEY));
+      if (!Number.isNaN(saved) && saved >= 0) return saved;
+    }
+    return 0;
+  });
 
-  // Reconciled Business Metrics State (initialized with zero live defaults)
   const [metrics, setMetrics] = useState({
     monthlySales: 0,
     previousMonthSales: 0,
     salesChange: 0,
     grossProfit: 0,
     netProfit: 0,
-    monthlyTarget: 80000.0,
-    targetProgressPct: 0,
     averageItems: 0,
     averageSaleValue: 0,
+    saleChangePct: null as number | null,
     totalSalesYear: 0,
     comparisonSalesYear: 0,
   });
 
   const [heroMonths, setHeroMonths] = useState<MonthBarData[]>([]);
-  const [activeMonthName, setActiveMonthName] = useState("nov");
+  const [particleData, setParticleData] = useState<DottedColumn[]>([]);
+  const [dailyData, setDailyData] = useState<DailyBarItem[]>([]);
+  const [monthlyCurrentYear, setMonthlyCurrentYear] = useState<number[]>(Array(12).fill(0));
+  const [monthlyPrevYear, setMonthlyPrevYear] = useState<number[]>(Array(12).fill(0));
+  const [activeMonthName, setActiveMonthName] = useState(() => MONTH_NAMES[new Date().getMonth()]);
   const [recentOrders, setRecentOrders] = useState<RecentOrderSummary[]>([]);
   const [recentMovement, setRecentMovement] = useState<RecentMovementSummary | null>(null);
 
+  const handleSaveTarget = useCallback((newTarget: number) => {
+    setMonthlyTarget(newTarget);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(TARGET_STORAGE_KEY, String(newTarget));
+    }
+  }, []);
+
   useEffect(() => {
-    // Check if Playwright test metrics are injected
     if (typeof window !== "undefined" && (window as any).__TAZQOR_TEST_METRICS__) {
       setMetrics((prev) => ({
         ...prev,
@@ -84,7 +103,7 @@ export default function DashboardPage() {
       try {
         const supabase = createClient();
 
-        // 1. Fetch user profile
+        // 1. User profile
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { data: profile } = await supabase
@@ -100,197 +119,267 @@ export default function DashboardPage() {
           }
         }
 
-        // 2. Fetch all invoices with items
-        const { data: allInvoices, error: invErr } = await supabase
-          .from("invoices")
-          .select("id, grand_total, subtotal, invoice_date, created_at, status, invoice_items(quantity, line_total)")
-          .neq("status", "cancelled");
-
-        // 3. Fetch expenses
-        const { data: allExpenses } = await supabase
-          .from("expenses")
-          .select("amount, expense_date, created_at");
-
-        // 4. Fetch recent orders
-        const { data: ordersData } = await supabase
-          .from("orders")
-          .select("id, order_number, status, created_at, customers(name, shop_name), order_items(quantity, unit_price)")
-          .order("created_at", { ascending: false })
-          .limit(4);
+        // 2. Fetch live non-cancelled invoices with items, variant cost & allocated FEFO batch costs
+        const [
+          { data: allInvoices },
+          { data: allExpenses },
+          { data: ordersData },
+          { data: movsData },
+        ] = await Promise.all([
+          supabase
+            .from("invoices")
+            .select(
+              "id, grand_total, subtotal, invoice_date, created_at, status, invoice_items(quantity, line_total, product_variants(cost_price), invoice_item_batches(quantity_allocated, cost_per_unit))"
+            )
+            .neq("status", "cancelled"),
+          supabase.from("expenses").select("amount, expense_date, created_at"),
+          supabase
+            .from("orders")
+            .select("id, order_number, status, created_at, customers(name, shop_name), order_items(quantity, unit_price)")
+            .neq("status", "cancelled")
+            .order("created_at", { ascending: false })
+            .limit(4),
+          supabase
+            .from("stock_movements")
+            .select("id, movement_type, quantity, reason, notes, product_variant_id, batch_id, product_variants(name, products(name)), batches(batch_number, cost_per_unit)")
+            .order("created_at", { ascending: false })
+            .limit(1),
+        ]);
 
         if (ordersData) {
           const ords: RecentOrderSummary[] = ordersData.map((o: any) => {
             const custName = o.customers?.shop_name || o.customers?.name || "Customer";
             const items = o.order_items || [];
             const count = items.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 0), 0);
-            const total = items.reduce((sum: number, it: any) => sum + ((Number(it.quantity) || 0) * (Number(it.unit_price) || 0)), 0);
+            const total = items.reduce(
+              (sum: number, it: any) => sum + (Number(it.quantity) || 0) * (Number(it.unit_price) || 0),
+              0
+            );
             return {
               id: o.id,
               order_number: o.order_number,
               customer_name: custName,
-              itemCount: count > 0 ? count : 1,
-              totalAmount: total > 0 ? total : 4500,
+              itemCount: count,
+              totalAmount: total,
               status: o.status || "confirmed",
             };
           });
           setRecentOrders(ords);
+        } else {
+          setRecentOrders([]);
         }
-
-        // 5. Fetch recent stock movement (simplified select to avoid 400 on missing FK joins)
-        const { data: movsData } = await supabase
-          .from("stock_movements")
-          .select("id, movement_type, quantity, reason, notes, product_variant_id, batch_id")
-          .order("created_at", { ascending: false })
-          .limit(1);
 
         if (movsData && movsData.length > 0) {
           const m = movsData[0] as any;
-          const qty = Number(m.quantity) || 1;
+          const qty = Math.abs(Number(m.quantity) || 0);
+          const costPerUnit = Number(m.batches?.cost_per_unit) || 0;
+          const prodName = m.product_variants?.products?.name
+            ? `${m.product_variants.products.name} (${m.product_variants.name})`
+            : m.product_variants?.name || "Inventory";
+          const isInbound =
+            m.movement_type === "opening_stock" ||
+            m.movement_type === "purchase_in" ||
+            m.movement_type === "sales_return_in" ||
+            m.movement_type === "adjustment_in";
+
           setRecentMovement({
             id: m.id,
-            batch_number: "BATCH",
-            product: "Stock Movement",
-            type: m.movement_type === "opening_stock" || m.movement_type === "purchase_in" ? "In Stock" : "Dispatched",
+            batch_number: m.batches?.batch_number || "—",
+            product: prodName,
+            type: isInbound ? "Stock In" : "Stock Out",
             quantity: qty,
-            valuation: qty * 280,
-            notes: m.reason || m.notes || "Stock movement",
-            ref_doc: "GRN-01",
+            valuation: qty * costPerUnit,
+            notes: m.reason || m.notes || m.movement_type.replace(/_/g, " "),
           });
+        } else {
+          setRecentMovement(null);
         }
 
-        // 6. Calculate Financial Aggregates
         const now = new Date();
         const currentYear = now.getFullYear();
         const currentMonthIdx = now.getMonth();
-        const monthNames = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
-        setActiveMonthName(monthNames[currentMonthIdx]);
+        setActiveMonthName(MONTH_NAMES[currentMonthIdx]);
 
-        const invoicesList = allInvoices || [];
-        const expensesList = allExpenses || [];
+        const invoicesList = (allInvoices || []) as any[];
+        const expensesList = (allExpenses || []) as any[];
 
-        // Year to date sales
-        const salesThisYear = invoicesList
-          .filter((inv) => {
-            const d = new Date(inv.created_at || inv.invoice_date);
-            return d.getFullYear() === currentYear;
-          })
-          .reduce((sum, inv) => sum + (Number(inv.grand_total) || 0), 0);
-
-        // Previous year sales
-        const salesPrevYear = invoicesList
-          .filter((inv) => {
-            const d = new Date(inv.created_at || inv.invoice_date);
-            return d.getFullYear() === currentYear - 1;
-          })
-          .reduce((sum, inv) => sum + (Number(inv.grand_total) || 0), 0);
-
-        // Period-specific sales
-        let periodSales = 0;
-        let prevPeriodSales = 0;
-        let periodInvoices: typeof invoicesList = [];
-
-        if (period === "today") {
-          const todayStr = now.toISOString().split("T")[0];
-          const yesterday = new Date(now.getTime() - 86400000).toISOString().split("T")[0];
-          periodInvoices = invoicesList.filter((inv) => (inv.invoice_date || inv.created_at)?.startsWith(todayStr));
-          periodSales = periodInvoices.reduce((sum, inv) => sum + (Number(inv.grand_total) || 0), 0);
-          prevPeriodSales = invoicesList
-            .filter((inv) => (inv.invoice_date || inv.created_at)?.startsWith(yesterday))
-            .reduce((sum, inv) => sum + (Number(inv.grand_total) || 0), 0);
-        } else if (period === "week") {
-          const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
-          const fourteenDaysAgo = new Date(now.getTime() - 14 * 86400000);
-          periodInvoices = invoicesList.filter((inv) => new Date(inv.created_at || inv.invoice_date) >= sevenDaysAgo);
-          periodSales = periodInvoices.reduce((sum, inv) => sum + (Number(inv.grand_total) || 0), 0);
-          prevPeriodSales = invoicesList
-            .filter((inv) => {
-              const d = new Date(inv.created_at || inv.invoice_date);
-              return d >= fourteenDaysAgo && d < sevenDaysAgo;
-            })
-            .reduce((sum, inv) => sum + (Number(inv.grand_total) || 0), 0);
-        } else {
-          // Month
-          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-          const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-          const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
-
-          periodInvoices = invoicesList.filter((inv) => new Date(inv.created_at || inv.invoice_date) >= startOfMonth);
-          periodSales = periodInvoices.reduce((sum, inv) => sum + (Number(inv.grand_total) || 0), 0);
-          prevPeriodSales = invoicesList
-            .filter((inv) => {
-              const d = new Date(inv.created_at || inv.invoice_date);
-              return d >= startOfLastMonth && d <= endOfLastMonth;
-            })
-            .reduce((sum, inv) => sum + (Number(inv.grand_total) || 0), 0);
-        }
-
-        // Calculate period sales and active invoices directly based on period selection
-        const displaySales = periodSales;
-        const activeInvoices = periodInvoices;
-
-        // Items per bill
-        let totalItemsCount = 0;
-        activeInvoices.forEach((inv) => {
-          const items = inv.invoice_items || [];
-          if (items.length > 0) {
-            totalItemsCount += items.reduce((s: number, it: any) => s + (Number(it.quantity) || 0), 0);
-          } else {
-            totalItemsCount += 1;
-          }
-        });
-
-        const avgItems = activeInvoices.length > 0 ? Number((totalItemsCount / activeInvoices.length).toFixed(1)) : 0;
-        const avgSale = activeInvoices.length > 0 ? Math.round(displaySales / activeInvoices.length) : 0;
-
-        // Expenses for current period
-        const periodExpenses = expensesList.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
-        const grossProfit = displaySales * 0.535;
-        const netProfit = Math.max(0, grossProfit - periodExpenses);
-        const target = 80000.0;
-        const targetPct = target > 0 ? Math.min(100, Math.round((displaySales / target) * 100)) : 0;
-
-        // 7. Dynamic Last 6 Months Bars
-        const monthSalesMap: Record<string, number> = {};
-        for (let i = 5; i >= 0; i--) {
-          const idx = (currentMonthIdx - i + 12) % 12;
-          monthSalesMap[monthNames[idx]] = 0;
-        }
-
+        // Annual 12-month series for SalesSplineChart
+        const curYrMonthly = Array(12).fill(0);
+        const prevYrMonthly = Array(12).fill(0);
         invoicesList.forEach((inv) => {
-          const d = new Date(inv.created_at || inv.invoice_date);
-          const mKey = monthNames[d.getMonth()];
-          if (monthSalesMap[mKey] !== undefined) {
-            monthSalesMap[mKey] += Number(inv.grand_total) || 0;
+          const d = new Date(inv.invoice_date || inv.created_at);
+          const amt = Number(inv.grand_total) || 0;
+          if (d.getFullYear() === currentYear) {
+            curYrMonthly[d.getMonth()] += amt;
+          } else if (d.getFullYear() === currentYear - 1) {
+            prevYrMonthly[d.getMonth()] += amt;
           }
         });
+        setMonthlyCurrentYear(curYrMonthly);
+        setMonthlyPrevYear(prevYrMonthly);
 
-        const maxMonthSales = Math.max(1, ...Object.values(monthSalesMap));
-        const monthsBarData: MonthBarData[] = [];
+        const salesThisYear = curYrMonthly.reduce((a, b) => a + b, 0);
+        const salesPrevYear = prevYrMonthly.reduce((a, b) => a + b, 0);
+
+        // Date helper for period filtering
+        const parseDate = (dateStr?: string, createdStr?: string) => new Date(dateStr || createdStr || 0);
+        const todayStr = now.toISOString().split("T")[0];
+        const yesterdayStr = new Date(now.getTime() - 86400000).toISOString().split("T")[0];
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
+        const fourteenDaysAgo = new Date(now.getTime() - 14 * 86400000);
+        const startOfMonth = new Date(currentYear, currentMonthIdx, 1);
+        const startOfLastMonth = new Date(currentYear, currentMonthIdx - 1, 1);
+        const endOfLastMonth = new Date(currentYear, currentMonthIdx, 0, 23, 59, 59);
+
+        const inPeriod = (dateStr?: string, createdStr?: string, mode: "current" | "prev" = "current") => {
+          const raw = dateStr || createdStr || "";
+          const d = parseDate(dateStr, createdStr);
+          if (period === "today") {
+            return mode === "current" ? raw.startsWith(todayStr) : raw.startsWith(yesterdayStr);
+          }
+          if (period === "week") {
+            return mode === "current" ? d >= sevenDaysAgo : d >= fourteenDaysAgo && d < sevenDaysAgo;
+          }
+          return mode === "current"
+            ? d >= startOfMonth
+            : d >= startOfLastMonth && d <= endOfLastMonth;
+        };
+
+        const periodInvoices = invoicesList.filter((inv) => inPeriod(inv.invoice_date, inv.created_at, "current"));
+        const prevPeriodInvoices = invoicesList.filter((inv) => inPeriod(inv.invoice_date, inv.created_at, "prev"));
+        const periodExpensesList = expensesList.filter((exp) => inPeriod(exp.expense_date, exp.created_at, "current"));
+
+        const periodSales = periodInvoices.reduce((sum, inv) => sum + (Number(inv.grand_total) || 0), 0);
+        const prevPeriodSales = prevPeriodInvoices.reduce((sum, inv) => sum + (Number(inv.grand_total) || 0), 0);
+        const periodExpenses = periodExpensesList.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
+
+        // COGS from invoice_item_batches (real FEFO batch costs) or variant cost_price fallback
+        let periodCOGS = 0;
+        let totalItemsCount = 0;
+        periodInvoices.forEach((inv) => {
+          const items = inv.invoice_items || [];
+          items.forEach((it: any) => {
+            const qty = Number(it.quantity) || 0;
+            totalItemsCount += qty;
+            const batchAllocs = it.invoice_item_batches || [];
+            if (batchAllocs.length > 0) {
+              periodCOGS += batchAllocs.reduce(
+                (s: number, b: any) => s + (Number(b.quantity_allocated) || 0) * (Number(b.cost_per_unit) || 0),
+                0
+              );
+            } else {
+              periodCOGS += qty * (Number(it.product_variants?.cost_price) || 0);
+            }
+          });
+        });
+
+        const avgItems = periodInvoices.length > 0 ? Number((totalItemsCount / periodInvoices.length).toFixed(1)) : 0;
+        const avgSale = periodInvoices.length > 0 ? Math.round(periodSales / periodInvoices.length) : 0;
+        const prevAvgSale = prevPeriodInvoices.length > 0 ? prevPeriodSales / prevPeriodInvoices.length : 0;
+        const saleChangePct =
+          prevAvgSale > 0 ? Number((((avgSale - prevAvgSale) / prevAvgSale) * 100).toFixed(1)) : null;
+
+        const grossProfit = Math.max(0, periodSales - periodCOGS);
+        const netProfit = Math.max(0, grossProfit - periodExpenses);
+
+        // Last 6 months Hero Bars (real revenue & invoice counts)
+        const monthBuckets: { month: string; year: number; mIdx: number; amount: number; count: number }[] = [];
         for (let i = 5; i >= 0; i--) {
-          const idx = (currentMonthIdx - i + 12) % 12;
-          const mName = monthNames[idx];
-          const mSales = monthSalesMap[mName] || 0;
-          const isAct = i === 0;
-          const heightPct = mSales > 0 ? Math.max(30, Math.round((mSales / maxMonthSales) * 92)) : (isAct ? 85 : 35);
-          monthsBarData.push({
-            month: mName,
-            heightPct: heightPct,
-            isActive: isAct,
+          const dt = new Date(currentYear, currentMonthIdx - i, 1);
+          monthBuckets.push({
+            month: MONTH_NAMES[dt.getMonth()],
+            year: dt.getFullYear(),
+            mIdx: dt.getMonth(),
+            amount: 0,
+            count: 0,
           });
         }
-        setHeroMonths(monthsBarData);
+        invoicesList.forEach((inv) => {
+          const d = parseDate(inv.invoice_date, inv.created_at);
+          const bucket = monthBuckets.find((b) => b.year === d.getFullYear() && b.mIdx === d.getMonth());
+          if (bucket) {
+            bucket.amount += Number(inv.grand_total) || 0;
+            bucket.count += 1;
+          }
+        });
+        const maxMonthSales = Math.max(0, ...monthBuckets.map((b) => b.amount));
+        setHeroMonths(
+          monthBuckets.map((b, idx) => ({
+            month: b.month,
+            amount: b.amount,
+            orderCount: b.count,
+            heightPct: maxMonthSales > 0 ? Math.round((b.amount / maxMonthSales) * 100) : 0,
+            isActive: idx === monthBuckets.length - 1,
+          }))
+        );
+
+        // Last 5 months Particle Data (real avg items/bill)
+        const particleBuckets: { month: string; year: number; mIdx: number; items: number; invs: number }[] = [];
+        for (let i = 4; i >= 0; i--) {
+          const dt = new Date(currentYear, currentMonthIdx - i, 1);
+          particleBuckets.push({
+            month: MONTH_NAMES[dt.getMonth()],
+            year: dt.getFullYear(),
+            mIdx: dt.getMonth(),
+            items: 0,
+            invs: 0,
+          });
+        }
+        invoicesList.forEach((inv) => {
+          const d = parseDate(inv.invoice_date, inv.created_at);
+          const pb = particleBuckets.find((b) => b.year === d.getFullYear() && b.mIdx === d.getMonth());
+          if (pb) {
+            pb.invs += 1;
+            pb.items += (inv.invoice_items || []).reduce((s: number, it: any) => s + (Number(it.quantity) || 0), 0);
+          }
+        });
+        setParticleData(
+          particleBuckets.map((pb, idx) => {
+            const val = pb.invs > 0 ? Number((pb.items / pb.invs).toFixed(1)) : 0;
+            return {
+              month: pb.month,
+              value: val,
+              invoiceCount: pb.invs,
+              dotsCount: pb.invs === 0 ? 0 : Math.max(3, Math.min(22, Math.round(val * 2))),
+              highlight: idx === particleBuckets.length - 1 && pb.invs > 0,
+            };
+          })
+        );
+
+        // Last 14 days Daily Pill Bars (real sales)
+        const dayBuckets: { key: string; label: string; day: number; amount: number }[] = [];
+        for (let i = 13; i >= 0; i--) {
+          const dt = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+          const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+          const label = dt.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+          dayBuckets.push({ key, label, day: dt.getDate(), amount: 0 });
+        }
+        invoicesList.forEach((inv) => {
+          const key = (inv.invoice_date || inv.created_at || "").slice(0, 10);
+          const db = dayBuckets.find((b) => b.key === key);
+          if (db) db.amount += Number(inv.grand_total) || 0;
+        });
+        const maxDaySales = Math.max(0, ...dayBuckets.map((b) => b.amount));
+        setDailyData(
+          dayBuckets.map((db, idx) => ({
+            day: idx + 1,
+            label: db.label,
+            amount: db.amount,
+            heightPct: maxDaySales > 0 ? Math.round((db.amount / maxDaySales) * 100) : 0,
+            highlight: maxDaySales > 0 && db.amount === maxDaySales,
+          }))
+        );
 
         setMetrics({
-          monthlySales: displaySales,
+          monthlySales: periodSales,
           previousMonthSales: prevPeriodSales,
-          salesChange: displaySales - prevPeriodSales,
-          grossProfit: grossProfit,
-          netProfit: netProfit,
-          monthlyTarget: target,
-          targetProgressPct: targetPct,
+          salesChange: periodSales - prevPeriodSales,
+          grossProfit,
+          netProfit,
           averageItems: avgItems,
           averageSaleValue: avgSale,
-          totalSalesYear: salesThisYear > 0 ? salesThisYear : displaySales,
+          saleChangePct,
+          totalSalesYear: salesThisYear,
           comparisonSalesYear: salesPrevYear,
         });
       } catch (err) {
@@ -307,16 +396,19 @@ export default function DashboardPage() {
     };
   }, [period]);
 
+  const targetProgressPct =
+    monthlyTarget > 0 ? Math.min(100, Math.round((metrics.monthlySales / monthlyTarget) * 100)) : 0;
+
   return (
-    <div className="min-h-screen flex flex-col pb-4">
+    <div className="min-h-0 flex-1 flex flex-col pb-4 lg:pb-0">
       {/* Top Navigation Bar */}
       <TopHeader period={period} onPeriodChange={setPeriod} />
 
       {/* Mobile-Only Period Segmented Pills */}
       <MobilePeriodPills period={period} onPeriodChange={setPeriod} />
 
-      {/* Main Master Bento Canvas: 20 Columns x 5 Equal-Height Rows */}
-      <div className="flex-1 flex flex-col lg:bento-grid gap-4 lg:gap-0 pt-1 select-none min-w-0 min-h-0">
+      {/* Main Master Bento Canvas: 20 Columns x 5 Rows on Desktop */}
+      <div className="flex-1 flex flex-col bento-grid gap-4 lg:gap-0 pt-1 select-none min-w-0 min-h-0">
         {/* 1. Hero Card: Cols 1-8, Rows 1-2 */}
         <div className="bento-hero min-w-0 min-h-0">
           <HeroMonthBars
@@ -333,6 +425,9 @@ export default function DashboardPage() {
           <TopRightMetricsCard
             averageItems={metrics.averageItems}
             averageSaleValue={metrics.averageSaleValue}
+            saleChangePct={metrics.saleChangePct}
+            particleData={particleData}
+            dailyData={dailyData}
           />
         </div>
 
@@ -340,8 +435,9 @@ export default function DashboardPage() {
         <div className="bento-target min-w-0 min-h-0">
           <TargetProgressBar
             currentSales={metrics.monthlySales}
-            targetSales={metrics.monthlyTarget}
-            progressPct={metrics.targetProgressPct}
+            targetSales={monthlyTarget}
+            progressPct={targetProgressPct}
+            onTargetSave={handleSaveTarget}
           />
         </div>
 
@@ -350,6 +446,8 @@ export default function DashboardPage() {
           <SalesSplineChart
             totalSales={metrics.totalSalesYear}
             comparisonSales={metrics.comparisonSalesYear}
+            monthlyCurrent={monthlyCurrentYear}
+            monthlyPrevious={monthlyPrevYear}
           />
         </div>
 
@@ -357,47 +455,47 @@ export default function DashboardPage() {
         <div className="bento-transfer min-w-0 min-h-0">
           <OrderCard
             type={recentMovement ? "Inventory" : "Transfer"}
-            title={recentMovement ? recentMovement.notes : "Warehouse stock"}
-            subtitle={recentMovement ? `${recentMovement.product}` : "Central Hub"}
-            amount={recentMovement ? recentMovement.valuation : 28400.0}
-            status={recentMovement ? recentMovement.type : "In Stock"}
+            title={recentMovement ? recentMovement.notes : "No recent movements"}
+            subtitle={recentMovement ? recentMovement.product : "Warehouse"}
+            amount={recentMovement ? recentMovement.valuation : 0}
+            status={recentMovement ? recentMovement.type : "Empty"}
             countLabel={{
-              count: recentMovement ? recentMovement.quantity : 180,
+              count: recentMovement ? recentMovement.quantity : 0,
               word: "units",
             }}
             href="/inventory"
           />
         </div>
 
-        {/* 6. Purchase / Sales Orders Card 1: Cols 13-16, Row 4 */}
+        {/* 6. Recent Order Card 1: Cols 13-16, Row 4 */}
         <div className="bento-po-1 min-w-0 min-h-0">
           <OrderCard
             type="Order"
-            title={recentOrders[0] ? `#${recentOrders[0].order_number}` : "Order #ORD-7567"}
-            subtitle={recentOrders[0] ? recentOrders[0].customer_name : "Shreeji Supermarket"}
-            amount={recentOrders[0] ? recentOrders[0].totalAmount : 5540.0}
-            status={recentOrders[0] ? recentOrders[0].status.toUpperCase() : "CONFIRMED"}
+            title={recentOrders[0] ? `#${recentOrders[0].order_number}` : "No orders yet"}
+            subtitle={recentOrders[0] ? recentOrders[0].customer_name : "Create your first order"}
+            amount={recentOrders[0] ? recentOrders[0].totalAmount : 0}
+            status={recentOrders[0] ? recentOrders[0].status.toUpperCase() : "—"}
             countLabel={{
-              count: recentOrders[0] ? recentOrders[0].itemCount : 12,
+              count: recentOrders[0] ? recentOrders[0].itemCount : 0,
               word: "units",
             }}
-            href="/orders"
+            href={recentOrders[0] ? `/orders/${recentOrders[0].id}` : "/orders/new"}
           />
         </div>
 
-        {/* 7. Purchase / Sales Orders Card 2: Cols 13-16, Row 5 */}
+        {/* 7. Recent Order Card 2: Cols 13-16, Row 5 */}
         <div className="bento-po-2 min-w-0 min-h-0">
           <OrderCard
             type="Order"
-            title={recentOrders[1] ? `#${recentOrders[1].order_number}` : "Order #ORD-8558"}
-            subtitle={recentOrders[1] ? recentOrders[1].customer_name : "Hotel Pride Plaza"}
-            amount={recentOrders[1] ? recentOrders[1].totalAmount : 5540.0}
-            status={recentOrders[1] ? recentOrders[1].status.toUpperCase() : "CONFIRMED"}
+            title={recentOrders[1] ? `#${recentOrders[1].order_number}` : "No recent order"}
+            subtitle={recentOrders[1] ? recentOrders[1].customer_name : "—"}
+            amount={recentOrders[1] ? recentOrders[1].totalAmount : 0}
+            status={recentOrders[1] ? recentOrders[1].status.toUpperCase() : "—"}
             countLabel={{
-              count: recentOrders[1] ? recentOrders[1].itemCount : 12,
+              count: recentOrders[1] ? recentOrders[1].itemCount : 0,
               word: "units",
             }}
-            href="/orders"
+            href={recentOrders[1] ? `/orders/${recentOrders[1].id}` : "/orders"}
           />
         </div>
 
@@ -411,15 +509,14 @@ export default function DashboardPage() {
                 : 0
             }
           />
-          {/* Overlapping Round Arrow Button */}
           <Link
             href="/reports"
             data-notch-overlap="true"
-            className="absolute -bottom-5 right-5 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black text-[#D7FF00] hover:scale-105 active:scale-95 ring-[6px] ring-[#D3C7BD] flex items-center justify-center transition-all z-30"
+            className="hidden lg:flex absolute -bottom-5 right-5 w-10 h-10 xl:w-11 xl:h-11 rounded-full bg-black text-[#D7FF00] hover:scale-105 active:scale-95 ring-[6px] ring-[#D3C7BD] items-center justify-center transition-all z-20"
             title="View Profit Analysis"
             aria-label="View Profit Analysis"
           >
-            <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5 text-[#D7FF00]" />
+            <ArrowUpRight className="w-4 h-4 xl:w-5 xl:h-5 text-[#D7FF00]" />
           </Link>
         </div>
 
@@ -435,6 +532,9 @@ export default function DashboardPage() {
           />
         </div>
       </div>
+      {loading && (
+        <span className="sr-only">Loading dashboard metrics</span>
+      )}
     </div>
   );
 }

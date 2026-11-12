@@ -12,6 +12,7 @@ import { formatDate } from "@/lib/formatting/dates";
 
 interface VisitRecord {
   id: string;
+  customer_id: string;
   customer_name: string;
   shop_name: string;
   visit_date: string;
@@ -31,24 +32,38 @@ export default function VisitsPage() {
       try {
         setLoading(true);
         const supabase = createClient();
-        const { data, error } = await supabase
-          .from("customer_visits")
-          .select("*, customers(name, shop_name)")
-          .order("visit_date", { ascending: false });
+        const [{ data, error }, { data: followUps }] = await Promise.all([
+          supabase
+            .from("customer_visits")
+            .select("*, customers(name, shop_name)")
+            .order("visit_date", { ascending: false }),
+          supabase
+            .from("follow_ups")
+            .select("visit_id, scheduled_for, status"),
+        ]);
+
+        const followUpMap = new Map<string, { scheduled_for: string; status: string }>();
+        for (const f of followUps || []) {
+          if (f.visit_id) {
+            followUpMap.set(f.visit_id, { scheduled_for: f.scheduled_for, status: f.status });
+          }
+        }
 
         if (!error && data) {
           const mapped: VisitRecord[] = data.map((v: any) => {
             const custName = v.customers?.name || "Customer";
             const shopName = v.customers?.shop_name || custName;
+            const fu = followUpMap.get(v.id);
             return {
               id: v.id,
+              customer_id: v.customer_id,
               customer_name: custName,
               shop_name: shopName,
               visit_date: v.visit_date || new Date().toISOString().split("T")[0],
               outcome: v.outcome || v.notes || "Visited store",
-              next_follow_up: undefined,
-              gps_verified: true,
-              status: "completed",
+              next_follow_up: fu?.scheduled_for,
+              gps_verified: Boolean(v.gps_lat && v.gps_lng),
+              status: fu?.status === "pending" && new Date(fu.scheduled_for) > new Date() ? "upcoming" : "completed",
             };
           });
 
@@ -129,7 +144,7 @@ export default function VisitsPage() {
             <div className="flex items-center gap-1.5 mt-1">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
               <span className="text-2xl sm:text-3xl font-semibold text-neutral-900 tracking-tight">
-                {visits.filter((v) => v.gps_verified).length || visits.length}
+                {visits.filter((v) => v.gps_verified).length}
               </span>
             </div>
             <p className="text-[10px] sm:text-[11px] font-light text-neutral-500 mt-0.5 truncate">
@@ -221,7 +236,7 @@ export default function VisitsPage() {
 
                 <div className="flex items-center gap-2 shrink-0">
                   <Link
-                    href="/customers"
+                    href={v.customer_id ? `/customers/${v.customer_id}` : "/customers"}
                     className="px-4 min-h-[44px] flex items-center justify-center rounded-full bg-white/70 text-neutral-800 text-xs font-light border border-white/80 hover:bg-black hover:text-white transition-all shadow-sm cursor-pointer"
                   >
                     View Shop

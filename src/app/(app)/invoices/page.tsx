@@ -1,23 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   FileText,
   Plus,
   Search,
-  CheckCircle2,
-  Clock,
-  Printer,
   ChevronRight,
-  ChevronDown,
+  Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { formatINR } from "@/lib/formatting/currency";
 import { formatDate } from "@/lib/formatting/dates";
 import { InvoiceRecord } from "@/lib/services/businessData";
 import { FitNumber } from "@/components/ui/FitNumber";
 import { createClient } from "@/lib/supabase/client";
+import { StyledSelect } from "@/components/ui/StyledSelect";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
@@ -26,50 +26,98 @@ export default function InvoicesPage() {
   const [selectedMode, setSelectedMode] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
 
-  useEffect(() => {
-    async function loadInvoices() {
-      setLoading(true);
-      try {
-        const supabase = createClient();
-        const [{ data, error }, { data: paymentsData }] = await Promise.all([
-          supabase
-            .from("invoices")
-            .select("*, customers(name, shop_name)")
-            .order("created_at", { ascending: false }),
-          supabase
-            .from("payments")
-            .select("amount, customer_id"),
-        ]);
+  const [draftToDelete, setDraftToDelete] = useState<InvoiceRecord | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
-        if (!error && data) {
-          const mapped: InvoiceRecord[] = data.map((inv: any) => {
-            const custName = inv.customers?.shop_name || inv.customers?.name || "Customer";
-            const grandTotal = Number(inv.grand_total) || 0;
-            return {
-              id: inv.id,
-              invoice_number: inv.invoice_number || "INV-LIVE",
-              customer_name: custName,
-              customer_id: inv.customer_id,
-              mode: (inv.mode as InvoiceRecord["mode"]) || "gst",
-              invoice_date: inv.invoice_date || (inv.created_at || new Date().toISOString()).split("T")[0],
-              due_date: inv.due_date || inv.invoice_date || (inv.created_at || new Date().toISOString()).split("T")[0],
-              grand_total: grandTotal,
-              paid_amount: 0,
-              outstanding: grandTotal,
-              status: (inv.status as InvoiceRecord["status"]) || "finalized",
-            };
-          });
+  const loadInvoices = useCallback(async () => {
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const [{ data, error }, { data: outData }] = await Promise.all([
+        supabase
+          .from("invoices")
+          .select("*, customers(name, shop_name)")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("v_invoice_outstanding")
+          .select("invoice_id, amount_paid, outstanding, is_overdue"),
+      ]);
 
-          setInvoices(mapped);
-        }
-      } catch (e) {
-        console.warn("Could not load invoices from Supabase", e);
-      } finally {
-        setLoading(false);
+      const outMap = new Map<string, any>();
+      for (const row of outData || []) {
+        outMap.set(row.invoice_id, row);
       }
+
+      if (!error && data) {
+        const mapped: InvoiceRecord[] = data.map((inv: any) => {
+          const custName = inv.customers?.shop_name || inv.customers?.name || "Customer";
+          const grandTotal = Number(inv.grand_total) || 0;
+          const out = outMap.get(inv.id);
+          const isFinalized = inv.status === "finalized";
+          const isCancelled = inv.status === "cancelled";
+
+          return {
+            id: inv.id,
+            invoice_number: inv.invoice_number || "DRAFT",
+            customer_name: custName,
+            customer_id: inv.customer_id,
+            mode: (inv.mode as InvoiceRecord["mode"]) || "gst",
+            invoice_date: inv.invoice_date || (inv.created_at || new Date().toISOString()).split("T")[0],
+            due_date: inv.due_date || inv.invoice_date || (inv.created_at || new Date().toISOString()).split("T")[0],
+            grand_total: grandTotal,
+            paid_amount: isFinalized && out ? Number(out.amount_paid) || 0 : 0,
+            outstanding: isCancelled
+              ? 0
+              : isFinalized && out
+              ? Number(out.outstanding)
+              : grandTotal,
+            status: (inv.status as InvoiceRecord["status"]) || "draft",
+          };
+        });
+
+        setInvoices(mapped);
+      }
+    } catch (e) {
+      console.warn("Could not load invoices from Supabase", e);
+    } finally {
+      setLoading(false);
     }
-    loadInvoices();
   }, []);
+
+  useEffect(() => {
+    loadInvoices();
+  }, [loadInvoices]);
+
+  const handleDeleteDraft = async () => {
+    if (!draftToDelete) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("invoices")
+        .delete()
+        .eq("id", draftToDelete.id)
+        .select("id");
+
+      if (error) {
+        setDeleteError(error.message);
+        return;
+      }
+      if (!data || data.length === 0) {
+        setDeleteError("Only draft invoices can be deleted. Cancel finalized invoices instead.");
+        return;
+      }
+      toast.success("Draft invoice deleted.");
+      setDraftToDelete(null);
+      await loadInvoices();
+    } catch (err: any) {
+      setDeleteError(err?.message || "Failed to delete draft invoice");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const filteredInvoices = invoices.filter((inv) => {
     const matchSearch =
@@ -89,17 +137,16 @@ export default function InvoicesPage() {
     .reduce((sum, i) => sum + i.outstanding, 0);
 
   const finalizedInvoices = invoices.filter((i) => i.status === "finalized");
-  const settledCount = finalizedInvoices.filter((i) => i.outstanding === 0).length;
+  const settledCount = finalizedInvoices.filter((i) => i.outstanding <= 0).length;
 
   return (
     <div className="min-h-screen pb-12">
       <TopHeader title="Invoices & Bills" subtitle="GST & Cash Invoicing" />
 
       <div className="space-y-4 sm:space-y-6 pt-2">
-        {/* Summary KPIs: Compact 2-column cards on mobile, 3-column on desktop */}
+        {/* Summary KPIs */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-5">
-          {/* Card 1: Total invoiced revenue */}
-          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-6 shadow-none">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-6 shadow-none min-w-0">
             <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
               Total invoiced revenue
             </span>
@@ -115,8 +162,7 @@ export default function InvoicesPage() {
             </p>
           </div>
 
-          {/* Card 2: Unpaid receivables */}
-          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-6 shadow-none">
+          <div className="bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-6 shadow-none min-w-0">
             <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
               Unpaid receivables
             </span>
@@ -132,8 +178,7 @@ export default function InvoicesPage() {
             </p>
           </div>
 
-          {/* Card 3: Settled Bills (Replaces previous developer text per spec) */}
-          <div className="col-span-2 sm:col-span-1 bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-6 shadow-none">
+          <div className="col-span-2 sm:col-span-1 bg-white/55 backdrop-blur-xl border border-white/65 rounded-[24px] p-4 sm:p-6 shadow-none min-w-0">
             <span className="text-[11px] sm:text-xs font-light text-neutral-500 block">
               Settled bills
             </span>
@@ -149,46 +194,59 @@ export default function InvoicesPage() {
 
         {/* Filter and Action Bar */}
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-          <div className="flex items-center gap-2 flex-1 max-w-lg">
-            {/* Search Input with visible search icon & short placeholder */}
-            <div className="relative flex-1">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 max-w-2xl min-w-0">
+            <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search bills"
-                className="w-full h-10 pl-10 pr-4 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#D7FF00] shadow-none transition-all"
+                className="w-full h-10 pl-10 pr-4 text-xs bg-white/75 backdrop-blur-md rounded-full border border-white/80 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#D7FF00] transition-all"
               />
             </div>
 
-            {/* Custom styled select */}
-            <div className="relative">
-              <select
-                aria-label="Filter invoice type"
-                value={selectedMode}
-                onChange={(e) => setSelectedMode(e.target.value)}
-                className="appearance-none h-10 pl-3.5 pr-8 text-xs bg-white/65 backdrop-blur-md rounded-full border border-white/70 text-neutral-700 font-light focus:outline-none focus:ring-2 focus:ring-[#D7FF00] shadow-none cursor-pointer"
-              >
-                <option value="all">All types</option>
-                <option value="gst">Tax Invoice (GST)</option>
-                <option value="non_gst">Cash Bill (Non-GST)</option>
-              </select>
-              <ChevronDown className="w-3.5 h-3.5 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
+            <StyledSelect
+              aria-label="Filter invoice type"
+              value={selectedMode}
+              onChange={(e) => setSelectedMode(e.target.value)}
+              wrapperClassName="sm:w-44"
+              className="h-10 py-0 text-xs bg-white/75 border-white/80 text-neutral-800"
+            >
+              <option value="all">All types</option>
+              <option value="gst">Tax Invoice (GST)</option>
+              <option value="non_gst">Cash Bill (Non-GST)</option>
+            </StyledSelect>
+
+            <StyledSelect
+              aria-label="Filter invoice status"
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              wrapperClassName="sm:w-40"
+              className="h-10 py-0 text-xs bg-white/75 border-white/80 text-neutral-800"
+            >
+              <option value="all">All statuses</option>
+              <option value="finalized">Finalized</option>
+              <option value="draft">Draft</option>
+              <option value="cancelled">Cancelled</option>
+            </StyledSelect>
           </div>
 
           <Link
             href="/invoices/new"
-            className="flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-black text-white text-xs sm:text-sm font-normal shadow-none hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            className="flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-black text-white text-xs sm:text-sm font-normal hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
           >
             <Plus className="w-4 h-4 text-[#D7FF00]" />
             <span>Create Bill</span>
           </Link>
         </div>
 
-        {/* Invoice List: Desktop Table + Mobile Cards */}
-        {filteredInvoices.length === 0 ? (
+        {/* Invoice List */}
+        {loading ? (
+          <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-10 text-center border border-white/65 text-xs text-neutral-500">
+            Loading invoices from database...
+          </div>
+        ) : filteredInvoices.length === 0 ? (
           <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-8 sm:p-12 text-center border border-white/65 space-y-3">
             <FileText className="w-10 h-10 text-neutral-300 mx-auto" />
             <h3 className="text-base font-normal text-neutral-900">No Invoices Found</h3>
@@ -199,7 +257,7 @@ export default function InvoicesPage() {
         ) : (
           <>
             {/* Desktop Table View */}
-            <div className="hidden md:block bg-white/55 backdrop-blur-xl rounded-[28px] border border-white/65 overflow-x-auto shadow-none">
+            <div className="hidden md:block bg-white/55 backdrop-blur-xl rounded-[28px] border border-white/65 table-wrapper shadow-none">
               <table className="w-full text-left text-xs">
                 <thead className="bg-white/40 border-b border-white/60 text-neutral-500 font-normal">
                   <tr>
@@ -213,161 +271,219 @@ export default function InvoicesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/50">
-                  {filteredInvoices.map((inv) => (
-                    <tr key={inv.id} className="hover:bg-white/40 transition-colors">
-                      <td className="py-4 px-6">
-                        <Link href={`/invoices/${inv.id}`} className="group">
-                          <div className="font-normal text-neutral-900 group-hover:text-black group-hover:underline text-sm tabular-nums">
-                            {inv.invoice_number}
-                          </div>
-                          <div className="text-[11px] font-light text-neutral-500 mt-0.5">
-                            {inv.customer_name}
-                          </div>
-                        </Link>
-                      </td>
+                  {filteredInvoices.map((inv) => {
+                    const statusLabel =
+                      inv.status === "cancelled"
+                        ? "Cancelled"
+                        : inv.status === "draft"
+                        ? "Draft"
+                        : inv.outstanding <= 0
+                        ? "Paid in full"
+                        : inv.paid_amount > 0
+                        ? "Partial"
+                        : "Unpaid";
+                    const dotColor =
+                      inv.status === "cancelled"
+                        ? "bg-rose-400"
+                        : inv.status === "draft"
+                        ? "bg-neutral-400"
+                        : inv.outstanding <= 0
+                        ? "bg-[#D7FF00]"
+                        : "bg-[#DB9595]";
 
-                      <td className="py-4 px-4 text-neutral-700 font-light">
-                        {formatDate(inv.invoice_date)}
-                      </td>
+                    return (
+                      <tr key={inv.id} className="hover:bg-white/40 transition-colors">
+                        <td className="py-4 px-6">
+                          <Link href={`/invoices/${inv.id}`} className="group">
+                            <div className="font-normal text-neutral-900 group-hover:text-black group-hover:underline text-sm tabular-nums">
+                              {inv.invoice_number}
+                            </div>
+                            <div className="text-[11px] font-light text-neutral-500 mt-0.5">
+                              {inv.customer_name}
+                            </div>
+                          </Link>
+                        </td>
 
-                      <td className="py-4 px-4">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-light bg-white/60 text-neutral-700 uppercase border border-white/70">
-                          {inv.mode === "gst" ? "GST Tax Invoice" : "Cash Bill"}
-                        </span>
-                      </td>
+                        <td className="py-4 px-4 text-neutral-700 font-light whitespace-nowrap">
+                          {formatDate(inv.invoice_date)}
+                        </td>
 
-                      <td className="py-4 px-4">
-                        {inv.status === "finalized" ? (
-                          inv.outstanding === 0 ? (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-light bg-white/70 text-neutral-800 border border-white/70">
-                              <span className="w-2 h-2 rounded-full bg-[#D7FF00]" />
-                              <span>Paid in full</span>
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-light bg-white/60 text-neutral-700 uppercase border border-white/70">
+                            {inv.mode === "gst" ? "GST Tax Invoice" : "Cash Bill"}
+                          </span>
+                        </td>
+
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-light bg-white/70 text-neutral-800 border border-white/70">
+                            <span className={`w-2 h-2 rounded-full ${dotColor}`} />
+                            <span>{statusLabel}</span>
+                          </span>
+                        </td>
+
+                        <td className="py-4 px-4 text-right font-light text-neutral-800 whitespace-nowrap">
+                          {formatINR(inv.grand_total)}
+                        </td>
+
+                        <td className="py-4 px-4 text-right font-semibold whitespace-nowrap">
+                          {inv.status === "cancelled" ? (
+                            <span className="text-neutral-400 font-light">Void</span>
+                          ) : inv.outstanding > 0 ? (
+                            <span className="text-neutral-900 flex items-center justify-end gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-[#DB9595]" />
+                              <span>{formatINR(inv.outstanding)}</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-light bg-white/70 text-neutral-800 border border-white/70">
-                              <span className="w-2 h-2 rounded-full bg-[#DB9595]" />
-                              <span>Partial</span>
+                            <span className="text-neutral-700 font-light flex items-center justify-end gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-[#D7FF00]" />
+                              <span>Settled</span>
                             </span>
-                          )
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-light bg-white/70 text-neutral-700 border border-white/70">
-                            <span className="w-2 h-2 rounded-full bg-neutral-400" />
-                            <span>Draft</span>
-                          </span>
-                        )}
-                      </td>
+                          )}
+                        </td>
 
-                      <td className="py-4 px-4 text-right font-light text-neutral-800">
-                        {formatINR(inv.grand_total)}
-                      </td>
-
-                      <td className="py-4 px-4 text-right font-semibold">
-                        {inv.outstanding > 0 ? (
-                          <span className="text-neutral-900 flex items-center justify-end gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-[#DB9595]" />
-                            <span>{formatINR(inv.outstanding)}</span>
-                          </span>
-                        ) : (
-                          <span className="text-neutral-700 font-light flex items-center justify-end gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-[#D7FF00]" />
-                            <span>Settled</span>
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="py-4 px-6 text-right">
-                        <Link
-                          href={`/invoices/${inv.id}`}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/60 text-neutral-800 text-xs font-light hover:bg-black hover:text-white border border-white/70 transition-all shadow-none"
-                        >
-                          <span>View</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
+                        <td className="py-4 px-6 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {inv.status === "draft" && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDeleteError(null);
+                                  setDraftToDelete(inv);
+                                }}
+                                aria-label="Delete draft invoice"
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 text-xs font-medium hover:bg-rose-100 border border-rose-200 transition-all cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Delete</span>
+                              </button>
+                            )}
+                            <Link
+                              href={`/invoices/${inv.id}`}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/60 text-neutral-800 text-xs font-light hover:bg-black hover:text-white border border-white/70 transition-all"
+                            >
+                              <span>View</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
 
-            {/* Mobile Cards View: compact glass cards with palette dots and tabular-nums IDs */}
+            {/* Mobile Cards View */}
             <div className="md:hidden space-y-3">
-              {filteredInvoices.map((inv) => (
-                <div
-                  key={inv.id}
-                  className="bg-white/55 backdrop-blur-xl rounded-[24px] p-4 border border-white/65 shadow-none space-y-3"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <span className="text-[10px] tabular-nums font-normal text-neutral-500 block mb-0.5">
-                        {inv.invoice_number}
+              {filteredInvoices.map((inv) => {
+                const statusLabel =
+                  inv.status === "cancelled"
+                    ? "Cancelled"
+                    : inv.status === "draft"
+                    ? "Draft"
+                    : inv.outstanding <= 0
+                    ? "Paid"
+                    : "Due";
+                return (
+                  <div
+                    key={inv.id}
+                    className="bg-white/55 backdrop-blur-xl rounded-[24px] p-4 border border-white/65 shadow-none space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <span className="text-[10px] tabular-nums font-normal text-neutral-500 block mb-0.5">
+                          {inv.invoice_number}
+                        </span>
+                        <h4 className="text-sm font-semibold text-neutral-900 truncate">
+                          {inv.customer_name}
+                        </h4>
+                        <p className="text-xs font-light text-neutral-500">
+                          {inv.mode === "gst" ? "Tax Invoice (GST)" : "Cash Bill"}
+                        </p>
+                      </div>
+
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-light bg-white/80 text-neutral-800 border border-white/70 shrink-0">
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            inv.status === "finalized"
+                              ? inv.outstanding <= 0
+                                ? "bg-[#D7FF00]"
+                                : "bg-[#DB9595]"
+                              : inv.status === "cancelled"
+                              ? "bg-rose-400"
+                              : "bg-neutral-400"
+                          }`}
+                        />
+                        <span>{statusLabel}</span>
                       </span>
-                      <h4 className="text-sm font-semibold text-neutral-900 truncate">
-                        {inv.customer_name}
-                      </h4>
-                      <p className="text-xs font-light text-neutral-500">
-                        {inv.mode === "gst" ? "Tax Invoice (GST)" : "Cash Bill"}
-                      </p>
                     </div>
 
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-light bg-white/80 text-neutral-800 border border-white/70 shrink-0">
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          inv.status === "finalized"
-                            ? inv.outstanding === 0
-                              ? "bg-[#D7FF00]"
-                              : "bg-[#DB9595]"
-                            : "bg-neutral-400"
-                        }`}
-                      />
-                      <span>
-                        {inv.status === "finalized"
-                          ? inv.outstanding === 0
-                            ? "Paid"
-                            : "Partial"
-                          : "Draft"}
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-white/40">
+                      <span className="text-[11px] font-light text-neutral-500">
+                        {formatDate(inv.invoice_date)}
                       </span>
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs pt-1 border-t border-white/40">
-                    <span className="text-[11px] font-light text-neutral-500">
-                      {formatDate(inv.invoice_date)}
-                    </span>
-                    <span className="text-sm font-semibold text-neutral-900">
-                      {formatINR(inv.grand_total)}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1">
-                    <div>
-                      {inv.outstanding > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-neutral-900">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#DB9595]" />
-                          <span>{formatINR(inv.outstanding)} due</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-light text-neutral-700">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#D7FF00]" />
-                          <span>Zero balance</span>
-                        </span>
-                      )}
+                      <span className="text-sm font-semibold text-neutral-900">
+                        {formatINR(inv.grand_total)}
+                      </span>
                     </div>
 
-                    <Link
-                      href={`/invoices/${inv.id}`}
-                      className="inline-flex items-center justify-center gap-1 px-4 min-h-[44px] rounded-full bg-black text-white text-xs font-normal hover:scale-105 active:scale-95 transition-all shadow-none"
-                    >
-                      <span>View</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </Link>
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <div>
+                        {inv.status === "cancelled" ? (
+                          <span className="text-[11px] text-neutral-400">Cancelled</span>
+                        ) : inv.outstanding > 0 ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-neutral-900">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#DB9595]" />
+                            <span>{formatINR(inv.outstanding)} due</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-light text-neutral-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#D7FF00]" />
+                            <span>Zero balance</span>
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {inv.status === "draft" && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDeleteError(null);
+                              setDraftToDelete(inv);
+                            }}
+                            className="inline-flex items-center justify-center px-3 min-h-[40px] rounded-full bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200"
+                          >
+                            Delete
+                          </button>
+                        )}
+                        <Link
+                          href={`/invoices/${inv.id}`}
+                          className="inline-flex items-center justify-center gap-1 px-4 min-h-[40px] rounded-full bg-black text-white text-xs font-normal"
+                        >
+                          <span>View</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={Boolean(draftToDelete)}
+        title={`Delete draft invoice?`}
+        description="This draft invoice and its line items will be permanently removed."
+        confirmLabel="Delete Draft"
+        loading={deleting}
+        error={deleteError}
+        onConfirm={handleDeleteDraft}
+        onClose={() => !deleting && setDraftToDelete(null)}
+      />
     </div>
   );
 }

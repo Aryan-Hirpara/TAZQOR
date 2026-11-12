@@ -42,8 +42,8 @@ export function Sidebar() {
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [unreadNotifsCount, setUnreadNotifsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
-  const [userEmail, setUserEmail] = useState("tazqor@gmail.com");
-  const [userName, setUserName] = useState("TAZQOR Admin");
+  const [userEmail, setUserEmail] = useState("");
+  const [userName, setUserName] = useState("Admin");
 
   useEffect(() => {
     async function initUserAndCounts() {
