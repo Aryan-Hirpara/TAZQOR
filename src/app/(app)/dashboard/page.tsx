@@ -234,15 +234,19 @@ export default function DashboardPage() {
   const activeMonthName = computed.activeMonthName || MONTH_NAMES[new Date().getMonth()];
   const expensesSummary: DashboardExpensesSummary = computed.expensesSummary;
 
+  const targetCurrentSales = period === "year" ? metrics.totalSalesYear : metrics.currentMonthSales;
+  const targetGoal = period === "year" ? (monthlyTarget > 0 ? monthlyTarget * 12 : 0) : monthlyTarget;
   const targetProgressPct =
-    monthlyTarget > 0 ? Math.min(100, Math.round((metrics.currentMonthSales / monthlyTarget) * 100)) : 0;
+    targetGoal > 0 ? Math.min(100, Math.round((targetCurrentSales / targetGoal) * 100)) : 0;
 
   const periodExpensesTitle =
     period === "today"
       ? "Today's Expenses"
       : period === "week"
       ? "This Week Expenses"
-      : "This Month Expenses";
+      : period === "month"
+      ? "This Month Expenses"
+      : "This Year Expenses";
 
   const inventorySubtitle = inventorySummary.topProduct
     ? `${inventorySummary.activeSkuCount} SKUs • Top: ${inventorySummary.topProduct.name} (${inventorySummary.topProduct.units})`
@@ -282,11 +286,11 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* 3. Sales Target Bar: Cols 1-12, Row 3 (always tracks monthly progress) */}
+        {/* 3. Sales Target Bar: Cols 1-12, Row 3 */}
         <div className="bento-target min-w-0 min-h-0">
           <TargetProgressBar
-            currentSales={metrics.currentMonthSales}
-            targetSales={monthlyTarget}
+            currentSales={targetCurrentSales}
+            targetSales={targetGoal}
             progressPct={targetProgressPct}
             onTargetSave={handleSaveTarget}
           />

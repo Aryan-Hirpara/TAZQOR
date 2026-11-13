@@ -5,6 +5,7 @@ import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { formatINR } from "@/lib/formatting/currency";
+import { toLocalYMD } from "@/lib/formatting/dates";
 import { MobileSalesAnalyzing } from "@/components/dashboard/MobileSalesAnalyzing";
 import { createClient } from "@/lib/supabase/client";
 
@@ -62,15 +63,20 @@ export default function ReportsPage() {
         let endDate: string;
 
         if (period === "this_month") {
-          startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-          endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+          startDate = toLocalYMD(new Date(now.getFullYear(), now.getMonth(), 1));
+          endDate = toLocalYMD(new Date(now.getFullYear(), now.getMonth() + 1, 0));
         } else if (period === "last_month") {
-          startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split("T")[0];
-          endDate = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split("T")[0];
+          startDate = toLocalYMD(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+          endDate = toLocalYMD(new Date(now.getFullYear(), now.getMonth(), 0));
         } else {
           startDate = fyInfo.startDate;
           endDate = fyInfo.endDate;
         }
+
+        const [sY, sM, sD] = startDate.split("-").map(Number);
+        const [eY, eM, eD] = endDate.split("-").map(Number);
+        const startIso = new Date(sY, sM - 1, sD, 0, 0, 0, 0).toISOString();
+        const endIso = new Date(eY, eM - 1, eD, 23, 59, 59, 999).toISOString();
 
         const [{ data: invData }, { data: expData }, { data: payData }, { data: ordData }] = await Promise.all([
           supabase
@@ -98,8 +104,8 @@ export default function ReportsPage() {
             .from("orders")
             .select("id, status, created_at")
             .eq("business_id", BUSINESS_ID)
-            .gte("created_at", `${startDate}T00:00:00.000Z`)
-            .lte("created_at", `${endDate}T23:59:59.999Z`),
+            .gte("created_at", startIso)
+            .lte("created_at", endIso),
         ]);
 
         if (invData) {

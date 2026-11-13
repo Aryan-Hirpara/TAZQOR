@@ -4,7 +4,7 @@ import { MonthBarData } from "@/components/dashboard/HeroMonthBars";
 import { parseExpenseRow, RawExpenseDbRow } from "@/lib/expenses/expense-record";
 import { isComboPackCategoryName, parseComboRecipe } from "@/lib/products/combo-pack";
 
-export type DashboardPeriod = "today" | "week" | "month";
+export type DashboardPeriod = "today" | "week" | "month" | "year";
 
 const MONTH_NAMES = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 const CALENDAR_DATE_PREFIX_RE = /^(\d{4})-(\d{2})-(\d{2})/;
@@ -187,6 +187,13 @@ export function isRecordInPeriod(
     const endOffset = mode === "current" ? 0 : -7;
     const startKey = toLocalDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() + startOffset));
     const endKey = toLocalDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() + endOffset));
+    return recordKey >= startKey && recordKey <= endKey;
+  }
+
+  if (period === "year") {
+    const targetYear = mode === "current" ? today.getFullYear() : today.getFullYear() - 1;
+    const startKey = `${targetYear}-01-01`;
+    const endKey = `${targetYear}-12-31`;
     return recordKey >= startKey && recordKey <= endKey;
   }
 
@@ -423,17 +430,30 @@ export function computeDashboardMetrics(params: {
   const grossProfit = periodSales - periodCOGS;
   const netProfit = grossProfit - periodExpenses;
 
-  // Last 6 months Hero Bars
+  // Hero Month Bars: when period is "year", show all 12 months (Jan-Dec) of current year; otherwise show rolling 6 months
+  const isYearPeriod = params.period === "year";
   const monthBuckets: { month: string; year: number; mIdx: number; amount: number; count: number }[] = [];
-  for (let i = 5; i >= 0; i--) {
-    const dt = new Date(currentYear, currentMonthIdx - i, 1);
-    monthBuckets.push({
-      month: MONTH_NAMES[dt.getMonth()],
-      year: dt.getFullYear(),
-      mIdx: dt.getMonth(),
-      amount: 0,
-      count: 0,
-    });
+  if (isYearPeriod) {
+    for (let m = 0; m < 12; m++) {
+      monthBuckets.push({
+        month: MONTH_NAMES[m],
+        year: currentYear,
+        mIdx: m,
+        amount: 0,
+        count: 0,
+      });
+    }
+  } else {
+    for (let i = 5; i >= 0; i--) {
+      const dt = new Date(currentYear, currentMonthIdx - i, 1);
+      monthBuckets.push({
+        month: MONTH_NAMES[dt.getMonth()],
+        year: dt.getFullYear(),
+        mIdx: dt.getMonth(),
+        amount: 0,
+        count: 0,
+      });
+    }
   }
   for (const inv of confirmedInvoices) {
     const d = parseLocalRecordDate(inv.invoice_date, inv.created_at);
@@ -449,7 +469,7 @@ export function computeDashboardMetrics(params: {
     amount: b.amount,
     orderCount: b.count,
     heightPct: maxMonthSales > 0 ? Math.round((b.amount / maxMonthSales) * 100) : 0,
-    isActive: idx === monthBuckets.length - 1,
+    isActive: isYearPeriod ? b.mIdx === currentMonthIdx : idx === monthBuckets.length - 1,
   }));
 
   // Last 5 months Particle Data

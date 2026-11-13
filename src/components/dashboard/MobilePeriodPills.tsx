@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 interface MobilePeriodPillsProps {
-  period: "today" | "week" | "month";
-  onPeriodChange?: (period: "today" | "week" | "month") => void;
+  period: "today" | "week" | "month" | "year";
+  onPeriodChange?: (period: "today" | "week" | "month" | "year") => void;
   className?: string;
 }
 
@@ -57,17 +57,18 @@ export function MobilePeriodPills({
         >
           This Month
         </button>
-        <Link
-          href="/reports"
+        <button
+          type="button"
+          onClick={() => onPeriodChange?.("year")}
           className={cn(
             "py-2 px-1 text-[11px] sm:text-xs rounded-full transition-all cursor-pointer min-h-[42px] flex items-center justify-center text-center truncate",
-            pathname === "/reports"
+            period === "year" && isDashboard
               ? "bg-black text-white font-normal shadow-sm"
               : "text-neutral-700 font-light hover:bg-white/40"
           )}
         >
-          Reports
-        </Link>
+          This Year
+        </button>
       </div>
     </div>
   );

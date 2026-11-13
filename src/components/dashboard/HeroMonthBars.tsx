@@ -95,7 +95,7 @@ export function HeroMonthBars({
           )}
         </div>
 
-        <div className="flex items-end justify-between gap-2 sm:gap-2.5 h-24 sm:h-28 px-0.5">
+        <div className={`flex items-end justify-between ${months.length > 6 ? "gap-1 sm:gap-1.5" : "gap-2 sm:gap-2.5"} h-24 sm:h-28 px-0.5`}>
           {months.map((m, idx) => {
             const amount = Number(m.amount) || 0;
             const ratio = maxAmount > 0 ? amount / maxAmount : 0;
@@ -134,7 +134,7 @@ export function HeroMonthBars({
                 className="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer focus:outline-none min-w-0"
               >
                 <div
-                  className={`w-full max-w-[44px] min-h-[26px] rounded-full flex flex-col items-center justify-between overflow-hidden transition-all duration-300 relative border ${tierClasses} ${
+                  className={`w-full ${months.length > 6 ? "max-w-[32px]" : "max-w-[44px]"} min-h-[26px] rounded-full flex flex-col items-center justify-between overflow-hidden transition-all duration-300 relative border ${tierClasses} ${
                     isHovered ? "ring-2 ring-black/30 scale-[1.03]" : ""
                   } ${isActive && amount === 0 ? "ring-1 ring-black/25" : ""}`}
                   style={{ height: `${visualHeightPct}%` }}
@@ -146,7 +146,7 @@ export function HeroMonthBars({
                     <div className="w-full h-[45%] rounded-t-full hatch-pattern-dark opacity-30 shrink-0" />
                   )}
                   <div className="flex-1" />
-                  <span className="text-[11px] font-medium pb-1.5 z-10 leading-none">
+                  <span className="text-[10px] sm:text-[11px] font-medium pb-1.5 z-10 leading-none">
                     {m.month}
                   </span>
                 </div>

@@ -204,6 +204,67 @@ describe("dashboard metrics & domain isolation", () => {
     expect(isRecordInPeriod("2026-11-11", null, "today", "prev", now)).toBe(true);
     expect(isRecordInPeriod("2026-11-06", null, "week", "current", now)).toBe(true);
     expect(isRecordInPeriod("2026-11-05", null, "week", "current", now)).toBe(false);
+    expect(isRecordInPeriod("2026-10-31", null, "month", "current", now)).toBe(false);
+    expect(isRecordInPeriod("2026-11-01", null, "month", "current", now)).toBe(true);
+    expect(isRecordInPeriod("2026-10-31", null, "year", "current", now)).toBe(true);
+    expect(isRecordInPeriod("2025-10-31", null, "year", "prev", now)).toBe(true);
+  });
+
+  it("calculates dashboard metrics accurately under 'year' condition", () => {
+    const now = new Date(2026, 10, 13, 11, 0, 0); // 13 Nov 2026 local
+
+    const state = computeDashboardMetrics({
+      period: "year",
+      now,
+      invoices: [
+        {
+          id: "inv-nov",
+          grand_total: 800,
+          invoice_date: "2026-11-12",
+          status: "finalized",
+          invoice_items: [{ quantity: 4, product_variants: { cost_price: 125 } }],
+        },
+        {
+          id: "inv-prev-year",
+          grand_total: 600,
+          invoice_date: "2025-11-12",
+          status: "finalized",
+          invoice_items: [{ quantity: 3, product_variants: { cost_price: 100 } }],
+        },
+      ],
+      expenses: [
+        {
+          id: "exp-nov",
+          expense_date: "2026-11-02",
+          amount: 2160,
+          description: "[Expense: labels | Paid by: Aryan]",
+        },
+        {
+          id: "exp-oct",
+          expense_date: "2026-10-31",
+          amount: 3592,
+          description: "[Expense: bottles | Paid by: Yug]",
+        },
+        {
+          id: "exp-prev-year",
+          expense_date: "2025-10-31",
+          amount: 1000,
+          description: "[Expense: old | Paid by: Yug]",
+        },
+      ],
+    });
+
+    expect(state.metrics.monthlySales).toBe(800);
+    expect(state.metrics.totalSalesYear).toBe(800);
+    expect(state.metrics.comparisonSalesYear).toBe(600);
+    expect(state.metrics.salesChange).toBe(200); // 800 - 600
+    expect(state.metrics.grossProfit).toBe(300); // 800 - 4*125
+    expect(state.metrics.netProfit).toBe(300 - (2160 + 3592)); // -5452
+    expect(state.expensesSummary.totalAmount).toBe(5752); // 2160 + 3592
+    expect(state.expensesSummary.count).toBe(2);
+    expect(state.heroMonths).toHaveLength(12); // All 12 months in year mode
+    expect(state.heroMonths[10].month).toBe("nov");
+    expect(state.heroMonths[10].isActive).toBe(true);
   });
 });
 

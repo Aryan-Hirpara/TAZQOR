@@ -22,8 +22,8 @@ const BUSINESS_ID = "00000000-0000-0000-0000-000000000001";
 interface TopHeaderProps {
   title?: string;
   subtitle?: string;
-  period?: "today" | "week" | "month";
-  onPeriodChange?: (period: "today" | "week" | "month") => void;
+  period?: "today" | "week" | "month" | "year";
+  onPeriodChange?: (period: "today" | "week" | "month" | "year") => void;
   showBack?: boolean;
 }
 
@@ -128,12 +128,18 @@ export function TopHeader({
               >
                 This Month
               </button>
-              <Link
-                href="/reports"
-                className="px-4 sm:px-5 py-1 text-xs sm:text-sm rounded-full transition-all h-full flex items-center text-neutral-700 hover:text-black font-light hover:bg-white/40"
+              <button
+                type="button"
+                onClick={() => onPeriodChange ? onPeriodChange("year") : router.push("/dashboard")}
+                className={cn(
+                  "px-4 sm:px-5 py-1 text-xs sm:text-sm rounded-full transition-all h-full flex items-center cursor-pointer",
+                  period === "year" && isHome
+                    ? "bg-black text-white font-normal"
+                    : "text-neutral-700 hover:text-black font-light hover:bg-white/40"
+                )}
               >
-                Reports
-              </Link>
+                This Year
+              </button>
             </div>
           )}
 
