@@ -60,3 +60,4 @@ CREATE POLICY "stock_movements_delete"
 --    across all devices and environments (localhost, Vercel, mobile)
 ALTER TABLE public.business_settings
   ADD COLUMN IF NOT EXISTS invoice_terms JSONB DEFAULT NULL;
+

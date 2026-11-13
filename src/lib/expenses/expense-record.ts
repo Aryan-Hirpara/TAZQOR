@@ -115,9 +115,10 @@ export function parseExpenseRow(row: RawExpenseDbRow): ExpenseRecord {
     row.vendor ||
     "Business Expense";
 
-  const paidBy: ExpensePayer = isValidExpensePayer(row.paid_by)
-    ? row.paid_by
-    : parsedPayer || "Other";
+  const paidBy: ExpensePayer =
+    row.paid_by && row.paid_by !== "Other" && isValidExpensePayer(row.paid_by)
+      ? row.paid_by
+      : parsedPayer || (isValidExpensePayer(row.paid_by) ? row.paid_by : "Other");
 
   const receiptUrl = row.receipt_url || null;
 

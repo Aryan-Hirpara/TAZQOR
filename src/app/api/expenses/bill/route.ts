@@ -128,6 +128,12 @@ export async function GET(request: Request) {
       .download(path!);
 
     if (error || !data) {
+      const { data: pubData } = auth.db.storage
+        .from(EXPENSE_BILLS_BUCKET)
+        .getPublicUrl(path!);
+      if (pubData?.publicUrl) {
+        return NextResponse.redirect(pubData.publicUrl);
+      }
       return NextResponse.json(
         { error: error?.message || "Bill file not found." },
         { status: 404 }
