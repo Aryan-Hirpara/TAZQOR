@@ -221,8 +221,14 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
       const sgstTotal = items.reduce((s: number, it: any) => s + it.sgst, 0);
       const igstTotal = items.reduce((s: number, it: any) => s + it.igst, 0);
 
+      if (Array.isArray(bizSettings?.invoice_terms) && bizSettings.invoice_terms.length > 0) {
+        setTermsList(bizSettings.invoice_terms);
+        setTermsDraftText(bizSettings.invoice_terms.join("\n"));
+      }
+
       setInvoice({
         id: invRow.id,
+        business_id: invRow.business_id,
         invoice_number: invRow.invoice_number || "DRAFT",
         mode: invRow.mode === "non_gst" ? "non_gst" : "gst",
         status: invRow.status || "draft",
@@ -272,7 +278,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
     loadInvoice();
   }, [loadInvoice]);
 
-  const handleSaveTerms = () => {
+  const handleSaveTerms = async () => {
     const cleaned = termsDraftText
       .split("\n")
       .map((line) => line.replace(/^\d+[.)]\s*/, "").trim())
@@ -281,19 +287,50 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
     setTermsList(nextTerms);
     setTermsDraftText(nextTerms.join("\n"));
     if (typeof window !== "undefined") {
-      localStorage.setItem(TERMS_STORAGE_KEY, JSON.stringify(nextTerms));
+      try {
+        localStorage.setItem(TERMS_STORAGE_KEY, JSON.stringify(nextTerms));
+      } catch {
+        // ignore storage error
+      }
+    }
+    if (invoice?.business_id) {
+      try {
+        const supabase = createClient();
+        await supabase
+          .from("business_settings")
+          .update({ invoice_terms: nextTerms })
+          .eq("business_id", invoice.business_id);
+      } catch (err) {
+        console.warn("Could not save invoice terms to database", err);
+      }
     }
     setEditingTerms(false);
-    toast.success("Terms & Conditions updated.");
+    toast.success("Terms & Conditions updated and saved.");
   };
 
-  const handleResetTerms = () => {
+  const handleResetTerms = async () => {
     const defaults = [...DEFAULT_INVOICE_TERMS];
     setTermsList(defaults);
     setTermsDraftText(defaults.join("\n"));
     if (typeof window !== "undefined") {
-      localStorage.removeItem(TERMS_STORAGE_KEY);
+      try {
+        localStorage.removeItem(TERMS_STORAGE_KEY);
+      } catch {
+        // ignore storage error
+      }
     }
+    if (invoice?.business_id) {
+      try {
+        const supabase = createClient();
+        await supabase
+          .from("business_settings")
+          .update({ invoice_terms: null })
+          .eq("business_id", invoice.business_id);
+      } catch (err) {
+        console.warn("Could not reset invoice terms in database", err);
+      }
+    }
+    setEditingTerms(false);
     toast.success("Reset to default Terms & Conditions.");
   };
 
@@ -1120,15 +1157,17 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
           </div>
 
           {/* Indian Digital / Billing Statutory Declaration */}
-          <div className="mt-6 pt-4 border-t border-gray-100 text-[10px] text-gray-400 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-6">
-            <p className="flex-1 sm:pr-8 leading-relaxed">
+          <div className="mt-6 pt-4 border-t border-gray-100 text-[10px] text-gray-400 flex flex-row items-baseline justify-between gap-4">
+            <p className="flex-1 pr-6 sm:pr-10 leading-relaxed text-left">
               {isDigitalCopy
                 ? "Certified that the particulars given above are true and correct. This is a computer-generated Digital Copy bearing an authorized electronic signature."
                 : "Certified that the particulars given above are true and correct."}
               {invoice.mode === "non_gst" &&
                 " Bill of Supply (Non-GST / Exempt / Unregistered Supply)."}
             </p>
-            <span className="shrink-0 font-medium text-gray-500 whitespace-nowrap">E. &amp; O.E.</span>
+            <span className="shrink-0 font-medium text-gray-500 whitespace-nowrap text-right self-end">
+              E. &amp; O.E.
+            </span>
           </div>
         </div>
       </div>

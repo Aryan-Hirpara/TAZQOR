@@ -25,11 +25,13 @@ const PREFERRED_ROOT_NAMES = [
 ];
 
 const PREFERRED_BRAND_NAMES = [
+  "signature_transparent.png",
+  "signature-transparent.png",
+  "signature.png",
   "signature-custom.png",
   "signature-custom.jpg",
   "signature-custom.jpeg",
   "signature-custom.webp",
-  "signature.png",
   "signature.jpg",
   "signature.jpeg",
   "signature.webp",
@@ -66,7 +68,27 @@ async function resolveSignatureFile(): Promise<ResolvedSignatureFile | null> {
   const cwd = process.cwd();
   const brandDir = path.join(cwd, "public", "brand");
 
-  // 1. Check root directory first so placing `signature.png` or `*sign*.png` in project root works immediately
+  // 1. Check brand directory first (reliably bundled on Vercel and local dev)
+  for (const name of PREFERRED_BRAND_NAMES) {
+    const candidate = path.join(brandDir, name);
+    try {
+      const stat = await fs.stat(candidate);
+      if (stat.isFile()) {
+        const ext = path.extname(name).toLowerCase();
+        return {
+          fullPath: candidate,
+          filename: name,
+          source: "brand",
+          mimeType: MIME_BY_EXT[ext] || "image/png",
+          mtimeMs: Math.round(stat.mtimeMs),
+        };
+      }
+    } catch {
+      // ignore missing file
+    }
+  }
+
+  // 2. Check root directory next so placing `signature.png` or `*sign*.png` in project root works too
   for (const name of PREFERRED_ROOT_NAMES) {
     const candidate = path.join(cwd, name);
     try {
@@ -161,7 +183,10 @@ export async function GET(request: Request) {
           available: true,
           filename: resolved.filename,
           source: resolved.source,
-          url: `/api/business/signature?v=${resolved.mtimeMs}`,
+          url:
+            resolved.source === "brand"
+              ? `/brand/${resolved.filename}?v=${resolved.mtimeMs}`
+              : `/api/business/signature?v=${resolved.mtimeMs}`,
         },
         { headers: { "Cache-Control": "no-store" } }
       );
