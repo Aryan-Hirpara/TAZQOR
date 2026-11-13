@@ -1,3 +1,5 @@
+import { formatINR } from "@/lib/formatting/currency";
+
 export const DEFAULT_INVOICE_TERMS: readonly string[] = [
   "Unopened and unused products in original sealed packaging may be returned or replaced within 7 days of the invoice date.",
   "Products that are opened, unsealed, tampered with, or partially used will not be accepted for return, replacement, or refund.",
@@ -311,4 +313,75 @@ export function formatPlaceOfSupplyWithCode(
 
   return code ? `${clean} (${code})` : clean;
 }
+
+export interface WhatsAppInvoiceShareParams {
+  businessName: string;
+  businessPhone?: string | null;
+  businessEmail?: string | null;
+  customerName: string;
+  invoiceNumber: string;
+  invoiceDate: string;
+  docLabel?: string;
+  grandTotal: number;
+  outstanding: number;
+  status?: string | null;
+  items?: Array<{
+    description: string;
+    quantity: number;
+    line_total?: number;
+    rate?: number;
+  }>;
+}
+
+/**
+ * Formats a WhatsApp thank-you and digital invoice share message listing
+ * the purchased products, bill totals, payment status, and direct support contact info.
+ */
+export function formatWhatsAppShareMessage(params: WhatsAppInvoiceShareParams): string[] {
+  const docLabel = params.docLabel || "Bill of Supply";
+  const bizPhone = (params.businessPhone || "").trim();
+  const bizEmail = (params.businessEmail || "").trim();
+  const itemsList = (params.items || []).map((it) => {
+    const total =
+      it.line_total !== undefined && it.line_total !== null
+        ? it.line_total
+        : (it.rate || 0) * it.quantity;
+    return `• ${it.description} × ${it.quantity} (${formatINR(total)})`;
+  });
+
+  const lines = [
+    `Dear *${params.customerName}*,`,
+    `Thank you for your purchase from *${params.businessName}*! 🙏`,
+    "",
+    `*${docLabel}* Details:`,
+    `Bill No: *${params.invoiceNumber}*`,
+    `Date: ${params.invoiceDate}`,
+  ];
+
+  if (itemsList.length > 0) {
+    lines.push("");
+    lines.push("*Items Purchased:*");
+    lines.push(...itemsList);
+  }
+
+  lines.push("");
+  lines.push(`*Total Amount:* *${formatINR(params.grandTotal)}*`);
+  if (params.status === "cancelled") {
+    lines.push("Payment Status: *CANCELLED / VOID*");
+  } else if (params.outstanding <= 0) {
+    lines.push("Payment Status: *PAID IN FULL* ✅");
+  } else {
+    lines.push(`Balance Due: *${formatINR(params.outstanding)}*`);
+  }
+
+  if (bizPhone || bizEmail) {
+    lines.push("");
+    lines.push("For any query or support, please contact us:");
+    if (bizPhone) lines.push(`📞 Phone: ${bizPhone}`);
+    if (bizEmail) lines.push(`✉️ Email: ${bizEmail}`);
+  }
+
+  return lines;
+}
+
 

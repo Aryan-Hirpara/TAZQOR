@@ -79,18 +79,34 @@ export default function OrderDetailClient({ id }: { id: string }) {
     if (!order || newStatus === order.status) return;
     setUpdatingStatus(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("orders")
-        .update({ status: newStatus as any })
-        .eq("id", order.id);
-
-      if (error) {
-        toast.error(error.message || "Could not update order status");
+      const res = await fetch(`/api/orders/${order.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const payload = await res.json().catch(() => null);
+      if (!res.ok || !payload?.success) {
+        toast.error(payload?.error || "Could not update order status");
         return;
       }
-      setOrder((prev: any) => ({ ...prev, status: newStatus }));
-      toast.success(`Order status updated to ${newStatus}`);
+      const updatedOrder: any = { ...order, status: newStatus };
+      if (payload.linked_invoice) {
+        updatedOrder.linkedInvoice = payload.linked_invoice;
+      }
+      if (newStatus === "delivered" && payload.stock_deducted) {
+        updatedOrder.delivery_stock_deducted = true;
+        toast.success("Order delivered — stock deducted & draft invoice created!");
+      } else if (newStatus === "cancelled") {
+        updatedOrder.delivery_stock_deducted = false;
+        toast.success(
+          payload.stock_reverted
+            ? "Order cancelled — stock restored."
+            : "Order cancelled."
+        );
+      } else {
+        toast.success(`Order status updated to ${newStatus}`);
+      }
+      setOrder(updatedOrder);
     } catch (err: any) {
       toast.error(err?.message || "Failed to update status");
     } finally {
@@ -120,18 +136,21 @@ export default function OrderDetailClient({ id }: { id: string }) {
         );
         router.push("/orders");
       } else {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from("orders")
-          .update({ status: "cancelled" })
-          .eq("id", order.id)
-          .select("id");
-
-        if (error || !data || data.length === 0) {
-          setConfirmError(error?.message || "Could not cancel order.");
+        const res = await fetch(`/api/orders/${order.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "cancelled" }),
+        });
+        const payload = await res.json().catch(() => null);
+        if (!res.ok || !payload?.success) {
+          setConfirmError(payload?.error || "Could not cancel order.");
           return;
         }
-        toast.success(`Order ${order.order_number} cancelled.`);
+        toast.success(
+          payload.stock_reverted
+            ? `Order ${order.order_number} cancelled — stock restored.`
+            : `Order ${order.order_number} cancelled.`
+        );
         setConfirmKind(null);
         await loadOrder();
       }

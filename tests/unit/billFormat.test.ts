@@ -4,6 +4,7 @@ import {
   formatBillCustomerBlock,
   formatBusinessAddressLines,
   formatPlaceOfSupplyWithCode,
+  formatWhatsAppShareMessage,
   normalizeWhatsAppDigits,
   splitBatchCodes,
   toIndianCurrencyWords,
@@ -140,6 +141,45 @@ describe("bill format & Indian invoice helpers", () => {
     expect(bounds).toEqual({ minX: 1, minY: 0, maxX: 9, maxY: 5 });
     // Faint corner smudge cleared
     expect(rgba[(11 * width + 11) * 4 + 3]).toBe(0);
+  });
+
+  it("formats WhatsApp share message with customer thank-you, purchased items list, and support contact details", () => {
+    const lines = formatWhatsAppShareMessage({
+      businessName: "TAZQOR",
+      businessPhone: "+91 96384 90740",
+      businessEmail: "tazqor@gmail.com",
+      customerName: "Jeel Domadiya",
+      invoiceNumber: "BILL/2026-27/0002",
+      invoiceDate: "2026-11-12",
+      docLabel: "Bill of Supply",
+      grandTotal: 200,
+      outstanding: 0,
+      status: "finalized",
+      items: [
+        {
+          description: "Dish wash (lemon) 250ml",
+          quantity: 2,
+          line_total: 100,
+        },
+        {
+          description: "Liquid soap (lavender) 250ml",
+          quantity: 1,
+          line_total: 100,
+        },
+      ],
+    });
+
+    const msg = lines.join("\n");
+    expect(msg).toContain("Dear *Jeel Domadiya*");
+    expect(msg).toContain("Thank you for your purchase from *TAZQOR*!");
+    expect(msg).toContain("Bill No: *BILL/2026-27/0002*");
+    expect(msg).toContain("• Dish wash (lemon) 250ml × 2 (₹100.00)");
+    expect(msg).toContain("• Liquid soap (lavender) 250ml × 1 (₹100.00)");
+    expect(msg).toContain("*Total Amount:* *₹200.00*");
+    expect(msg).toContain("Payment Status: *PAID IN FULL* ✅");
+    expect(msg).toContain("For any query or support, please contact us:");
+    expect(msg).toContain("📞 Phone: +91 96384 90740");
+    expect(msg).toContain("✉️ Email: tazqor@gmail.com");
   });
 });
 

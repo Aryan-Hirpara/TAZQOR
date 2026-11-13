@@ -85,6 +85,98 @@ export async function POST(
       );
     }
 
+    // ── STOCK-ALREADY-DEDUCTED PATH ─────────────────────────────────────────
+    // If this invoice was auto-created from an order delivery, stock was already
+    // deducted via stock_movements with reference_type = "order_delivery".
+    // In that case skip all FEFO allocation and finalize directly via RPC.
+    if (invoice.order_id) {
+      const { data: orderRow } = await auth.db
+        .from("orders")
+        .select("delivery_stock_deducted")
+        .eq("id", invoice.order_id)
+        .eq("business_id", businessId)
+        .maybeSingle();
+
+      if (orderRow?.delivery_stock_deducted) {
+        // Confirm there are actual movements recorded for this order
+        const { count: movCount } = await auth.db
+          .from("stock_movements")
+          .select("id", { count: "exact", head: true })
+          .eq("reference_id", invoice.order_id)
+          .eq("reference_type", "order_delivery")
+          .eq("business_id", businessId);
+
+        if ((movCount || 0) > 0) {
+          // Stock already deducted — skip FEFO and go straight to finalize RPC
+          const parsedPaymentEarly = parseInvoicePaymentInput(body?.payment, {
+            defaultDate:
+              typeof invoice.invoice_date === "string" && invoice.invoice_date
+                ? invoice.invoice_date
+                : getTodayIsoDate(),
+            maxAmount: Number(invoice.grand_total) || 0,
+            requirePositiveWhenPresent: false,
+          });
+          if (parsedPaymentEarly.error) {
+            return NextResponse.json(
+              { success: false, error: parsedPaymentEarly.error },
+              { status: 400 }
+            );
+          }
+
+          const applyOptionalPaymentEarly = async (
+            finalizedPayload: Record<string, unknown>,
+            payment: ParsedInvoicePayment | null
+          ) => {
+            if (!payment) {
+              return NextResponse.json({ success: true, ...finalizedPayload });
+            }
+            const settlement = await settleInvoiceWithPayment({
+              db: auth.db,
+              businessId,
+              invoiceId,
+              customerId: invoice.customer_id,
+              payment,
+            });
+            if (!settlement.ok) {
+              return NextResponse.json(
+                {
+                  success: false,
+                  ...finalizedPayload,
+                  payment_recorded: false,
+                  error: `Invoice finalized, but recording payment failed: ${settlement.error}`,
+                },
+                { status: 400 }
+              );
+            }
+            return NextResponse.json({
+              success: true,
+              ...finalizedPayload,
+              payment_recorded: true,
+              payment_id: settlement.paymentId,
+              paid_amount: settlement.amount,
+            });
+          };
+
+          // Use the finalize_invoice RPC — it will assign invoice number + set status
+          const { data: rpcRes, error: rpcErr } = await auth.db.rpc("finalize_invoice", {
+            p_invoice_id: invoiceId,
+            p_idempotency_key: idempotencyKey || undefined,
+          });
+          if (rpcErr) {
+            return NextResponse.json(
+              { success: false, error: rpcErr.message },
+              { status: 400 }
+            );
+          }
+          return applyOptionalPaymentEarly(
+            typeof rpcRes === "object" && rpcRes ? (rpcRes as Record<string, unknown>) : {},
+            parsedPaymentEarly.payment
+          );
+        }
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     const parsedPayment = parseInvoicePaymentInput(body?.payment, {
       defaultDate:
         typeof invoice.invoice_date === "string" && invoice.invoice_date

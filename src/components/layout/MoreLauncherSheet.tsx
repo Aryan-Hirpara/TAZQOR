@@ -49,7 +49,6 @@ export function MoreLauncherSheet({ isOpen, onClose }: MoreLauncherSheetProps) {
   useEffect(() => {
     if (typeof window !== "undefined") {
       document.documentElement.classList.remove("dark");
-      localStorage.removeItem("tazqor-theme");
     }
   }, []);
 

@@ -32,7 +32,7 @@ import {
 } from "@/lib/dashboard/metrics";
 
 const MONTH_NAMES = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
-const TARGET_STORAGE_KEY = "tazqor_monthly_target";
+const DEFAULT_BUSINESS_ID = "00000000-0000-0000-0000-000000000001";
 
 interface RawDashboardSnapshot {
   invoices: DashboardInvoiceRow[];
@@ -58,21 +58,21 @@ export default function DashboardPage() {
   const [period, setPeriod] = useState<DashboardPeriod>("month");
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("there");
-  const [monthlyTarget, setMonthlyTarget] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      const saved = Number(window.localStorage.getItem(TARGET_STORAGE_KEY));
-      if (!Number.isNaN(saved) && saved >= 0) return saved;
-    }
-    return 0;
-  });
+  const [monthlyTarget, setMonthlyTarget] = useState<number>(0);
 
   const [snapshot, setSnapshot] = useState<RawDashboardSnapshot>(EMPTY_SNAPSHOT);
   const [testMetricsOverride, setTestMetricsOverride] = useState<Record<string, unknown> | null>(null);
 
-  const handleSaveTarget = useCallback((newTarget: number) => {
+  const handleSaveTarget = useCallback(async (newTarget: number) => {
     setMonthlyTarget(newTarget);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(TARGET_STORAGE_KEY, String(newTarget));
+    try {
+      const supabase = createClient();
+      await supabase
+        .from("business_settings")
+        .update({ monthly_target: newTarget })
+        .eq("business_id", DEFAULT_BUSINESS_ID);
+    } catch (err) {
+      console.warn("Could not save monthly target to database:", err);
     }
   }, []);
 
@@ -134,6 +134,7 @@ export default function DashboardPage() {
           { data: stockSummariesData },
           { data: batchesData },
           { data: batchStockData },
+          { data: settingsData },
         ] = await Promise.all([
           supabase
             .from("invoices")
@@ -164,7 +165,16 @@ export default function DashboardPage() {
           supabase
             .from("v_stock_on_hand")
             .select("batch_id, quantity_on_hand"),
+          supabase
+            .from("business_settings")
+            .select("monthly_target")
+            .eq("business_id", DEFAULT_BUSINESS_ID)
+            .maybeSingle(),
         ]);
+
+        if (settingsData && typeof (settingsData as any).monthly_target === "number" && !cancelled) {
+          setMonthlyTarget(Number((settingsData as any).monthly_target) || 0);
+        }
 
         if (!cancelled) {
           setSnapshot({

@@ -31,6 +31,7 @@ import {
   formatBillCustomerBlock,
   formatBusinessAddressLines,
   formatPlaceOfSupplyWithCode,
+  formatWhatsAppShareMessage,
   normalizeWhatsAppDigits,
   toIndianCurrencyWords,
 } from "@/lib/invoices/bill-format";
@@ -38,8 +39,6 @@ import { loadTransparentSignatureDataUrl } from "@/lib/invoices/signature-ink";
 import { generateInvoicePdf } from "@/lib/invoices/pdf-generator";
 
 type BillCopyMode = "digital" | "print";
-
-const TERMS_STORAGE_KEY = "tazqor_invoice_terms_v1";
 
 interface SignatureMeta {
   available: boolean;
@@ -76,23 +75,6 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
   const [termsList, setTermsList] = useState<string[]>([...DEFAULT_INVOICE_TERMS]);
   const [editingTerms, setEditingTerms] = useState(false);
   const [termsDraftText, setTermsDraftText] = useState(DEFAULT_INVOICE_TERMS.join("\n"));
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem(TERMS_STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setTermsList(parsed);
-            setTermsDraftText(parsed.join("\n"));
-          }
-        }
-      } catch {
-        // ignore invalid stored terms
-      }
-    }
-  }, []);
 
   const loadSignatureMeta = useCallback(async () => {
     try {
@@ -133,7 +115,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
       const { data: invRow } = await supabase
         .from("invoices")
         .select(
-          "*, customers(*), invoice_items(*, invoice_item_batches(quantity_allocated, batches(batch_number)))"
+          "*, customers(*), orders(id, status, delivery_stock_deducted), invoice_items(*, invoice_item_batches(quantity_allocated, batches(batch_number)))"
         )
         .eq("id", id)
         .maybeSingle();
@@ -226,9 +208,16 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
         setTermsDraftText(bizSettings.invoice_terms.join("\n"));
       }
 
+      const isStockAlreadyDeducted = Boolean(
+        invRow.orders?.delivery_stock_deducted ||
+        invRow.orders?.status === "delivered"
+      );
+
       setInvoice({
         id: invRow.id,
         business_id: invRow.business_id,
+        order_id: invRow.order_id,
+        stockAlreadyDeducted: isStockAlreadyDeducted,
         invoice_number: invRow.invoice_number || "DRAFT",
         mode: invRow.mode === "non_gst" ? "non_gst" : "gst",
         status: invRow.status || "draft",
@@ -286,13 +275,6 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
     const nextTerms = cleaned.length > 0 ? cleaned : [...DEFAULT_INVOICE_TERMS];
     setTermsList(nextTerms);
     setTermsDraftText(nextTerms.join("\n"));
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem(TERMS_STORAGE_KEY, JSON.stringify(nextTerms));
-      } catch {
-        // ignore storage error
-      }
-    }
     if (invoice?.business_id) {
       try {
         const supabase = createClient();
@@ -312,13 +294,6 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
     const defaults = [...DEFAULT_INVOICE_TERMS];
     setTermsList(defaults);
     setTermsDraftText(defaults.join("\n"));
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.removeItem(TERMS_STORAGE_KEY);
-      } catch {
-        // ignore storage error
-      }
-    }
     if (invoice?.business_id) {
       try {
         const supabase = createClient();
@@ -390,19 +365,24 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
   };
 
   const buildShareMessageLines = () => {
-    const docLabel = invoice.mode === "gst" ? "Tax Invoice" : "Bill of Supply";
-    return [
-      `*${invoice.business.name}* — ${docLabel} (Digital Copy)`,
-      `Bill No: *${invoice.invoice_number}*`,
-      `Date: ${invoice.date}`,
-      `Billed To: ${invoice.customer.name}`,
-      `Total Amount: *${formatINR(invoice.grand_total)}*`,
-      invoice.status === "cancelled"
-        ? "Status: CANCELLED / VOID"
-        : invoice.outstanding <= 0
-        ? "Status: PAID IN FULL"
-        : `Balance Due: ${formatINR(invoice.outstanding)}`,
-    ];
+    return formatWhatsAppShareMessage({
+      businessName: invoice.business.name,
+      businessPhone: invoice.business.phone,
+      businessEmail: invoice.business.email,
+      customerName: invoice.customer.name,
+      invoiceNumber: invoice.invoice_number,
+      invoiceDate: invoice.date,
+      docLabel: invoice.mode === "gst" ? "Tax Invoice" : "Bill of Supply",
+      grandTotal: invoice.grand_total,
+      outstanding: invoice.outstanding,
+      status: invoice.status,
+      items: (invoice.items || []).map((it: any) => ({
+        description: it.name,
+        quantity: it.quantity,
+        line_total: it.total,
+        rate: it.unit_price,
+      })),
+    });
   };
 
   const handleDownloadPdf = async () => {
@@ -668,15 +648,28 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
 
             <div className="flex flex-wrap items-center gap-2">
               {invoice.status === "draft" && (
-                <button
-                  type="button"
-                  onClick={handleFinalizeDraft}
-                  disabled={finalizing}
-                  className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-[#D7FF00] text-black text-xs font-semibold hover:brightness-95 transition-all disabled:opacity-50 cursor-pointer"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>{finalizing ? "Finalizing..." : "Finalize & Deduct Stock"}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleFinalizeDraft}
+                    disabled={finalizing}
+                    className="flex items-center gap-1.5 px-4 h-10 rounded-full bg-[#D7FF00] text-black text-xs font-semibold hover:brightness-95 transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>
+                      {finalizing
+                        ? "Finalizing..."
+                        : invoice.stockAlreadyDeducted
+                        ? "Finalize Bill"
+                        : "Finalize & Deduct Stock"}
+                    </span>
+                  </button>
+                  {invoice.stockAlreadyDeducted && (
+                    <span className="hidden sm:inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-medium">
+                      Stock already deducted on delivery
+                    </span>
+                  )}
+                </div>
               )}
 
               {invoice.status === "finalized" && invoice.outstanding > 0 && (
