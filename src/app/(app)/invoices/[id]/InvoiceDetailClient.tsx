@@ -906,7 +906,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
                 Paid: {formatINR(invoice.paid_amount)} / Total: {formatINR(invoice.grand_total)}
               </p>
               {invoice.status === "finalized" && invoice.outstanding > 0 && (
-                <div className="pt-1 print:hidden">
+                <div className="pt-1 print:hidden" data-html2canvas-ignore="true">
                   <button
                     type="button"
                     onClick={() => setMarkPaidOpen(true)}
