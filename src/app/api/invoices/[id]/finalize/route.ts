@@ -85,122 +85,149 @@ export async function POST(
       );
     }
 
-    // ── STOCK-ALREADY-DEDUCTED PATH ─────────────────────────────────────────
-    // If this invoice was auto-created from an order delivery, stock was already
-    // deducted via stock_movements with reference_type = "order_delivery".
-    // In that case skip all FEFO allocation and finalize directly via RPC.
+    // ── ORDER-LINKED INVOICE PATH ───────────────────────────────────────────
+    // Stock deduction is owned by the order (deducted upon order delivery).
+    // An invoice linked to an order NEVER deducts stock to prevent double deductions.
     if (invoice.order_id) {
-      const { data: orderRow } = await auth.db
-        .from("orders")
-        .select("delivery_stock_deducted")
-        .eq("id", invoice.order_id)
-        .eq("business_id", businessId)
-        .maybeSingle();
+      const parsedPaymentEarly = parseInvoicePaymentInput(body?.payment, {
+        defaultDate:
+          typeof invoice.invoice_date === "string" && invoice.invoice_date
+            ? invoice.invoice_date
+            : getTodayIsoDate(),
+        maxAmount: Number(invoice.grand_total) || 0,
+        requirePositiveWhenPresent: false,
+      });
+      if (parsedPaymentEarly.error) {
+        return NextResponse.json(
+          { success: false, error: parsedPaymentEarly.error },
+          { status: 400 }
+        );
+      }
 
-      if (orderRow?.delivery_stock_deducted) {
-        // Confirm there are actual movements recorded for this order
-        const { count: movCount } = await auth.db
-          .from("stock_movements")
-          .select("id", { count: "exact", head: true })
-          .eq("reference_id", invoice.order_id)
-          .eq("reference_type", "order_delivery")
-          .eq("business_id", businessId);
+      // Check GST settings if mode === 'gst'
+      if (invoice.mode === "gst") {
+        const { data: settings } = await auth.db
+          .from("business_settings")
+          .select("gst_enabled, gst_confirmed, gstin")
+          .eq("business_id", businessId)
+          .maybeSingle();
 
-        if ((movCount || 0) > 0) {
-          // Stock already deducted — skip FEFO and go straight to finalize RPC
-          const parsedPaymentEarly = parseInvoicePaymentInput(body?.payment, {
-            defaultDate:
-              typeof invoice.invoice_date === "string" && invoice.invoice_date
-                ? invoice.invoice_date
-                : getTodayIsoDate(),
-            maxAmount: Number(invoice.grand_total) || 0,
-            requirePositiveWhenPresent: false,
-          });
-          if (parsedPaymentEarly.error) {
-            return NextResponse.json(
-              { success: false, error: parsedPaymentEarly.error },
-              { status: 400 }
-            );
-          }
-
-          const triggerFinalizePush = async (invNum: string, paidAmt?: number) => {
-            try {
-              const { data: custRow } = await auth.db
-                .from("customers")
-                .select("name, shop_name")
-                .eq("id", invoice.customer_id)
-                .maybeSingle();
-              const custName = custRow?.shop_name || custRow?.name || "Customer";
-              const { sendPushToAllDevices } = await import("@/lib/notifications/push");
-              const { formatINR } = await import("@/lib/formatting/currency");
-              const total = Number(invoice.grand_total) || 0;
-              const isPaid = (paidAmt || 0) >= total && total > 0;
-              await sendPushToAllDevices(auth.db, businessId, {
-                title: isPaid ? `💰 Paid: ${custName} (${formatINR(total)})` : `🧾 Bill Finalized: ${custName}`,
-                body: `Bill ${invNum} • ${formatINR(total)}${isPaid ? " • Paid in Full" : " • Payment Pending"}`,
-                url: `/invoices/${invoiceId}`,
-                tag: `invoice-${invoiceId}`,
-              });
-            } catch (e) {
-              console.warn("Finalize push notification error:", e);
-            }
-          };
-
-          const applyOptionalPaymentEarly = async (
-            finalizedPayload: Record<string, unknown>,
-            payment: ParsedInvoicePayment | null
-          ) => {
-            const finalNum = String(finalizedPayload.invoice_number || invoice.invoice_number || "Bill");
-            if (!payment) {
-              triggerFinalizePush(finalNum);
-              return NextResponse.json({ success: true, ...finalizedPayload });
-            }
-            const settlement = await settleInvoiceWithPayment({
-              db: auth.db,
-              businessId,
-              invoiceId,
-              customerId: invoice.customer_id,
-              payment,
-            });
-            if (!settlement.ok) {
-              triggerFinalizePush(finalNum);
-              return NextResponse.json(
-                {
-                  success: false,
-                  ...finalizedPayload,
-                  payment_recorded: false,
-                  error: `Invoice finalized, but recording payment failed: ${settlement.error}`,
-                },
-                { status: 400 }
-              );
-            }
-            triggerFinalizePush(finalNum, settlement.amount);
-            return NextResponse.json({
-              success: true,
-              ...finalizedPayload,
-              payment_recorded: true,
-              payment_id: settlement.paymentId,
-              paid_amount: settlement.amount,
-            });
-          };
-
-          // Use the finalize_invoice RPC — it will assign invoice number + set status
-          const { data: rpcRes, error: rpcErr } = await auth.db.rpc("finalize_invoice", {
-            p_invoice_id: invoiceId,
-            p_idempotency_key: idempotencyKey || undefined,
-          });
-          if (rpcErr) {
-            return NextResponse.json(
-              { success: false, error: rpcErr.message },
-              { status: 400 }
-            );
-          }
-          return applyOptionalPaymentEarly(
-            typeof rpcRes === "object" && rpcRes ? (rpcRes as Record<string, unknown>) : {},
-            parsedPaymentEarly.payment
+        if (
+          !settings?.gst_enabled ||
+          !settings?.gst_confirmed ||
+          !settings?.gstin ||
+          settings.gstin.trim().length !== 15
+        ) {
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                "GST mode is disabled: Business must confirm GST eligibility and configure a valid 15-character GSTIN.",
+            },
+            { status: 400 }
           );
         }
       }
+
+      // Generate invoice number
+      const [{ data: invNumber, error: numErr }, { data: businessRow }, { data: customerRow }] =
+        await Promise.all([
+          auth.db.rpc("next_invoice_number", {
+            p_business_id: businessId,
+            p_mode: invoice.mode,
+          }),
+          auth.db.from("businesses").select("*").eq("id", businessId).maybeSingle(),
+          auth.db.from("customers").select("*").eq("id", invoice.customer_id).maybeSingle(),
+        ]);
+
+      if (numErr || !invNumber) {
+        return NextResponse.json(
+          { success: false, error: numErr?.message || "Failed to generate invoice number." },
+          { status: 400 }
+        );
+      }
+
+      // Mark finalized without creating duplicate stock movements!
+      const { error: updErr } = await auth.db
+        .from("invoices")
+        .update({
+          status: "finalized",
+          invoice_number: invNumber,
+          idempotency_key: idempotencyKey || invoice.idempotency_key || crypto.randomUUID(),
+          snapshot_business: businessRow || null,
+          snapshot_customer: customerRow || null,
+          finalized_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", invoiceId)
+        .eq("business_id", businessId)
+        .eq("status", "draft");
+
+      if (updErr) {
+        return NextResponse.json({ success: false, error: updErr.message }, { status: 400 });
+      }
+
+      const triggerFinalizePush = async (invNum: string, paidAmt?: number) => {
+        try {
+          const custName = customerRow?.shop_name || customerRow?.name || "Customer";
+          const { sendPushToAllDevices } = await import("@/lib/notifications/push");
+          const { formatINR } = await import("@/lib/formatting/currency");
+          const total = Number(invoice.grand_total) || 0;
+          const isPaid = (paidAmt || 0) >= total && total > 0;
+          await sendPushToAllDevices(auth.db, businessId, {
+            title: isPaid ? `💰 Paid: ${custName} (${formatINR(total)})` : `🧾 Bill Finalized: ${custName}`,
+            body: `Bill ${invNum} • ${formatINR(total)}${isPaid ? " • Paid in Full" : " • Payment Pending"}`,
+            url: `/invoices/${invoiceId}`,
+            tag: `invoice-${invoiceId}`,
+          });
+        } catch (e) {
+          console.warn("Finalize push notification error:", e);
+        }
+      };
+
+      if (!parsedPaymentEarly.payment) {
+        triggerFinalizePush(invNumber);
+        return NextResponse.json({
+          success: true,
+          status: "finalized",
+          invoice_id: invoiceId,
+          invoice_number: invNumber,
+        });
+      }
+
+      const settlement = await settleInvoiceWithPayment({
+        db: auth.db,
+        businessId,
+        invoiceId,
+        customerId: invoice.customer_id,
+        payment: parsedPaymentEarly.payment,
+      });
+
+      if (!settlement.ok) {
+        triggerFinalizePush(invNumber);
+        return NextResponse.json(
+          {
+            success: false,
+            status: "finalized",
+            invoice_id: invoiceId,
+            invoice_number: invNumber,
+            payment_recorded: false,
+            error: `Invoice finalized, but recording payment failed: ${settlement.error}`,
+          },
+          { status: 400 }
+        );
+      }
+
+      triggerFinalizePush(invNumber, settlement.amount);
+      return NextResponse.json({
+        success: true,
+        status: "finalized",
+        invoice_id: invoiceId,
+        invoice_number: invNumber,
+        payment_recorded: true,
+        payment_id: settlement.paymentId,
+        paid_amount: settlement.amount,
+      });
     }
     // ─────────────────────────────────────────────────────────────────────────
 
