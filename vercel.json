@@ -14,11 +14,11 @@
     },
     {
       "path": "/api/cron/pending-orders",
-      "schedule": "0 */4 * * *"
+      "schedule": "0 4 * * *"
     },
     {
       "path": "/api/cron/mail-check",
-      "schedule": "*/30 * * * *"
+      "schedule": "0 12 * * *"
     }
   ]
 }
