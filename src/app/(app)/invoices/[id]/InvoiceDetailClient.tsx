@@ -36,7 +36,7 @@ import {
   toIndianCurrencyWords,
 } from "@/lib/invoices/bill-format";
 import { loadTransparentSignatureDataUrl } from "@/lib/invoices/signature-ink";
-import { generateInvoicePdf } from "@/lib/invoices/pdf-generator";
+import { generateVectorInvoicePdf } from "@/lib/invoices/pdf-generator";
 
 type BillCopyMode = "digital" | "print";
 
@@ -359,15 +359,18 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
   const captureInvoicePdf = async (forceDigital: boolean) => {
     if (forceDigital && copyMode !== "digital") {
       setCopyMode("digital");
-      await new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-      );
     }
-    const invoiceEl = document.getElementById("printable-invoice");
-    if (!invoiceEl || !invoice) {
-      throw new Error("Invoice document element not found");
+    if (!invoice) {
+      throw new Error("Invoice document not found");
     }
-    return generateInvoicePdf(invoiceEl, invoice.invoice_number);
+    return generateVectorInvoicePdf({
+      invoice,
+      copyMode: forceDigital ? "digital" : copyMode,
+      transparentSignUrl,
+      signatureMeta,
+      amountInWords,
+      termsList,
+    });
   };
 
   const buildShareMessageLines = () => {
@@ -409,7 +412,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
     }
   };
 
-  const handleShareWhatsApp = () => {
+  const handleShareWhatsApp = async () => {
     if (!invoice) return;
     const digits = normalizeWhatsAppDigits(invoice.customer.phone);
     if (!digits) {
@@ -438,17 +441,15 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
       setCopyMode("digital");
     }
 
-    // 4. Automatically launch Print as PDF (native print preview dialog)
-    // instead of direct canvas download, allowing the user to save as PDF in internal storage
-    setTimeout(() => {
-      const originalTitle = document.title;
-      const safeNumber = (invoice.invoice_number || "Bill").replace(/[/\\?%*:|"<>]/g, "-");
-      document.title = `Invoice_${safeNumber}_Digital`;
-      window.print();
-      setTimeout(() => {
-        document.title = originalTitle;
-      }, 1500);
-    }, 250);
+    // 4. Automatically generate 100% Vector PDF (Digital Copy) and download it directly
+    // so the user can easily attach the vector PDF file in WhatsApp!
+    try {
+      const generated = await captureInvoicePdf(true);
+      generated.save();
+      toast.success("100% Vector PDF downloaded — attach in WhatsApp!", { duration: 4000 });
+    } catch (err) {
+      console.warn("WhatsApp background vector PDF generation error:", err);
+    }
   };
 
   const handleEmailDigitalCopy = async () => {
