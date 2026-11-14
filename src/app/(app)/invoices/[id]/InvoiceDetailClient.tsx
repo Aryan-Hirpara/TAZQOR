@@ -115,7 +115,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
       const { data: invRow } = await supabase
         .from("invoices")
         .select(
-          "*, customers(*), orders(id, status, delivery_stock_deducted), invoice_items(*, invoice_item_batches(quantity_allocated, batches(batch_number)))"
+          "*, customers(*), orders(id, status, delivery_stock_deducted), invoice_items(*, product_variants(name, pack_size, sku, products(name)), invoice_item_batches(quantity_allocated, batches(batch_number)))"
         )
         .eq("id", id)
         .maybeSingle();
@@ -167,9 +167,16 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
         const cgst = igstRate > 0 ? 0 : taxAmt / 2;
         const sgst = igstRate > 0 ? 0 : taxAmt / 2;
 
+        const pv = it.product_variants as any;
+        const variantFullName = pv?.products?.name
+          ? (pv.pack_size || pv.name ? `${pv.products.name} (${pv.pack_size || pv.name})` : pv.products.name)
+          : pv?.name || null;
+        const resolvedName = it.description || variantFullName || "Product";
+        const resolvedSku = it.sku_snapshot || pv?.sku || "—";
+
         return {
-          name: it.description || "Product",
-          sku: it.sku_snapshot || "—",
+          name: resolvedName,
+          sku: resolvedSku,
           hsn: it.hsn_snapshot || "—",
           batch: batches.length > 0 ? batches.join(", ") : "—",
           quantity: Number(it.quantity) || 0,
@@ -233,8 +240,8 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
           gstin: bizSettings?.gstin || snapBiz.gstin || "",
           address: bizAddr.streetLine,
           city: bizAddr.regionLine,
-          phone: bizSettings?.phone || "",
-          email: bizSettings?.email || "",
+          phone: bizSettings?.phone || snapBiz.phone || "+91 96384 90740",
+          email: bizSettings?.email || snapBiz.email || "tazqor@gmail.com",
         },
         customer: {
           name: formattedCust.displayName,
@@ -404,75 +411,41 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
   };
 
   const handleShareWhatsApp = async () => {
-    if (!invoice || isSharingWhatsApp) return;
+    if (!invoice) return;
     const digits = normalizeWhatsAppDigits(invoice.customer.phone);
     if (!digits) {
       toast.error("Customer phone/WhatsApp number is not available.");
       return;
     }
 
-    setIsSharingWhatsApp(true);
-    const toastId = toast.loading("Preparing Digital Copy PDF for WhatsApp...");
+    const message = buildShareMessageLines().join("\n");
+    const waUrl = `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 
-    try {
-      const generated = await captureInvoicePdf(true);
-      const message = buildShareMessageLines().join("\n");
-      const isMobile =
-        typeof navigator !== "undefined" &&
-        /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    // 1. Immediately open WhatsApp chat with customer (instant user-gesture, never blocked)
+    const popup = window.open(waUrl, "_blank", "noopener,noreferrer");
+    if (!popup) {
+      window.location.href = waUrl;
+    }
 
-      if (
-        isMobile &&
-        typeof navigator.share === "function" &&
-        typeof navigator.canShare === "function" &&
-        navigator.canShare({ files: [generated.file] })
-      ) {
-        try {
-          await navigator.share({
-            title: `Invoice ${invoice.invoice_number}`,
-            text: message,
-            files: [generated.file],
-          });
-          toast.success("Shared Digital Copy PDF!", { id: toastId });
-          return;
-        } catch (shareErr: unknown) {
-          if (shareErr instanceof Error && shareErr.name === "AbortError") {
-            toast.dismiss(toastId);
-            return;
-          }
-        }
+    // 2. Copy message text to clipboard for quick paste
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(message).catch(() => {});
+    }
+
+    toast.success(`Opening WhatsApp chat with ${invoice.customer.name}...`);
+
+    // 3. In background, generate and download Digital Copy PDF so it's ready to attach
+    if (!isSharingWhatsApp) {
+      setIsSharingWhatsApp(true);
+      try {
+        const generated = await captureInvoicePdf(true);
+        generated.save();
+        toast.success(`Digital Copy PDF downloaded — attach in WhatsApp chat!`, { duration: 4000 });
+      } catch (err) {
+        console.warn("Background PDF capture error:", err);
+      } finally {
+        setIsSharingWhatsApp(false);
       }
-
-      generated.save();
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(message).catch(() => {});
-      }
-
-      const waUrl = `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
-      const popup = window.open(waUrl, "_blank", "noopener,noreferrer");
-      if (!popup) {
-        toast.success(
-          `Downloaded ${generated.filename}. Click "Open WhatsApp" if your browser blocked the tab.`,
-          {
-            id: toastId,
-            action: {
-              label: "Open WhatsApp",
-              onClick: () => window.open(waUrl, "_blank", "noopener,noreferrer"),
-            },
-          }
-        );
-        return;
-      }
-
-      toast.success(
-        `Downloaded ${generated.filename} & opened WhatsApp — attach the PDF and press Send!`,
-        { id: toastId }
-      );
-    } catch (err) {
-      console.error("WhatsApp share error:", err);
-      toast.error("Could not prepare PDF for WhatsApp.", { id: toastId });
-    } finally {
-      setIsSharingWhatsApp(false);
     }
   };
 

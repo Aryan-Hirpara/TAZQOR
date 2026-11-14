@@ -339,47 +339,51 @@ export interface WhatsAppInvoiceShareParams {
  */
 export function formatWhatsAppShareMessage(params: WhatsAppInvoiceShareParams): string[] {
   const docLabel = params.docLabel || "Bill of Supply";
-  const bizPhone = (params.businessPhone || "").trim();
-  const bizEmail = (params.businessEmail || "").trim();
+  const bizName = (params.businessName || "TAZQOR").trim();
+  const bizPhone = (params.businessPhone || "+91 96384 90740").trim();
+  const bizEmail = (params.businessEmail || "tazqor@gmail.com").trim();
   const itemsList = (params.items || []).map((it) => {
     const total =
       it.line_total !== undefined && it.line_total !== null
         ? it.line_total
         : (it.rate || 0) * it.quantity;
-    return `• ${it.description} × ${it.quantity} (${formatINR(total)})`;
+    return `• *${it.description}* × ${it.quantity} (${formatINR(total)})`;
   });
 
   const lines = [
     `Dear *${params.customerName}*,`,
-    `Thank you for your purchase from *${params.businessName}*! 🙏`,
+    `Thank you for your purchase from *${bizName}*! 🙏`,
     "",
-    `*${docLabel}* Details:`,
-    `Bill No: *${params.invoiceNumber}*`,
-    `Date: ${params.invoiceDate}`,
+    `Here are your *${docLabel}* details:`,
+    `📄 Bill No: *${params.invoiceNumber}*`,
+    `📅 Date: ${params.invoiceDate}`,
   ];
 
   if (itemsList.length > 0) {
     lines.push("");
-    lines.push("*Items Purchased:*");
+    lines.push("📦 *Items Purchased:*");
     lines.push(...itemsList);
   }
 
   lines.push("");
-  lines.push(`*Total Amount:* *${formatINR(params.grandTotal)}*`);
+  lines.push(`💰 *Total Amount:* *${formatINR(params.grandTotal)}*`);
   if (params.status === "cancelled") {
     lines.push("Payment Status: *CANCELLED / VOID*");
   } else if (params.outstanding <= 0) {
     lines.push("Payment Status: *PAID IN FULL* ✅");
   } else {
-    lines.push(`Balance Due: *${formatINR(params.outstanding)}*`);
+    lines.push(`Payment Status: *Balance Due: ${formatINR(params.outstanding)}*`);
   }
 
   if (bizPhone || bizEmail) {
     lines.push("");
-    lines.push("For any query or support, please contact us:");
+    lines.push("For any query, support, or future orders, please contact us:");
     if (bizPhone) lines.push(`📞 Phone: ${bizPhone}`);
     if (bizEmail) lines.push(`✉️ Email: ${bizEmail}`);
   }
+
+  lines.push("");
+  lines.push(`Thank you for choosing *${bizName}*! We value your business. ✨`);
 
   return lines;
 }

@@ -115,11 +115,11 @@ export async function PATCH(
       if (orderItems.length > 0) {
         const variantIds = Array.from(new Set(orderItems.map((it) => it.product_variant_id)));
 
-        // Resolve combo recipes
+        // Resolve combo recipes + variant metadata for invoice snapshot
         const [{ data: variantsMeta }, comboTableRes] = await Promise.all([
           auth.db
             .from("product_variants")
-            .select("id, product_id, products(id, name, image_url)")
+            .select("id, product_id, sku, pack_size, name, products(id, name, image_url)")
             .in("id", variantIds),
           auth.db
             .from("combo_pack_items" as any)
@@ -352,12 +352,21 @@ export async function PATCH(
             .single();
 
           if (!invErr && invRow) {
+            const variantMetaMap = new Map<string, { name: string; sku: string }>();
+            for (const vm of (variantsMeta || []) as any[]) {
+              const pName = vm.products?.name || "Product";
+              const size = vm.pack_size || vm.name || "";
+              const fullName = size ? `${pName} (${size})` : pName;
+              variantMetaMap.set(vm.id, { name: fullName, sku: vm.sku || "—" });
+            }
+
             // Insert invoice items
             const invoiceItemRows = orderItems.map((it, idx) => ({
               business_id: businessId,
               invoice_id: invRow.id,
               product_variant_id: it.product_variant_id,
-              description: null, // will be shown as variant lookup
+              description: variantMetaMap.get(it.product_variant_id)?.name || null,
+              sku_snapshot: variantMetaMap.get(it.product_variant_id)?.sku || null,
               quantity: Number(it.quantity),
               unit_price: Number(it.unit_price),
               discount_percent: Number(it.discount_percent) || 0,
