@@ -36,7 +36,7 @@ import {
   toIndianCurrencyWords,
 } from "@/lib/invoices/bill-format";
 import { loadTransparentSignatureDataUrl } from "@/lib/invoices/signature-ink";
-import { generateVectorInvoicePdf } from "@/lib/invoices/pdf-generator";
+import { generateInvoicePdf } from "@/lib/invoices/pdf-generator";
 
 type BillCopyMode = "digital" | "print";
 
@@ -58,6 +58,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [isSharingWhatsApp, setIsSharingWhatsApp] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isUploadingSign, setIsUploadingSign] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -359,18 +360,15 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
   const captureInvoicePdf = async (forceDigital: boolean) => {
     if (forceDigital && copyMode !== "digital") {
       setCopyMode("digital");
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      );
     }
-    if (!invoice) {
-      throw new Error("Invoice document not found");
+    const invoiceEl = document.getElementById("printable-invoice");
+    if (!invoiceEl || !invoice) {
+      throw new Error("Invoice document element not found");
     }
-    return generateVectorInvoicePdf({
-      invoice,
-      copyMode: forceDigital ? "digital" : copyMode,
-      transparentSignUrl,
-      signatureMeta,
-      amountInWords,
-      termsList,
-    });
+    return generateInvoicePdf(invoiceEl, invoice.invoice_number);
   };
 
   const buildShareMessageLines = () => {
@@ -436,19 +434,18 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
 
     toast.success(`Opening WhatsApp chat with ${invoice.customer.name}...`);
 
-    // 3. Switch to Digital Copy mode if not already active (includes digital signature)
-    if (copyMode !== "digital") {
-      setCopyMode("digital");
-    }
-
-    // 4. Automatically generate 100% Vector PDF (Digital Copy) and download it directly
-    // so the user can easily attach the vector PDF file in WhatsApp!
-    try {
-      const generated = await captureInvoicePdf(true);
-      generated.save();
-      toast.success("100% Vector PDF downloaded — attach in WhatsApp!", { duration: 4000 });
-    } catch (err) {
-      console.warn("WhatsApp background vector PDF generation error:", err);
+    // 3. In background, generate and download Digital Copy PDF so it's ready to attach
+    if (!isSharingWhatsApp) {
+      setIsSharingWhatsApp(true);
+      try {
+        const generated = await captureInvoicePdf(true);
+        generated.save();
+        toast.success(`Digital Copy PDF downloaded — attach in WhatsApp chat!`, { duration: 4000 });
+      } catch (err) {
+        console.warn("Background PDF capture error:", err);
+      } finally {
+        setIsSharingWhatsApp(false);
+      }
     }
   };
 
@@ -688,10 +685,15 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
               <button
                 type="button"
                 onClick={handleShareWhatsApp}
-                className="flex items-center gap-1.5 px-3.5 h-10 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200 hover:bg-emerald-100 transition-all cursor-pointer"
+                disabled={isSharingWhatsApp}
+                className="flex items-center gap-1.5 px-3.5 h-10 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200 hover:bg-emerald-100 transition-all disabled:opacity-50 cursor-pointer"
               >
-                <MessageCircle className="w-3.5 h-3.5" />
-                <span>WhatsApp</span>
+                {isSharingWhatsApp ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <MessageCircle className="w-3.5 h-3.5" />
+                )}
+                <span>{isSharingWhatsApp ? "Preparing PDF..." : "WhatsApp"}</span>
               </button>
 
               {invoice.customer.email && (
@@ -904,7 +906,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
                 Paid: {formatINR(invoice.paid_amount)} / Total: {formatINR(invoice.grand_total)}
               </p>
               {invoice.status === "finalized" && invoice.outstanding > 0 && (
-                <div className="pt-1 print:hidden" data-html2canvas-ignore="true">
+                <div className="pt-1 print:hidden">
                   <button
                     type="button"
                     onClick={() => setMarkPaidOpen(true)}

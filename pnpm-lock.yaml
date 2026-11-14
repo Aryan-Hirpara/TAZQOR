@@ -86,9 +86,6 @@ importers:
       jspdf:
         specifier: ^4.2.1
         version: 4.2.1
-      jspdf-autotable:
-        specifier: ^5.0.9
-        version: 5.0.9(jspdf@4.2.1)
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4
@@ -3988,11 +3985,6 @@ packages:
 
   jsonlines@0.1.1:
     resolution: {integrity: sha512-ekDrAGso79Cvf+dtm+mL8OBI2bmAOt3gssYs833De/C9NmIpWDWyUO4zPgB5x2/OhY366dkhgfPMYfwZF7yOZA==}
-
-  jspdf-autotable@5.0.9:
-    resolution: {integrity: sha512-wIOG2ggjG6Y7qvqjgFACZZeu+oHxoxrhwCn1lTMxjPhojLVVvu2U2yS2srVCYl0CXe6pqiG/jQMIIS0CFn1ssw==}
-    peerDependencies:
-      jspdf: ^2 || ^3 || ^4
 
   jspdf@4.2.1:
     resolution: {integrity: sha512-YyAXyvnmjTbR4bHQRLzex3CuINCDlQnBqoSYyjJwTP2x9jDLuKDzy7aKUl0hgx3uhcl7xzg32agn5vlie6HIlQ==}
@@ -9223,10 +9215,6 @@ snapshots:
       graceful-fs: 4.2.11
 
   jsonlines@0.1.1: {}
-
-  jspdf-autotable@5.0.9(jspdf@4.2.1):
-    dependencies:
-      jspdf: 4.2.1
 
   jspdf@4.2.1:
     dependencies:
