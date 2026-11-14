@@ -58,7 +58,6 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-  const [isSharingWhatsApp, setIsSharingWhatsApp] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isUploadingSign, setIsUploadingSign] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -410,7 +409,7 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
     }
   };
 
-  const handleShareWhatsApp = async () => {
+  const handleShareWhatsApp = () => {
     if (!invoice) return;
     const digits = normalizeWhatsAppDigits(invoice.customer.phone);
     if (!digits) {
@@ -434,19 +433,22 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
 
     toast.success(`Opening WhatsApp chat with ${invoice.customer.name}...`);
 
-    // 3. In background, generate and download Digital Copy PDF so it's ready to attach
-    if (!isSharingWhatsApp) {
-      setIsSharingWhatsApp(true);
-      try {
-        const generated = await captureInvoicePdf(true);
-        generated.save();
-        toast.success(`Digital Copy PDF downloaded — attach in WhatsApp chat!`, { duration: 4000 });
-      } catch (err) {
-        console.warn("Background PDF capture error:", err);
-      } finally {
-        setIsSharingWhatsApp(false);
-      }
+    // 3. Switch to Digital Copy mode if not already active (includes digital signature)
+    if (copyMode !== "digital") {
+      setCopyMode("digital");
     }
+
+    // 4. Automatically launch Print as PDF (native print preview dialog)
+    // instead of direct canvas download, allowing the user to save as PDF in internal storage
+    setTimeout(() => {
+      const originalTitle = document.title;
+      const safeNumber = (invoice.invoice_number || "Bill").replace(/[/\\?%*:|"<>]/g, "-");
+      document.title = `Invoice_${safeNumber}_Digital`;
+      window.print();
+      setTimeout(() => {
+        document.title = originalTitle;
+      }, 1500);
+    }, 250);
   };
 
   const handleEmailDigitalCopy = async () => {
@@ -685,15 +687,10 @@ export default function InvoiceDetailClient({ id }: { id: string }) {
               <button
                 type="button"
                 onClick={handleShareWhatsApp}
-                disabled={isSharingWhatsApp}
-                className="flex items-center gap-1.5 px-3.5 h-10 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200 hover:bg-emerald-100 transition-all disabled:opacity-50 cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 h-10 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200 hover:bg-emerald-100 transition-all cursor-pointer"
               >
-                {isSharingWhatsApp ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <MessageCircle className="w-3.5 h-3.5" />
-                )}
-                <span>{isSharingWhatsApp ? "Preparing PDF..." : "WhatsApp"}</span>
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>WhatsApp</span>
               </button>
 
               {invoice.customer.email && (
