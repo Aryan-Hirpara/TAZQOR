@@ -127,6 +127,29 @@ export async function POST(
         : Math.max(0, currentOutstanding - settlement.amount)
     );
 
+    // Trigger real-time mobile push notification
+    (async () => {
+      try {
+        const { data: custRow } = await auth.db
+          .from("customers")
+          .select("name, shop_name")
+          .eq("id", invoice.customer_id)
+          .maybeSingle();
+        const custName = custRow?.shop_name || custRow?.name || "Customer";
+        const { sendPushToAllDevices } = await import("@/lib/notifications/push");
+        const { formatINR } = await import("@/lib/formatting/currency");
+        const isSettled = outstanding <= 0;
+        await sendPushToAllDevices(auth.db, businessId, {
+          title: `💰 Payment: ${custName} (${formatINR(settlement.amount)})`,
+          body: `${formatINR(settlement.amount)} received for Bill ${invoice.invoice_number} • ${isSettled ? "Settled in Full" : `${formatINR(outstanding)} remaining`}`,
+          url: `/invoices/${invoice.id}`,
+          tag: `payment-${settlement.paymentId}`,
+        });
+      } catch (e) {
+        console.warn("Payment push notification error:", e);
+      }
+    })();
+
     return NextResponse.json({
       success: true,
       invoice_id: invoice.id,

@@ -10,11 +10,15 @@ import {
   Download,
   Database,
   LogOut,
+  Bell,
+  Smartphone,
+  Send,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { StyledSelect } from "@/components/ui/StyledSelect";
 import { createClient } from "@/lib/supabase/client";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const BUSINESS_ID = "00000000-0000-0000-0000-000000000001";
 
@@ -23,6 +27,26 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userEmail, setUserEmail] = useState("");
+  const { status: pushStatus, error: pushError, subscribe: subscribePush, unsubscribe: unsubscribePush } = usePushNotifications();
+  const [testingPush, setTestingPush] = useState(false);
+
+  const handleTestPush = async () => {
+    setTestingPush(true);
+    const toastId = toast.loading("Sending test mobile alert...");
+    try {
+      const res = await fetch("/api/notifications/test", { method: "POST" });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success) {
+        toast.success(data.message || "Test alert sent to your screen!", { id: toastId });
+      } else {
+        toast.error(data?.error || "Could not send test alert", { id: toastId });
+      }
+    } catch {
+      toast.error("Failed to connect to notification server", { id: toastId });
+    } finally {
+      setTestingPush(false);
+    }
+  };
 
   // Business profile state (loaded live from Supabase business_settings)
   const [profile, setProfile] = useState({
@@ -427,6 +451,119 @@ export default function SettingsPage() {
             </div>
           </form>
         )}
+
+        {/* Real-time Mobile Screen Alerts & Web Push Section */}
+        <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 shadow-none space-y-5">
+          <div className="flex items-center justify-between gap-4 pb-3 border-b border-white/50">
+            <div className="flex items-center gap-2">
+              <Bell className="w-5 h-5 text-neutral-800" />
+              <div>
+                <h2 className="text-base font-normal text-neutral-900">Real-Time Mobile Screen Alerts</h2>
+                <p className="text-xs font-light text-neutral-500">
+                  Receive instant lockscreen & banner notifications for orders, stock, due bills, emails, and daily summaries
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {pushStatus === "subscribed" && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Active on this device
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 rounded-2xl bg-white/70 border border-white/80 space-y-2">
+              <div className="flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-neutral-700" />
+                <span className="text-xs font-semibold text-neutral-900">Device Push Status</span>
+              </div>
+              <p className="text-xs text-neutral-600 font-light leading-relaxed">
+                {pushStatus === "subscribed"
+                  ? "This device is registered to receive real-time web push notifications even when the app is closed."
+                  : pushStatus === "denied"
+                  ? "Notifications are currently blocked by your browser permissions. Enable them in site settings."
+                  : "Enable notifications to get live updates on your phone lockscreen for sales, deliveries, and stock."}
+              </p>
+              {pushError && <p className="text-xs text-rose-500">{pushError}</p>}
+
+              <div className="pt-2 flex flex-wrap items-center gap-2">
+                {pushStatus === "subscribed" ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleTestPush}
+                      disabled={testingPush}
+                      className="inline-flex items-center gap-1.5 px-4 h-9 rounded-full bg-black text-[#D7FF00] text-xs font-medium hover:brightness-110 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>{testingPush ? "Sending..." : "Send Test Mobile Alert"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const ok = await unsubscribePush();
+                        if (ok) toast.success("Notifications turned off for this device.");
+                      }}
+                      className="px-3 h-9 rounded-full bg-white border border-neutral-200 text-neutral-700 text-xs font-light hover:bg-neutral-50 transition-all cursor-pointer"
+                    >
+                      Turn Off
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const ok = await subscribePush();
+                      if (ok) toast.success("Real-time screen notifications enabled!");
+                    }}
+                    className="inline-flex items-center gap-1.5 px-5 h-9 rounded-full bg-black text-[#D7FF00] text-xs font-semibold hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+                  >
+                    <Bell className="w-3.5 h-3.5" />
+                    <span>Enable Screen Alerts on this Phone</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/70 border border-white/80 space-y-2">
+              <span className="text-xs font-semibold text-neutral-900 block">Live Automated Alerts</span>
+              <ul className="text-xs text-neutral-600 font-light space-y-1.5">
+                <li className="flex items-center gap-1.5">
+                  <span className="text-emerald-600 font-bold">✓</span>
+                  <span><strong>New Orders:</strong> Instant alert with customer name, items & amount</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span className="text-emerald-600 font-bold">✓</span>
+                  <span><strong>Order Delivery:</strong> Confirms stock deduction & auto-created bill</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span className="text-emerald-600 font-bold">✓</span>
+                  <span><strong>Pending Orders:</strong> Alerts if order confirmed &gt;12h without delivery</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span className="text-emerald-600 font-bold">✓</span>
+                  <span><strong>Stock Alerts:</strong> Warning when inventory hits reorder level or finishes</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span className="text-emerald-600 font-bold">✓</span>
+                  <span><strong>Due Bills:</strong> 10:00 AM daily alert for unpaid overdue invoices</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span className="text-emerald-600 font-bold">✓</span>
+                  <span><strong>New Emails:</strong> Alert on incoming customer/vendor Gmail messages</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span className="text-emerald-600 font-bold">✓</span>
+                  <span><strong>Daily Summary:</strong> 9:30 PM recap with sales, profit & pending balance</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
 
         {/* Data Export & Backup Section */}
         <div className="bg-white/55 backdrop-blur-xl rounded-[28px] p-6 sm:p-8 border border-white/65 shadow-none space-y-4">

@@ -1,0 +1,25 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/daily-summary",
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/cron/due-bills",
+      "schedule": "30 4 * * *"
+    },
+    {
+      "path": "/api/cron/low-stock",
+      "schedule": "30 2 * * *"
+    },
+    {
+      "path": "/api/cron/pending-orders",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/cron/mail-check",
+      "schedule": "*/30 * * * *"
+    }
+  ]
+}
+

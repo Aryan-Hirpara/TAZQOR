@@ -126,6 +126,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Trigger real-time mobile push notification
+    (async () => {
+      try {
+        const [{ data: custRow }, { data: variantsData }] = await Promise.all([
+          auth.db
+            .from("customers")
+            .select("name, shop_name")
+            .eq("id", customerId)
+            .maybeSingle(),
+          auth.db
+            .from("product_variants")
+            .select("id, name, pack_size, products(name)")
+            .in("id", rawItems.map((i) => i.product_variant_id)),
+        ]);
+
+        const custName = custRow?.shop_name || custRow?.name || "Customer";
+        const vMap = new Map<string, string>();
+        for (const v of (variantsData || []) as any[]) {
+          const pName = v.products?.name || "Item";
+          const pSize = v.pack_size || v.name || "";
+          vMap.set(v.id, pSize ? `${pName} (${pSize})` : pName);
+        }
+
+        const orderTotal = rawItems.reduce(
+          (s, it) => s + (Number(it.quantity) || 0) * (Number(it.unit_price) || 0),
+          0
+        );
+
+        const itemsSummary = rawItems
+          .slice(0, 3)
+          .map((it) => `${it.quantity}× ${vMap.get(it.product_variant_id) || "Item"}`)
+          .join(", ") + (rawItems.length > 3 ? ` +${rawItems.length - 3} more` : "");
+
+        const { sendPushToAllDevices } = await import("@/lib/notifications/push");
+        const { formatINR } = await import("@/lib/formatting/currency");
+
+        await sendPushToAllDevices(auth.db, businessId, {
+          title: `📦 New Order: ${custName} (${formatINR(orderTotal)})`,
+          body: `${orderNumber} • ${itemsSummary} • ${status.toUpperCase()}`,
+          url: `/orders/${insertedOrder.id}`,
+          tag: `order-${insertedOrder.id}`,
+          requireInteraction: true,
+        });
+      } catch (pushErr) {
+        console.warn("Could not dispatch order push notification:", pushErr);
+      }
+    })();
+
     return NextResponse.json(
       {
         success: true,

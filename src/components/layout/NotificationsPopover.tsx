@@ -19,6 +19,8 @@ import { cn } from "@/lib/utils";
 
 import { createClient } from "@/lib/supabase/client";
 import { formatINR } from "@/lib/formatting/currency";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { toast } from "sonner";
 
 export interface NotificationItem {
   id: string;
@@ -49,6 +51,26 @@ export function NotificationsPopover({
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | "unread" | "alerts">("all");
   const [businessEmail, setBusinessEmail] = useState("");
+  const { status: pushStatus, subscribe: subscribePush } = usePushNotifications();
+  const [testingPush, setTestingPush] = useState(false);
+
+  const handleTestPush = async () => {
+    setTestingPush(true);
+    const toastId = toast.loading("Sending test mobile alert...");
+    try {
+      const res = await fetch("/api/notifications/test", { method: "POST" });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success) {
+        toast.success(data.message || "Test alert sent to your screen!", { id: toastId });
+      } else {
+        toast.error(data?.error || "Could not send test alert", { id: toastId });
+      }
+    } catch {
+      toast.error("Failed to connect to notification server", { id: toastId });
+    } finally {
+      setTestingPush(false);
+    }
+  };
 
   useEffect(() => {
     async function loadRealNotifications() {
@@ -349,37 +371,51 @@ export function NotificationsPopover({
         </div>
 
         {/* Real-time Push & Email Notifications Bar */}
-        <div className="px-4 py-2 bg-neutral-50 border-b border-neutral-100 flex items-center justify-between text-[11px]">
-          <span className="text-neutral-600 font-light truncate">
-            {businessEmail ? (
-              <>
-                Email alerts: <strong className="font-normal text-neutral-900">{businessEmail}</strong>
-              </>
+        <div className="px-4 py-2 bg-neutral-50 dark:bg-neutral-950/40 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-[11px] gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            {pushStatus === "subscribed" ? (
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
+            ) : pushStatus === "denied" ? (
+              <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
             ) : (
-              "Live workspace activity feed"
+              <span className="w-2 h-2 rounded-full bg-neutral-400 shrink-0" />
             )}
-          </span>
-          {typeof window !== "undefined" && "Notification" in window && Notification.permission !== "granted" && (
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  const res = await Notification.requestPermission();
-                  if (res === "granted") {
-                    new Notification("TAZQOR Alerts Enabled", {
-                      body: "Real-time notifications are now active on this device.",
-                      icon: "/icon-192.png",
-                    });
+            <span className="text-neutral-700 dark:text-neutral-300 font-medium truncate">
+              {pushStatus === "subscribed"
+                ? "Mobile Screen Alerts Active"
+                : pushStatus === "denied"
+                ? "Alerts Blocked in Settings"
+                : "Get Alerts on Mobile Screen"}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {pushStatus === "subscribed" ? (
+              <button
+                type="button"
+                onClick={handleTestPush}
+                disabled={testingPush}
+                className="text-[10px] px-2.5 py-1 rounded-full bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 font-semibold hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {testingPush ? "Sending..." : "Test Alert"}
+              </button>
+            ) : pushStatus === "unsubscribed" ? (
+              <button
+                type="button"
+                onClick={async () => {
+                  const ok = await subscribePush();
+                  if (ok) {
+                    toast.success("Mobile alerts enabled! You will receive live notifications.");
                   }
-                } catch (e) {
-                  console.warn("Notification error:", e);
-                }
-              }}
-              className="text-[10px] px-2.5 py-0.5 rounded-full bg-black text-[#E0FE52] font-normal hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0 ml-2"
-            >
-              Enable Screen Alerts
-            </button>
-          )}
+                }}
+                className="text-[10px] px-3 py-1 rounded-full bg-black text-[#D7FF00] font-semibold hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+              >
+                Enable Alerts
+              </button>
+            ) : pushStatus === "denied" ? (
+              <span className="text-[10px] text-rose-500 font-light">Allow in browser</span>
+            ) : null}
+          </div>
         </div>
 
         {/* Filter Tabs */}

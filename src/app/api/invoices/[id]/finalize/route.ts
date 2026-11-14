@@ -123,11 +123,36 @@ export async function POST(
             );
           }
 
+          const triggerFinalizePush = async (invNum: string, paidAmt?: number) => {
+            try {
+              const { data: custRow } = await auth.db
+                .from("customers")
+                .select("name, shop_name")
+                .eq("id", invoice.customer_id)
+                .maybeSingle();
+              const custName = custRow?.shop_name || custRow?.name || "Customer";
+              const { sendPushToAllDevices } = await import("@/lib/notifications/push");
+              const { formatINR } = await import("@/lib/formatting/currency");
+              const total = Number(invoice.grand_total) || 0;
+              const isPaid = (paidAmt || 0) >= total && total > 0;
+              await sendPushToAllDevices(auth.db, businessId, {
+                title: isPaid ? `💰 Paid: ${custName} (${formatINR(total)})` : `🧾 Bill Finalized: ${custName}`,
+                body: `Bill ${invNum} • ${formatINR(total)}${isPaid ? " • Paid in Full" : " • Payment Pending"}`,
+                url: `/invoices/${invoiceId}`,
+                tag: `invoice-${invoiceId}`,
+              });
+            } catch (e) {
+              console.warn("Finalize push notification error:", e);
+            }
+          };
+
           const applyOptionalPaymentEarly = async (
             finalizedPayload: Record<string, unknown>,
             payment: ParsedInvoicePayment | null
           ) => {
+            const finalNum = String(finalizedPayload.invoice_number || invoice.invoice_number || "Bill");
             if (!payment) {
+              triggerFinalizePush(finalNum);
               return NextResponse.json({ success: true, ...finalizedPayload });
             }
             const settlement = await settleInvoiceWithPayment({
@@ -138,6 +163,7 @@ export async function POST(
               payment,
             });
             if (!settlement.ok) {
+              triggerFinalizePush(finalNum);
               return NextResponse.json(
                 {
                   success: false,
@@ -148,6 +174,7 @@ export async function POST(
                 { status: 400 }
               );
             }
+            triggerFinalizePush(finalNum, settlement.amount);
             return NextResponse.json({
               success: true,
               ...finalizedPayload,
@@ -196,7 +223,32 @@ export async function POST(
       finalizedPayload: Record<string, unknown>,
       payment: ParsedInvoicePayment | null
     ) => {
+      const finalNum = String(finalizedPayload.invoice_number || invoice.invoice_number || "Bill");
+      const triggerFinalizePushGeneral = async (invNum: string, paidAmt?: number) => {
+        try {
+          const { data: custRow } = await auth.db
+            .from("customers")
+            .select("name, shop_name")
+            .eq("id", invoice.customer_id)
+            .maybeSingle();
+          const custName = custRow?.shop_name || custRow?.name || "Customer";
+          const { sendPushToAllDevices } = await import("@/lib/notifications/push");
+          const { formatINR } = await import("@/lib/formatting/currency");
+          const total = Number(invoice.grand_total) || 0;
+          const isPaid = (paidAmt || 0) >= total && total > 0;
+          await sendPushToAllDevices(auth.db, businessId, {
+            title: isPaid ? `💰 Paid: ${custName} (${formatINR(total)})` : `🧾 Bill Finalized: ${custName}`,
+            body: `Bill ${invNum} • ${formatINR(total)}${isPaid ? " • Paid in Full" : " • Payment Pending"}`,
+            url: `/invoices/${invoiceId}`,
+            tag: `invoice-${invoiceId}`,
+          });
+        } catch (e) {
+          console.warn("Finalize push notification error:", e);
+        }
+      };
+
       if (!payment) {
+        triggerFinalizePushGeneral(finalNum);
         return NextResponse.json({ success: true, ...finalizedPayload });
       }
       const settlement = await settleInvoiceWithPayment({
@@ -207,6 +259,7 @@ export async function POST(
         payment,
       });
       if (!settlement.ok) {
+        triggerFinalizePushGeneral(finalNum);
         return NextResponse.json(
           {
             success: false,
@@ -217,6 +270,7 @@ export async function POST(
           { status: 400 }
         );
       }
+      triggerFinalizePushGeneral(finalNum, settlement.amount);
       return NextResponse.json({
         success: true,
         ...finalizedPayload,

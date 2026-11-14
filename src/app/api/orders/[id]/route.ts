@@ -219,6 +219,9 @@ export async function PATCH(
         }
 
         // FEFO allocation
+        // Use a unique reference_type per movement (with sequence suffix) to avoid
+        // violating the UNIQUE(reference_type, reference_line_id, movement_type) constraint
+        // when a combo pack has multiple component variants all sharing the same order_item id.
         const movementRows: Array<Record<string, unknown>> = [];
         let seqIdx = 0;
         for (const req of deductions) {
@@ -240,7 +243,10 @@ export async function PATCH(
               reason: req.isComboComponent
                 ? "Order delivery — combo component"
                 : "Order delivery stock deduction",
-              reference_type: "order_delivery",
+              // Append sequence index so each row has a unique (reference_type, reference_line_id, movement_type)
+              reference_type: req.isComboComponent
+                ? `order_delivery_combo:${req.targetVariantId}:${seqIdx}`
+                : `order_delivery:${seqIdx}`,
               reference_id: orderId,
               reference_line_id: req.invoiceItemId, // order_item id
             });
@@ -269,11 +275,11 @@ export async function PATCH(
           .eq("business_id", businessId);
 
         if (updOrdErr) {
-          // Rollback movements
+          // Rollback all delivery movements for this order (reference_type has sequence suffixes)
           await auth.db.from("stock_movements").delete()
             .eq("reference_id", orderId)
-            .eq("reference_type", "order_delivery")
-            .eq("business_id", businessId);
+            .eq("business_id", businessId)
+            .like("reference_type", "order_delivery%");
           return NextResponse.json({ success: false, error: updOrdErr.message }, { status: 400 });
         }
 
@@ -370,6 +376,27 @@ export async function PATCH(
           linkedInvoice = { id: existingInv.id, invoice_number: "", status: "draft" };
         }
 
+        // Trigger real-time mobile push notification
+        (async () => {
+          try {
+            const { data: custRow } = await auth.db
+              .from("customers")
+              .select("name, shop_name")
+              .eq("id", order.customer_id)
+              .maybeSingle();
+            const custName = custRow?.shop_name || custRow?.name || "Customer";
+            const { sendPushToAllDevices } = await import("@/lib/notifications/push");
+            await sendPushToAllDevices(auth.db, businessId, {
+              title: `✅ Delivered: ${custName}`,
+              body: `${order.order_number} delivered • Stock deducted & bill auto-created`,
+              url: `/orders/${orderId}`,
+              tag: `order-delivered-${orderId}`,
+            });
+          } catch (e) {
+            console.warn("Delivery push error:", e);
+          }
+        })();
+
         return NextResponse.json({
           success: true,
           status: "delivered",
@@ -387,14 +414,14 @@ export async function PATCH(
 
     // ── CANCELLED: revert delivery stock movements + cancel linked draft invoice ─
     if (newStatus === "cancelled") {
-      // Reverse any delivery stock movements
+      // Reverse any delivery stock movements (reference_type has sequence suffixes like order_delivery:1, order_delivery_combo:...)
       if (order.delivery_stock_deducted) {
         await auth.db
           .from("stock_movements")
           .delete()
           .eq("reference_id", orderId)
-          .eq("reference_type", "order_delivery")
-          .eq("business_id", businessId);
+          .eq("business_id", businessId)
+          .like("reference_type", "order_delivery%");
       }
 
       // Cancel linked draft invoices (don't touch finalized ones)
@@ -414,6 +441,27 @@ export async function PATCH(
       if (updErr) {
         return NextResponse.json({ success: false, error: updErr.message }, { status: 400 });
       }
+
+      // Trigger real-time mobile push notification
+      (async () => {
+        try {
+          const { data: custRow } = await auth.db
+            .from("customers")
+            .select("name, shop_name")
+            .eq("id", order.customer_id)
+            .maybeSingle();
+          const custName = custRow?.shop_name || custRow?.name || "Customer";
+          const { sendPushToAllDevices } = await import("@/lib/notifications/push");
+          await sendPushToAllDevices(auth.db, businessId, {
+            title: `❌ Cancelled: ${custName}`,
+            body: `${order.order_number} cancelled${order.delivery_stock_deducted ? " • Stock restored to inventory" : ""}`,
+            url: `/orders/${orderId}`,
+            tag: `order-cancelled-${orderId}`,
+          });
+        } catch (e) {
+          console.warn("Cancel push error:", e);
+        }
+      })();
 
       return NextResponse.json({
         success: true,
